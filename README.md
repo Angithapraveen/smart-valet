@@ -276,3 +276,5 @@ For detailed setup instructions for each component, refer to:
 - `frontend/owner/README.md`
 - `frontend/manager/README.md`
 - `mobile/driver/README.md`
+
+# smart-valet
