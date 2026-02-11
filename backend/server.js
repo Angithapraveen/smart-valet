@@ -7,6 +7,8 @@ const pool = require('./config/database');
 // Import routes
 const authRoutes = require('./routes/authRoutes');
 const dashboardRoutes = require('./routes/dashboardRoutes');
+const adminLocationRoutes = require('./routes/adminLocationRoutes');
+const adminOwnerRoutes = require('./routes/adminOwnerRoutes');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -37,6 +39,8 @@ app.get('/health', async (req, res) => {
 // API Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/dashboard', dashboardRoutes);
+app.use('/api/admin/locations', adminLocationRoutes);
+app.use('/api/admin/owners', adminOwnerRoutes);
 
 // 404 handler
 app.use((req, res) => {

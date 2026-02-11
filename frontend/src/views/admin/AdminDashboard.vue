@@ -2,6 +2,13 @@
   <div class="dashboard">
     <header class="dashboard-header">
       <h1>Admin Dashboard</h1>
+      <nav class="admin-nav">
+        <router-link to="/admin/dashboard" class="nav-link">Dashboard</router-link>
+        <router-link to="/admin/locations" class="nav-link">Locations</router-link>
+        <router-link to="/admin/owners" class="nav-link">Owners</router-link>
+        <router-link to="/admin/location/add" class="nav-link nav-link-primary">Add Location</router-link>
+        <router-link to="/admin/owner/add" class="nav-link nav-link-primary">Add Owner</router-link>
+      </nav>
       <div class="user-info">
         <span>{{ user?.name }}</span>
         <button @click="handleLogout" class="logout-button">Logout</button>
@@ -124,12 +131,45 @@ export default {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .dashboard-header h1 {
   color: #333;
   font-size: 24px;
+}
+
+.admin-nav {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.nav-link {
+  padding: 8px 14px;
+  border-radius: 6px;
+  text-decoration: none;
+  color: #374151;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.nav-link:hover,
+.nav-link.router-link-active {
+  background: #f3f4f6;
+  color: #6545e5;
+}
+
+.nav-link-primary {
+  background: #6545e5;
+  color: white;
+}
+
+.nav-link-primary:hover {
+  background: #7c5ef0;
+  color: white;
 }
 
 .user-info {

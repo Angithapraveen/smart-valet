@@ -1,6 +1,10 @@
 import { createRouter, createWebHistory } from 'vue-router';
 import Login from '../views/Login.vue';
 import AdminDashboard from '../views/admin/AdminDashboard.vue';
+import AddLocation from '../views/admin/AddLocation.vue';
+import LocationList from '../views/admin/LocationList.vue';
+import AddOwner from '../views/admin/AddOwner.vue';
+import OwnerList from '../views/admin/OwnerList.vue';
 import OwnerDashboard from '../views/owner/OwnerDashboard.vue';
 import ManagerDashboard from '../views/manager/ManagerDashboard.vue';
 import { useAuthStore } from '../stores/auth';
@@ -20,6 +24,30 @@ const routes = [
     path: '/admin/dashboard',
     name: 'AdminDashboard',
     component: AdminDashboard,
+    meta: { requiresAuth: true, role: 'ADMIN' }
+  },
+  {
+    path: '/admin/location/add',
+    name: 'AddLocation',
+    component: AddLocation,
+    meta: { requiresAuth: true, role: 'ADMIN' }
+  },
+  {
+    path: '/admin/locations',
+    name: 'LocationList',
+    component: LocationList,
+    meta: { requiresAuth: true, role: 'ADMIN' }
+  },
+  {
+    path: '/admin/owner/add',
+    name: 'AddOwner',
+    component: AddOwner,
+    meta: { requiresAuth: true, role: 'ADMIN' }
+  },
+  {
+    path: '/admin/owners',
+    name: 'OwnerList',
+    component: OwnerList,
     meta: { requiresAuth: true, role: 'ADMIN' }
   },
   {

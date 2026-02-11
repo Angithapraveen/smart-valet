@@ -4,7 +4,7 @@
 -- ====================================================
 
 CREATE TABLE IF NOT EXISTS USERS (
-    user_id VARCHAR(10) PRIMARY KEY,
+    user_id VARCHAR(20) PRIMARY KEY,
     name VARCHAR(100) NOT NULL,
     email_id VARCHAR(100) UNIQUE NOT NULL,
     phone_number VARCHAR(15) UNIQUE NOT NULL,
