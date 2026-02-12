@@ -1,5 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router';
-import Login from '../views/Login.vue';
+
 import AdminDashboard from '../views/admin/AdminDashboard.vue';
 import AddLocation from '../views/admin/AddLocation.vue';
 import LocationList from '../views/admin/LocationList.vue';
@@ -17,50 +17,71 @@ const routes = [
   {
     path: '/login',
     name: 'Login',
-    component: Login,
+    component: () => import('../views/Login.vue'),
     meta: { requiresGuest: true }
   },
   {
-    path: '/admin/dashboard',
-    name: 'AdminDashboard',
-    component: AdminDashboard,
-    meta: { requiresAuth: true, role: 'ADMIN' }
-  },
-  {
-    path: '/admin/location/add',
-    name: 'AddLocation',
-    component: AddLocation,
-    meta: { requiresAuth: true, role: 'ADMIN' }
-  },
-  {
-    path: '/admin/locations',
-    name: 'LocationList',
-    component: LocationList,
-    meta: { requiresAuth: true, role: 'ADMIN' }
-  },
-  {
-    path: '/admin/owner/add',
-    name: 'AddOwner',
-    component: AddOwner,
-    meta: { requiresAuth: true, role: 'ADMIN' }
-  },
-  {
-    path: '/admin/owners',
-    name: 'OwnerList',
-    component: OwnerList,
-    meta: { requiresAuth: true, role: 'ADMIN' }
-  },
-  {
-    path: '/owner/dashboard',
-    name: 'OwnerDashboard',
-    component: OwnerDashboard,
-    meta: { requiresAuth: true, role: 'OWNER' }
-  },
-  {
-    path: '/manager/dashboard',
-    name: 'ManagerDashboard',
-    component: ManagerDashboard,
-    meta: { requiresAuth: true, role: 'MANAGER' }
+    path: '/',
+    component: () => import('../layouts/MainLayout.vue'),
+    meta: { requiresAuth: true },
+    children: [
+      {
+        path: 'profile',
+        name: 'Profile',
+        component: () => import('../views/Profile.vue')
+      },
+      // Admin Routes
+      {
+        path: 'admin/dashboard',
+        name: 'AdminDashboard',
+        component: AdminDashboard,
+        meta: { role: 'ADMIN' }
+      },
+      {
+        path: 'admin/location/add',
+        name: 'AddLocation',
+        component: AddLocation,
+        meta: { role: 'ADMIN' }
+      },
+      {
+        path: 'admin/locations',
+        name: 'LocationList',
+        component: LocationList,
+        meta: { role: 'ADMIN' }
+      },
+      {
+        path: 'admin/location/:id',
+        name: 'LocationDetails',
+        component: () => import('../views/admin/LocationDetails.vue'),
+        meta: { role: 'ADMIN' }
+      },
+      {
+        path: 'admin/owner/add',
+        name: 'AddOwner',
+        component: AddOwner,
+        meta: { role: 'ADMIN' }
+      },
+      {
+        path: 'admin/owners',
+        name: 'OwnerList',
+        component: OwnerList,
+        meta: { role: 'ADMIN' }
+      },
+      // Owner Routes
+      {
+        path: 'owner/dashboard',
+        name: 'OwnerDashboard',
+        component: OwnerDashboard,
+        meta: { role: 'OWNER' }
+      },
+      // Manager Routes
+      {
+        path: 'manager/dashboard',
+        name: 'ManagerDashboard',
+        component: ManagerDashboard,
+        meta: { role: 'MANAGER' }
+      }
+    ]
   },
   {
     path: '/:pathMatch(.*)*',

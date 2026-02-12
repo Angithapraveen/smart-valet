@@ -1,7 +1,7 @@
 <template>
   <div class="add-location-page">
     <header class="page-header">
-      <router-link to="/admin/locations" class="back-link">← Locations</router-link>
+      <router-link to="/admin/admindashboard" class="back-link"><--Back</router-link>
       <h1>Add Location</h1>
     </header>
 

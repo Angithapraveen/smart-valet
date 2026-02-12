@@ -123,6 +123,15 @@ export default {
         });
         if (response.data.success) {
           locations.value = response.data.data.filter(loc => loc.status);
+          
+          // Pre-select location if passed in query
+          const route = useRouter().currentRoute.value;
+          if (route.query.location_id) {
+             const preSelected = locations.value.find(l => l.location_id === route.query.location_id);
+             if (preSelected) {
+                 form.location_id = preSelected.location_id;
+             }
+          }
         }
       } catch (err) {
         errorMessage.value = 'Failed to load locations.';

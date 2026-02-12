@@ -41,6 +41,32 @@ const getAdminDashboard = async (req, res) => {
 };
 
 /**
+ * Get Admin Dashboard Summary
+ */
+const getAdminSummary = async (req, res) => {
+    try {
+        const locationsCount = await pool.query('SELECT COUNT(*) FROM LOCATIONS WHERE status = TRUE');
+        const ownersCount = await pool.query("SELECT COUNT(*) FROM USERS u JOIN ROLE_MASTER rm ON u.role_id = rm.role_id WHERE rm.role_name = 'OWNER' AND u.status = TRUE");
+        const driversCount = await pool.query("SELECT COUNT(*) FROM USERS u JOIN ROLE_MASTER rm ON u.role_id = rm.role_id WHERE rm.role_name = 'DRIVER' AND u.status = TRUE");
+
+        res.json({
+            success: true,
+            data: {
+                total_locations: parseInt(locationsCount.rows[0].count),
+                total_owners: parseInt(ownersCount.rows[0].count),
+                total_drivers: parseInt(driversCount.rows[0].count)
+            }
+        });
+    } catch (error) {
+        console.error('Admin summary error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to load admin summary.'
+        });
+    }
+};
+
+/**
  * Owner Dashboard Controller
  */
 const getOwnerDashboard = async (req, res) => {
@@ -169,6 +195,7 @@ const getManagerDashboard = async (req, res) => {
 
 module.exports = {
     getAdminDashboard,
+    getAdminSummary,
     getOwnerDashboard,
     getManagerDashboard
 };

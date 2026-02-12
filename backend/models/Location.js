@@ -52,6 +52,50 @@ class Location {
     }
 
     /**
+     * Get all locations with statistics
+     */
+    static async findAllWithStats() {
+        const query = `
+            SELECT 
+                l.location_id, l.location_name, l.location_type, l.address, l.status,
+                COALESCE(b.total_blocks, 0) as total_blocks,
+                COALESCE(be.available_slots, 0) as available_slots,
+                COALESCE(be.occupied_slots, 0) as occupied_slots,
+                COALESCE(vt.active_parkings, 0) as active_parkings
+            FROM LOCATIONS l
+            LEFT JOIN (
+                SELECT location_id, COUNT(*) as total_blocks 
+                FROM BLOCKS 
+                WHERE status = TRUE 
+                GROUP BY location_id
+            ) b ON l.location_id = b.location_id
+            LEFT JOIN (
+                SELECT 
+                    location_id,
+                    COUNT(*) FILTER (WHERE status = 'AVAILABLE') as available_slots,
+                    COUNT(*) FILTER (WHERE status = 'OCCUPIED') as occupied_slots
+                FROM BLOCK_ENTRIES 
+                GROUP BY location_id
+            ) be ON l.location_id = be.location_id
+            LEFT JOIN (
+                SELECT location_id, COUNT(*) as active_parkings 
+                FROM VALET_TRANSACTIONS 
+                WHERE status IN ('PARKED', 'RETURN_REQUESTED', 'READY')
+                GROUP BY location_id
+            ) vt ON l.location_id = vt.location_id
+            ORDER BY l.created_at DESC
+        `;
+        const result = await pool.query(query);
+        return result.rows.map(row => ({
+            ...row,
+            total_blocks: parseInt(row.total_blocks),
+            available_slots: parseInt(row.available_slots),
+            occupied_slots: parseInt(row.occupied_slots),
+            active_parkings: parseInt(row.active_parkings)
+        }));
+    }
+
+    /**
      * Get location by id
      */
     static async findById(locationId) {

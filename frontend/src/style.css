@@ -1,0 +1,234 @@
+/**
+ * Global Styles for Admin Web Application
+ */
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Theme Color Variables - Matching Login Page */
+:root {
+  --primary-color: #6545e5;
+  --primary-color-hover: #7c5ef0;
+  --primary-color-text: #ffffff;
+  --primary-color-light: rgba(101, 69, 229, 0.1);
+  --primary-color-border: rgba(101, 69, 229, 0.3);
+
+  /* New Global Color System */
+  --header-bg: #121212;
+  --header-border: rgba(255, 255, 255, 0.05);
+  --header-text: #ffffff;
+  --header-hover: rgba(255, 255, 255, 0.05);
+
+  --primary: #6545e5;
+  --primary-hover: #7c5ef0;
+  --primary-shadow: rgba(101, 69, 229, 0.4);
+
+  --page-bg: #f5f6fa;
+  --card-bg: #ffffff;
+
+  --status-active: #22c55e;
+  --status-inactive: #ef4444;
+  --status-available: #16a34a;
+  --status-occupied: #dc2626;
+
+  --gradient-locations: linear-gradient(135deg, #3b82f6, #2563eb);
+  --gradient-owners: linear-gradient(135deg, #22c55e, #16a34a);
+  --gradient-managers: linear-gradient(135deg, #f59e0b, #d97706);
+  --gradient-drivers: linear-gradient(135deg, #a855f7, #7c3aed);
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+  background-color: #f5f5f5;
+  color: #333;
+}
+
+#app {
+  min-height: 100vh;
+}
+
+/* Utility Classes */
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+.btn {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.3s;
+}
+
+.btn-primary {
+  background-color: var(--primary-color);
+  color: var(--primary-color-text);
+}
+
+.btn-primary:hover {
+  background-color: var(--primary-color-hover);
+}
+
+.btn-outline-primary {
+  background-color: transparent;
+  border: 1px solid var(--primary-color);
+  color: var(--primary-color);
+}
+
+.btn-outline-primary:hover {
+  background-color: var(--primary-color-light);
+}
+
+.btn-secondary {
+  background-color: #6c757d;
+  color: white;
+}
+
+.btn-secondary:hover {
+  background-color: #545b62;
+}
+
+.btn-danger {
+  background-color: #dc3545;
+  color: white;
+}
+
+.btn-danger:hover {
+  background-color: #c82333;
+}
+
+.btn-success {
+  background-color: #28a745;
+  color: white;
+}
+
+.btn-success:hover {
+  background-color: #218838;
+}
+
+.btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.card {
+  background: white;
+  border-radius: 8px;
+  padding: 20px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  margin-bottom: 20px;
+}
+
+.form-group {
+  margin-bottom: 20px;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 500;
+  color: #555;
+}
+
+.form-group input,
+.form-group select,
+.form-group textarea {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  font-size: 14px;
+}
+
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+  outline: none;
+  border-color: #007bff;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  background: white;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.table th,
+.table td {
+  padding: 12px;
+  text-align: left;
+  border-bottom: 1px solid #eee;
+}
+
+.table th {
+  background-color: #f8f9fa;
+  font-weight: 600;
+  color: #555;
+}
+
+.table tr:hover {
+  background-color: #f8f9fa;
+}
+
+.badge {
+  display: inline-block;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.badge-success {
+  background-color: #d4edda;
+  color: #155724;
+}
+
+.badge-danger {
+  background-color: #f8d7da;
+  color: #721c24;
+}
+
+.badge-warning {
+  background-color: #fff3cd;
+  color: #856404;
+}
+
+.badge-info {
+  background-color: #d1ecf1;
+  color: #0c5460;
+}
+
+.loading {
+  text-align: center;
+  padding: 40px;
+  color: #666;
+}
+
+.error {
+  color: #dc3545;
+  padding: 10px;
+  background-color: #f8d7da;
+  border-radius: 6px;
+  margin-bottom: 20px;
+}
+
+.success {
+  color: #155724;
+  padding: 10px;
+  background-color: #d4edda;
+  border-radius: 6px;
+  margin-bottom: 20px;
+}

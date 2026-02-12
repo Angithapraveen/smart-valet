@@ -17,18 +17,18 @@ const authenticate = async (req, res, next) => {
         }
 
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
-        
+
         // Fetch user details from database
         const userQuery = `
-            SELECT u.user_id, u.name, u.email_id, u.phone_number, u.role_id, u.status,
+            SELECT u.user_id, u.name, u.email_id, u.phone_number, u.role_id, u.status, u.created_at,
                    rm.role_name
             FROM USERS u
             JOIN ROLE_MASTER rm ON u.role_id = rm.role_id
             WHERE u.user_id = $1 AND u.status = TRUE
         `;
-        
+
         const userResult = await pool.query(userQuery, [decoded.user_id]);
-        
+
         if (userResult.rows.length === 0) {
             return res.status(401).json({
                 success: false,

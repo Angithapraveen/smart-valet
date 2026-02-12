@@ -5,7 +5,8 @@ const { requireRole } = require('../middleware/roleAccess');
 const {
     createLocation,
     getLocations,
-    updateLocationStatus
+    updateLocationStatus,
+    getLocationOwners
 } = require('../controllers/locationController');
 
 // All routes require authentication and ADMIN role
@@ -15,5 +16,6 @@ router.use(requireRole('ADMIN'));
 router.post('/', createLocation);
 router.get('/', getLocations);
 router.put('/:id/status', updateLocationStatus);
+router.get('/:id/owners', getLocationOwners);
 
 module.exports = router;

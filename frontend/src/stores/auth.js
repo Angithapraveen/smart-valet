@@ -12,7 +12,12 @@ export const useAuthStore = defineStore('auth', {
 
   getters: {
     isAuthenticated: (state) => !!state.token,
-    userRole: (state) => state.user?.role_name || state.user?.role || null
+    userRole: (state) => state.user?.role_name || state.user?.role || null,
+    fullname: (state) => state.user?.name || '',
+    profileInitial: (state) => (state.user?.name || 'U').charAt(0).toUpperCase(),
+    role_name: (state) => state.user?.role_name || state.user?.role || '',
+    userLocations: (state) => state.accessibleLocations || [],
+    selectedLocationId: (state) => state.user?.selectedLocationId || (state.accessibleLocations?.[0]?.location_id) || null
   },
 
   actions: {
@@ -32,10 +37,11 @@ export const useAuthStore = defineStore('auth', {
             role: response.data.role,
             role_id: response.data.role_id
           };
-          // accessibleLocations will be fetched separately if needed
+          this.accessibleLocations = response.data.accessibleLocations || [];
 
           localStorage.setItem('token', this.token);
           localStorage.setItem('user', JSON.stringify(this.user));
+          localStorage.setItem('accessibleLocations', JSON.stringify(this.accessibleLocations));
 
           return {
             success: true,

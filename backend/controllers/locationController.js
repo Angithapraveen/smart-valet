@@ -75,7 +75,7 @@ async function createLocation(req, res) {
  */
 async function getLocations(req, res) {
     try {
-        const locations = await Location.findAll();
+        const locations = await Location.findAllWithStats();
         return res.json({
             success: true,
             data: locations
@@ -127,8 +127,43 @@ async function updateLocationStatus(req, res) {
     }
 }
 
+/**
+ * GET /api/admin/locations/:id/owners
+ * Get owners for a specific location (Admin only)
+ */
+async function getLocationOwners(req, res) {
+    try {
+        const { id } = req.params;
+        const pool = require('../config/database');
+
+        const query = `
+            SELECT 
+                u.user_id, u.name, u.email_id, u.phone_number, u.status, u.created_at
+            FROM USERS u
+            JOIN LOCATION_ACCESS la ON u.user_id = la.user_id
+            JOIN ROLE_MASTER rm ON u.role_id = rm.role_id
+            WHERE la.location_id = $1 AND rm.role_name = 'OWNER'
+            ORDER BY u.created_at DESC
+        `;
+
+        const result = await pool.query(query, [id]);
+
+        return res.json({
+            success: true,
+            data: result.rows
+        });
+    } catch (error) {
+        console.error('Get location owners error:', error);
+        return res.status(500).json({
+            success: false,
+            message: 'Failed to fetch location owners.'
+        });
+    }
+}
+
 module.exports = {
     createLocation,
     getLocations,
-    updateLocationStatus
+    updateLocationStatus,
+    getLocationOwners
 };

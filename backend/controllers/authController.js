@@ -41,7 +41,7 @@ const login = async (req, res) => {
 
         // Verify password - support both plain text (development) and bcrypt (production)
         let isPasswordValid = false;
-        
+
         if (user.password.startsWith('$2a$') || user.password.startsWith('$2b$') || user.password.startsWith('$2y$')) {
             // Password is bcrypt hashed
             isPasswordValid = await bcrypt.compare(password, user.password);
@@ -78,6 +78,7 @@ const login = async (req, res) => {
             name: user.name,
             role: user.role_name, // Must be ADMIN | OWNER | MANAGER
             role_id: user.role_id,
+            accessibleLocations: accessibleLocations || [],
             token: token
         });
     } catch (error) {
@@ -109,7 +110,8 @@ const getCurrentUser = async (req, res) => {
                     phone_number: req.user.phone_number,
                     role_name: req.user.role_name,
                     role: req.user.role_name,
-                    role_id: req.user.role_id
+                    role_id: req.user.role_id,
+                    created_at: req.user.created_at
                 },
                 accessibleLocations
             }
