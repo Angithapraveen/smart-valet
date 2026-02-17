@@ -8,7 +8,10 @@ const User = require('../models/User');
  * Driver login is handled separately in mobile app
  * 
  * Accepts login_id which can be: user_id, email_id, or phone_number
+ * 
  */
+
+
 const login = async (req, res) => {
     try {
         const { login_id, password } = req.body;
@@ -32,12 +35,12 @@ const login = async (req, res) => {
         }
 
         // Check if user is DRIVER (drivers login via mobile app)
-        if (user.role_name === 'DRIVER') {
-            return res.status(403).json({
-                success: false,
-                message: 'Driver login is available only through mobile app.'
-            });
-        }
+        // if (user.role_name === 'DRIVER') {
+        //     return res.status(403).json({
+        //         success: false,
+        //         message: 'Driver login is available only through mobile app.'
+        //     });
+        // }
 
         // Verify password - support both plain text (development) and bcrypt (production)
         let isPasswordValid = false;
@@ -76,6 +79,8 @@ const login = async (req, res) => {
             success: true,
             user_id: user.user_id,
             name: user.name,
+            email_id: user.email_id,
+            phone_number: user.phone_number,
             role: user.role_name, // Must be ADMIN | OWNER | MANAGER
             role_id: user.role_id,
             accessibleLocations: accessibleLocations || [],
@@ -125,7 +130,54 @@ const getCurrentUser = async (req, res) => {
     }
 };
 
+
+
+/**
+ * Update User Profile
+ */
+const updateProfile = async (req, res) => {
+    try {
+        const userId = req.user.user_id;
+        const { name, phone_number } = req.body;
+
+        if (!name && !phone_number) {
+            return res.status(400).json({
+                success: false,
+                message: 'No fields to update.'
+            });
+        }
+
+        const updatedUser = await User.update(userId, { name, phone_number });
+
+        if (!updatedUser) {
+            return res.status(404).json({
+                success: false,
+                message: 'User not found.'
+            });
+        }
+
+        // Return updated user info
+        res.json({
+            success: true,
+            message: 'Profile updated successfully.',
+            user: {
+                user_id: updatedUser.user_id,
+                name: updatedUser.name,
+                email_id: updatedUser.email_id,
+                phone_number: updatedUser.phone_number,
+                role_id: updatedUser.role_id
+            }
+        });
+    } catch (error) {
+        console.error('Update profile error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to update profile.'
+        });
+    }
+};
 module.exports = {
     login,
-    getCurrentUser
+    getCurrentUser,
+    updateProfile
 };

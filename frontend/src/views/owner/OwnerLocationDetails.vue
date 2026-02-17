@@ -1,0 +1,1353 @@
+<template>
+  <div class="owner-location-details-page animate-fade-in">
+    <!-- Header Section -->
+    <header class="location-header" v-if="location">
+      <button class="back-link" @click="$router.push('/owner/dashboard')">
+        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="19" y1="12" x2="5" y2="12"></line>
+          <polyline points="12 19 5 12 12 5"></polyline>
+        </svg>
+                Back to Dashboard
+            </button>
+
+      <div class="location-info-stack">
+        <h1 class="page-title">{{ location.location_name }}</h1>
+        <div class="location-meta">
+                        <span class="badge" :class="location.status ? 'badge-success' : 'badge-danger'">
+                            {{ location.status ? 'Active' : 'Inactive' }}
+                        </span>
+          <span class="meta-dot"></span>
+                        <span class="location-type">{{ location.location_type }}</span>
+                    </div>
+                </div>
+    </header>
+
+    <div v-else class="loading-state">
+        Loading location details...
+    </div>
+
+    <!-- Stats Cards -->
+    <div class="stats-grid" v-if="stats">
+        <div class="stat-card">
+            <div class="stat-value">{{ stats.total_blocks }}</div>
+            <div class="stat-label">Total Blocks</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value">{{ stats.total_managers }}</div>
+            <div class="stat-label">Total Managers</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value">{{ stats.total_drivers }}</div>
+            <div class="stat-label">Total Drivers</div>
+        </div>
+         <div class="stat-card">
+            <div class="stat-value text-primary">{{ stats.active_parkings }}</div>
+            <div class="stat-label">Active Parkings</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value text-success">{{ stats.available_slots }}</div>
+            <div class="stat-label">Available Slots</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value text-danger">{{ stats.occupied_slots }}</div>
+            <div class="stat-label">Occupied Slots</div>
+        </div>
+    </div>
+
+    <!-- Tabs Section -->
+    <div class="tabs-section" v-if="location">
+        <div class="tabs-header">
+            <div class="tabs-nav">
+                <button 
+                    v-for="tab in tabs" 
+                    :key="tab.id" 
+                    class="tab-btn" 
+                    :class="{ active: activeTab === tab.id }"
+                    @click="switchTab(tab.id)"
+                >
+                    {{ tab.label }}
+                </button>
+            </div>
+            <div class="tabs-actions">
+                <button v-if="activeTab === 'blocks'" class="btn-add" @click="showBlockModal = true">
+                    + Add Block
+                </button>
+                <button v-if="activeTab === 'managers'" class="btn-add" @click="showManagerModal = true">
+                    + Add Manager
+                </button>
+                <button v-if="activeTab === 'drivers'" class="btn-add" @click="showDriverModal = true">
+                    + Add Driver
+                </button>
+            </div>
+        </div>
+
+        <div class="tab-content">
+             <!-- Loading State for Tab Data -->
+             <div v-if="tabLoading" class="tab-loading">
+                 <div class="spinner"></div>
+                 <span>Loading {{ activeTab }}...</span>
+             </div>
+
+             <!-- Data Display -->
+             <div v-else>
+                 <!-- USERS LIST (Managers, Drivers, Owners) -->
+                 <div v-if="['managers', 'drivers', 'owners'].includes(activeTab)">
+                     <div v-if="tabData.length > 0" class="grid-list">
+                         <div v-for="user in tabData" :key="user.user_id" class="user-card">
+                             <div class="user-info">
+                                 <p class="user-name">{{ user.name }}</p>
+                                 <p class="user-email">{{ user.email_id }}</p>
+                                 <div class="status-badge-compact" :class="user.status ? 'status-active' : 'status-inactive'">
+                                     {{ user.status ? 'Active' : 'Inactive' }}
+                                 </div>
+                             </div>
+                             <div class="user-actions" v-if="activeTab !== 'owners'">
+                                 <button 
+                                     class="action-btn-sm" 
+                                     :class="user.status ? 'btn-deactivate' : 'btn-activate'"
+                                     @click="toggleUserStatus(user)"
+                                     :disabled="togglingUser === user.user_id"
+                                 >
+                                     {{ togglingUser === user.user_id ? '...' : (user.status ? 'Deactivate' : 'Activate') }}
+                                 </button>
+                             </div>
+                         </div>
+                     </div>
+                     <div v-else class="empty-tab">
+                         No {{ activeTab }} found.
+                     </div>
+                 </div>
+
+                 <!-- BLOCKS LIST -->
+                 <div v-if="activeTab === 'blocks'">
+                     <div v-if="tabData.length > 0" class="blocks-container">
+                         <div v-for="block in tabData" :key="block.block_id" class="block-detail-card">
+                             <!-- Block Header -->
+                             <div class="block-card-header">
+                                 <div class="block-info-row">
+                                     <div>
+                                         <h3 class="block-name">{{ block.block_name }}</h3>
+                                         <span class="block-id">{{ block.block_id }}</span>
+                                     </div>
+                                     <span :class="['status-badge', block.status ? 'status-active' : 'status-inactive']">
+                                         {{ block.status ? 'ACTIVE' : 'INACTIVE' }}
+                                     </span>
+                                 </div>
+                             </div>
+                             
+                             <!-- Block Details -->
+                             <div class="block-details-grid">
+                                 <div class="detail-item">
+                                     <span class="detail-label">Capacity:</span>
+                                     <span class="detail-value">{{ block.capacity }}</span>
+                                 </div>
+                                 <div class="detail-item">
+                                     <span class="detail-label">Valid:</span>
+                                     <span class="detail-value">{{ formatDate(block.valid_from) }} → {{ formatDate(block.valid_to) }}</span>
+                                 </div>
+                             </div>
+                             
+                             <!-- Edit Button -->
+                             <button class="btn-edit-block" @click="openEditBlockModal(block)">
+                                 Edit Block
+                             </button>
+                             
+                             <!-- Block Entries Grid -->
+                             <div class="entries-section">
+                                 <h4 class="entries-heading">Parking Slots</h4>
+                                 <div class="entries-grid">
+                                     <div
+                                         v-for="entry in block.entries"
+                                         :key="entry.block_entry_id"
+                                         :class="['entry-box', entry.status === 'AVAILABLE' ? 'entry-available' : 'entry-occupied']"
+                                     >
+                                         <div class="entry-id">{{ entry.block_entry_id }}</div>
+                                         <div class="entry-status">{{ entry.status === 'AVAILABLE' ? 'Available' : 'Occupied' }}</div>
+                                     </div>
+                                 </div>
+                             </div>
+                         </div>
+                     </div>
+                     <div v-else class="empty-tab">
+                         No blocks found.
+                     </div>
+                 </div>
+             </div>
+        </div>
+    </div>
+
+    <!-- Manager Modal -->
+    <div v-if="showManagerModal" class="modal-overlay" @click.self="closeManagerModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Add Manager</h2>
+                <button class="modal-close" @click="closeManagerModal">×</button>
+            </div>
+            <form @submit.prevent="submitManager">
+                <div v-if="managerError" class="error-message">{{ managerError }}</div>
+                
+                <div class="form-group">
+                    <label>Name <span class="required">*</span></label>
+                    <input v-model="managerForm.name" type="text" required placeholder="e.g. John Doe" class="form-input" />
+                </div>
+                
+                <div class="form-group">
+                    <label>Email <span class="required">*</span></label>
+                    <input v-model="managerForm.email_id" type="email" required placeholder="e.g. manager@example.com" class="form-input" />
+                </div>
+                
+                <div class="form-group">
+                    <label>Phone Number <span class="required">*</span></label>
+                    <input v-model="managerForm.phone_number" type="tel" required placeholder="e.g. +1234567890" class="form-input" />
+                </div>
+                
+                <div class="form-group">
+                    <label>Password <span class="required">*</span></label>
+                    <input v-model="managerForm.password" type="password" required minlength="6" placeholder="Minimum 6 characters" class="form-input" />
+                </div>
+                
+                <div class="modal-actions">
+                    <button type="button" class="btn-secondary" @click="closeManagerModal">Cancel</button>
+                    <button type="submit" class="btn-primary" :disabled="managerLoading">
+                        {{ managerLoading ? 'Creating...' : 'Create Manager' }}
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Driver Modal -->
+    <div v-if="showDriverModal" class="modal-overlay" @click.self="closeDriverModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Add Driver</h2>
+                <button class="modal-close" @click="closeDriverModal">×</button>
+            </div>
+            <form @submit.prevent="submitDriver">
+                <div v-if="driverError" class="error-message">{{ driverError }}</div>
+                
+                <div class="form-group">
+                    <label>Name <span class="required">*</span></label>
+                    <input v-model="driverForm.name" type="text" required placeholder="e.g. John Doe" class="form-input" />
+                </div>
+                
+                <div class="form-group">
+                    <label>Email <span class="required">*</span></label>
+                    <input v-model="driverForm.email_id" type="email" required placeholder="e.g. driver@example.com" class="form-input" />
+                </div>
+                
+                <div class="form-group">
+                    <label>Phone Number <span class="required">*</span></label>
+                    <input v-model="driverForm.phone_number" type="tel" required placeholder="e.g. +1234567890" class="form-input" />
+                </div>
+                
+                <div class="form-group">
+                    <label>Password <span class="required">*</span></label>
+                    <input v-model="driverForm.password" type="password" required minlength="6" placeholder="Minimum 6 characters" class="form-input" />
+                </div>
+                
+                <div class="modal-actions">
+                    <button type="button" class="btn-secondary" @click="closeDriverModal">Cancel</button>
+                    <button type="submit" class="btn-primary" :disabled="driverLoading">
+                        {{ driverLoading ? 'Creating...' : 'Create Driver' }}
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Block Modal -->
+    <div v-if="showBlockModal" class="modal-overlay" @click.self="closeBlockModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Add Block</h2>
+                <button class="modal-close" @click="closeBlockModal">×</button>
+            </div>
+            <form @submit.prevent="submitBlock">
+                <div v-if="blockError" class="error-message">{{ blockError }}</div>
+                
+                <div class="form-group">
+                    <label>Block Name <span class="required">*</span></label>
+                    <input v-model="blockForm.block_name" type="text" required placeholder="e.g. Basement A" class="form-input" />
+                </div>
+                
+                <div class="form-group">
+                    <label>Capacity <span class="required">*</span></label>
+                    <input v-model.number="blockForm.capacity" type="number" required min="1" max="1000" placeholder="e.g. 50" class="form-input" />
+                    <span class="hint">Number of parking slots (1-1000)</span>
+                </div>
+                
+                <div class="form-group">
+                    <label>Valid From <span class="required">*</span></label>
+                    <input v-model="blockForm.valid_from" type="date" required class="form-input" />
+                </div>
+                
+                <div class="form-group">
+                    <label>Valid To <span class="required">*</span></label>
+                    <input v-model="blockForm.valid_to" type="date" required class="form-input" />
+                </div>
+                
+                <div class="modal-actions">
+                    <button type="button" class="btn-secondary" @click="closeBlockModal">Cancel</button>
+                    <button type="submit" class="btn-primary" :disabled="blockLoading">
+                        {{ blockLoading ? 'Creating...' : 'Create Block' }}
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Edit Block Modal -->
+    <div v-if="showEditBlockModal" class="modal-overlay" @click.self="closeEditBlockModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Edit Block</h2>
+                <button class="modal-close" @click="closeEditBlockModal">×</button>
+            </div>
+            <form @submit.prevent="submitEditBlock">
+                <div v-if="editBlockError" class="error-message">{{ editBlockError }}</div>
+                
+                <div class="form-group">
+                    <label>Block ID</label>
+                    <input :value="editBlockForm.block_id" type="text" disabled class="form-input" style="background: #f3f4f6; cursor: not-allowed;" />
+                </div>
+                
+                <div class="form-group">
+                    <label>Block Name <span class="required">*</span></label>
+                    <input v-model="editBlockForm.block_name" type="text" required placeholder="e.g. Basement A" class="form-input" />
+                </div>
+                
+                <div class="form-group">
+                    <label>Capacity <span class="required">*</span></label>
+                    <input v-model.number="editBlockForm.capacity" type="number" required min="1" max="1000" placeholder="e.g. 50" class="form-input" />
+                    <span class="hint">Number of parking slots (1-1000)</span>
+                </div>
+                
+                <div class="form-group">
+                    <label>Valid From <span class="required">*</span></label>
+                    <input v-model="editBlockForm.valid_from" type="date" required class="form-input" />
+                </div>
+                
+                <div class="form-group">
+                    <label>Valid To <span class="required">*</span></label>
+                    <input v-model="editBlockForm.valid_to" type="date" required class="form-input" />
+                </div>
+                
+                <div class="form-group">
+                    <label>Status <span class="required">*</span></label>
+                    <select v-model="editBlockForm.status" required class="form-input">
+                        <option :value="true">Active</option>
+                        <option :value="false">Inactive</option>
+                    </select>
+                </div>
+                
+                <div class="modal-actions">
+                    <button type="button" class="btn-secondary" @click="closeEditBlockModal">Cancel</button>
+                    <button type="submit" class="btn-primary" :disabled="editBlockLoading">
+                        {{ editBlockLoading ? 'Updating...' : 'Update Block' }}
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+  </div>
+</template>
+
+<script setup>
+import { ref, onMounted } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
+import axios from 'axios';
+import { useAuthStore } from '../../stores/auth';
+
+const route = useRoute();
+const router = useRouter();
+const authStore = useAuthStore();
+const locationId = route.params.id;
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+
+const location = ref(null);
+const stats = ref(null);
+const activeTab = ref('blocks');
+const tabData = ref([]);
+const tabLoading = ref(false);
+const togglingUser = ref(null);
+
+// Modal states
+const showManagerModal = ref(false);
+const showDriverModal = ref(false);
+const showBlockModal = ref(false);
+const showEditBlockModal = ref(false);
+const managerLoading = ref(false);
+const driverLoading = ref(false);
+const blockLoading = ref(false);
+const editBlockLoading = ref(false);
+const managerError = ref('');
+const driverError = ref('');
+const blockError = ref('');
+const editBlockError = ref('');
+
+// Forms
+const managerForm = ref({
+    name: '',
+    email_id: '',
+    phone_number: '',
+    password: ''
+});
+
+const driverForm = ref({
+    name: '',
+    email_id: '',
+    phone_number: '',
+    password: ''
+});
+
+const blockForm = ref({
+    block_name: '',
+    capacity: null,
+    valid_from: '',
+    valid_to: ''
+});
+
+const editBlockForm = ref({
+    block_id: '',
+    block_name: '',
+    capacity: null,
+    valid_from: '',
+    valid_to: '',
+    status: true
+});
+
+const tabs = [
+    { id: 'blocks', label: 'Blocks' },
+    { id: 'managers', label: 'Managers' },
+    { id: 'drivers', label: 'Drivers' },
+    { id: 'owners', label: 'Owners' }
+];
+
+// Fetch Location & Stats
+const fetchLocationDetails = async () => {
+    try {
+        const response = await axios.get(`${API_URL}/dashboard/owner/location/${locationId}`, {
+            headers: { Authorization: `Bearer ${authStore.token}` }
+        });
+        if (response.data.success) {
+            location.value = response.data.data.location;
+            stats.value = response.data.data.stats;
+            // Load initial tab
+            switchTab('blocks');
+        }
+    } catch (error) {
+        console.error('Error fetching details:', error);
+    }
+};
+
+// Switch Tab & Load Data
+const switchTab = async (tabId) => {
+    activeTab.value = tabId;
+    tabLoading.value = true;
+    tabData.value = [];
+
+    try {
+        let endpoint = '';
+        if (tabId === 'blocks') {
+            endpoint = `${API_URL}/owner/locations/${locationId}/blocks`;
+        } else {
+            endpoint = `${API_URL}/dashboard/owner/locations/${locationId}/users?type=${tabId}`;
+        }
+
+        const response = await axios.get(endpoint, {
+             headers: { Authorization: `Bearer ${authStore.token}` }
+        });
+
+        if (response.data.success) {
+            tabData.value = response.data.data;
+        }
+
+    } catch (error) {
+        console.error(`Error fetching ${tabId}:`, error);
+    } finally {
+        tabLoading.value = false;
+    }
+};
+
+const toggleUserStatus = async (user) => {
+    togglingUser.value = user.user_id;
+    try {
+        const response = await axios.put(`${API_URL}/owner/user/${user.user_id}/status`, 
+            { status: !user.status },
+            { headers: { Authorization: `Bearer ${authStore.token}` } }
+        );
+
+        if (response.data.success) {
+            user.status = !user.status;
+        }
+    } catch (e) {
+        alert(e.response?.data?.message || 'Failed to update user status');
+    } finally {
+        togglingUser.value = null;
+    }
+};
+
+// Manager Modal
+const closeManagerModal = () => {
+    showManagerModal.value = false;
+    managerError.value = '';
+    managerForm.value = { name: '', email_id: '', phone_number: '', password: '' };
+};
+
+const submitManager = async () => {
+    managerError.value = '';
+    managerLoading.value = true;
+    
+    try {
+        const response = await axios.post(
+            `${API_URL}/owner/location/${locationId}/manager`,
+            managerForm.value,
+            { headers: { Authorization: `Bearer ${authStore.token}` } }
+        );
+        
+        if (response.data.success) {
+            closeManagerModal();
+            // Refresh managers list
+            await switchTab('managers');
+            // Update stats
+            if (stats.value) {
+                stats.value.total_managers += 1;
+            }
+            alert('Manager created successfully!');
+        }
+    } catch (error) {
+        console.error('Manager creation error:', error);
+        managerError.value = error.response?.data?.message || 'Failed to create manager.';
+    } finally {
+        managerLoading.value = false;
+    }
+};
+
+// Driver Modal
+const closeDriverModal = () => {
+    showDriverModal.value = false;
+    driverError.value = '';
+    driverForm.value = { name: '', email_id: '', phone_number: '', password: '' };
+};
+
+const submitDriver = async () => {
+    driverError.value = '';
+    driverLoading.value = true;
+    
+    try {
+        const response = await axios.post(
+            `${API_URL}/owner/location/${locationId}/driver`,
+            driverForm.value,
+            { headers: { Authorization: `Bearer ${authStore.token}` } }
+        );
+        
+        if (response.data.success) {
+            closeDriverModal();
+            // Refresh drivers list
+            await switchTab('drivers');
+            // Update stats
+            if (stats.value) {
+                stats.value.total_drivers += 1;
+            }
+            alert('Driver created successfully!');
+        }
+    } catch (error) {
+        console.error('Driver creation error:', error);
+        driverError.value = error.response?.data?.message || 'Failed to create driver.';
+    } finally {
+        driverLoading.value = false;
+    }
+};
+
+// Block Modal
+const closeBlockModal = () => {
+    showBlockModal.value = false;
+    blockError.value = '';
+    blockForm.value = { block_name: '', capacity: null, valid_from: '', valid_to: '' };
+};
+
+const submitBlock = async () => {
+    blockError.value = '';
+    
+    if (!blockForm.value.capacity || blockForm.value.capacity < 1 || blockForm.value.capacity > 1000) {
+        blockError.value = 'Capacity must be between 1 and 1000.';
+        return;
+    }
+    
+    if (!blockForm.value.valid_from || !blockForm.value.valid_to) {
+        blockError.value = 'Both validity dates are required.';
+        return;
+    }
+    
+    const fromDate = new Date(blockForm.value.valid_from);
+    const toDate = new Date(blockForm.value.valid_to);
+    
+    if (fromDate >= toDate) {
+        blockError.value = 'Valid From date must be before Valid To date.';
+        return;
+    }
+    
+    blockLoading.value = true;
+    
+    try {
+        const response = await axios.post(
+            `${API_URL}/owner/locations/${locationId}/blocks`,
+            blockForm.value,
+            { headers: { Authorization: `Bearer ${authStore.token}` } }
+        );
+        
+        if (response.data.success) {
+            closeBlockModal();
+            // Refresh blocks list
+            await switchTab('blocks');
+            // Update stats
+            if (stats.value) {
+                stats.value.total_blocks += 1;
+            }
+            alert(`Block created successfully! ${response.data.data.entries_created} parking slots generated.`);
+        }
+    } catch (error) {
+        console.error('Block creation error:', error);
+        blockError.value = error.response?.data?.message || 'Failed to create block.';
+    } finally {
+        blockLoading.value = false;
+    }
+};
+
+// Edit Block Modal
+const openEditBlockModal = (block) => {
+    editBlockForm.value = {
+        block_id: block.block_id,
+        block_name: block.block_name,
+        capacity: block.capacity,
+        valid_from: block.valid_from.split('T')[0], // Format date for input
+        valid_to: block.valid_to.split('T')[0],
+        status: block.status
+    };
+    showEditBlockModal.value = true;
+};
+
+const closeEditBlockModal = () => {
+    showEditBlockModal.value = false;
+    editBlockError.value = '';
+    editBlockForm.value = {
+        block_id: '',
+        block_name: '',
+        capacity: null,
+        valid_from: '',
+        valid_to: '',
+        status: true
+    };
+};
+
+const submitEditBlock = async () => {
+    editBlockError.value = '';
+    
+    if (!editBlockForm.value.capacity || editBlockForm.value.capacity < 1 || editBlockForm.value.capacity > 1000) {
+        editBlockError.value = 'Capacity must be between 1 and 1000.';
+        return;
+    }
+    
+    if (!editBlockForm.value.valid_from || !editBlockForm.value.valid_to) {
+        editBlockError.value = 'Both validity dates are required.';
+        return;
+    }
+    
+    const fromDate = new Date(editBlockForm.value.valid_from);
+    const toDate = new Date(editBlockForm.value.valid_to);
+    
+    if (fromDate >= toDate) {
+        editBlockError.value = 'Valid From date must be before Valid To date.';
+        return;
+    }
+    
+    editBlockLoading.value = true;
+    
+    try {
+        const payload = {
+            block_name: editBlockForm.value.block_name,
+            capacity: editBlockForm.value.capacity,
+            valid_from: editBlockForm.value.valid_from,
+            valid_to: editBlockForm.value.valid_to,
+            status: editBlockForm.value.status
+        };
+        
+        const response = await axios.put(
+            `${API_URL}/owner/blocks/${editBlockForm.value.block_id}`,
+            payload,
+            { headers: { Authorization: `Bearer ${authStore.token}` } }
+        );
+        
+        if (response.data.success) {
+            closeEditBlockModal();
+            // Refresh blocks list
+            await switchTab('blocks');
+            alert('Block updated successfully!');
+        }
+    } catch (error) {
+        console.error('Block update error:', error);
+        editBlockError.value = error.response?.data?.message || 'Failed to update block.';
+    } finally {
+        editBlockLoading.value = false;
+    }
+};
+
+// Helper function to format dates
+const formatDate = (dateString) => {
+    if (!dateString) return '';
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' });
+};
+
+onMounted(() => {
+    fetchLocationDetails();
+});
+</script>
+
+<style scoped>
+.owner-location-details-page {
+  padding: 32px;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+/* Header Section */
+.location-header {
+  margin-bottom: 40px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.back-link {
+  display: inline-flex;
+    align-items: center;
+    gap: 8px;
+  background: none;
+    border: none;
+  color: var(--text-muted);
+    font-size: 14px;
+  font-weight: 600;
+    cursor: pointer;
+  padding: 0;
+  width: fit-content;
+  transition: all 0.2s var(--ease-out);
+}
+
+.back-link:hover {
+  color: var(--primary);
+  transform: translateX(-4px);
+}
+
+.location-info-stack {
+    display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.page-title {
+  margin: 0;
+  font-size: 42px;
+  color: var(--text-main);
+  line-height:1;
+}
+
+.location-meta {
+    display: flex;
+    align-items: center;
+  gap: 12px;
+}
+
+.meta-dot {
+  width: 4px;
+  height: 4px;
+  background: var(--border-subtle);
+  border-radius: 50%;
+}
+
+.location-type {
+    font-weight: 600;
+  color: var(--text-muted);
+  font-size: 14px;
+}
+
+/* Stats Grid */
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 16px;
+    margin-bottom: 30px;
+}
+
+.stat-card {
+    background: white;
+    padding: 20px;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.02);
+    text-align: center;
+}
+
+.stat-value {
+    font-size: 24px;
+    font-weight: 700;
+    color: #333;
+    line-height: 1.2;
+    margin-bottom: 4px;
+}
+
+.stat-label {
+    font-size: 12px;
+    color: #888;
+    text-transform: uppercase;
+    font-weight: 600;
+}
+
+.text-primary { color: var(--primary); }
+.text-success { color: #15803d; }
+.text-danger { color: #b91c1c; }
+
+/* Tabs Section */
+.tabs-section {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.03);
+    border: 1px solid #f0f0f0;
+    overflow: hidden;
+    min-height: 400px;
+}
+
+.tabs-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid #eee;
+    background: #fafafa;
+    padding: 0 20px;
+}
+
+.tabs-nav {
+    display: flex;
+}
+
+.tabs-actions {
+    display: flex;
+    gap: 10px;
+}
+
+.tab-btn {
+    padding: 16px 24px;
+    background: none;
+    border: none;
+    font-size: 14px;
+    font-weight: 500;
+    color: #666;
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+}
+
+.tab-btn:hover { color: #333; }
+.tab-btn.active {
+    color: var(--primary);
+    border-bottom-color: var(--primary);
+    background: white;
+}
+
+.btn-add {
+    background: #6545e5;
+    color: white;
+    border: none;
+    border-radius: 10px;
+    padding: 8px 16px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.btn-add:hover {
+    background: #7c5ef0;
+}
+
+.tab-content { padding: 24px; }
+
+.tab-loading {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 40px;
+    color: #888;
+    gap: 12px;
+}
+
+.spinner {
+    width: 24px;
+    height: 24px;
+    border: 3px solid #eee;
+    border-top-color: var(--primary);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* Grid List (Managers, Drivers, Owners) */
+.grid-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 16px;
+}
+
+.user-card {
+    background: #f8fafc;
+    padding: 16px;
+    border-radius: 12px;
+    border: 1px solid #e2e8f0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.user-info {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.user-name {
+    font-weight: 600;
+    color: #1e293b;
+    margin: 0;
+}
+
+.user-email {
+    font-size: 13px;
+    color: #64748b;
+    margin: 0;
+}
+
+.status-badge-compact {
+    font-size: 11px;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 99px;
+    width: fit-content;
+    margin-top: 4px;
+    text-transform: uppercase;
+}
+
+.status-active {
+    background: #dcfce7;
+    color: #166534;
+}
+
+.status-inactive {
+    background: #fee2e2;
+    color: #991b1b;
+}
+
+.action-btn-sm {
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    border: 1px solid transparent;
+}
+
+.btn-activate {
+    background: #f0fdf4;
+    color: #166534;
+    border-color: #bcf0da;
+}
+
+.btn-activate:hover {
+    background: #dcfce7;
+}
+
+.btn-deactivate {
+    background: #fef2f2;
+    color: #991b1b;
+    border-color: #fecaca;
+}
+
+.btn-deactivate:hover {
+    background: #fee2e2;
+}
+
+.action-btn-sm:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* Block Cards */
+.blocks-container {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+}
+
+.block-detail-card {
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    padding: 24px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    transition: box-shadow 0.2s;
+}
+
+.block-detail-card:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.block-card-header {
+    margin-bottom: 20px;
+    padding-bottom: 16px;
+    border-bottom: 2px solid #f3f4f6;
+}
+
+.block-info-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+}
+
+.block-name {
+    font-size: 20px;
+    font-weight: 700;
+    color: #111;
+    margin: 0 0 6px 0;
+}
+
+.block-id {
+    display: inline-block;
+    background: #f3f4f6;
+    color: #6b7280;
+    padding: 4px 12px;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 600;
+    font-family: 'Courier New', monospace;
+}
+
+.status-badge {
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+}
+
+.status-active {
+    background: #dcfce7;
+    color: #166534;
+}
+
+.status-inactive {
+    background: #fee2e2;
+    color: #991b1b;
+}
+
+.block-details-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 16px;
+    margin-bottom: 16px;
+}
+
+.detail-item {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.detail-label {
+    font-size: 12px;
+    color: #6b7280;
+    font-weight: 500;
+}
+
+.detail-value {
+    font-size: 15px;
+    color: #111;
+    font-weight: 600;
+}
+
+.btn-edit-block {
+    background: #6545e5;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    padding: 10px 20px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    margin-bottom: 20px;
+}
+
+.btn-edit-block:hover {
+    background: #7c5ef0;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(101, 69, 229, 0.2);
+}
+
+.entries-section {
+    margin-top: 20px;
+    padding-top: 20px;
+    border-top: 2px solid #f3f4f6;
+}
+
+.entries-heading {
+    font-size: 15px;
+    font-weight: 600;
+    color: #374151;
+    margin: 0 0 16px 0;
+}
+
+.entries-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
+    gap: 10px;
+}
+
+.entry-box {
+    padding: 12px 8px;
+    border-radius: 8px;
+    text-align: center;
+    transition: all 0.2s;
+    cursor: default;
+    border: 2px solid;
+}
+
+.entry-box:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.entry-id {
+    font-size: 11px;
+    font-weight: 700;
+    font-family: 'Courier New', monospace;
+    margin-bottom: 4px;
+}
+
+.entry-status {
+    font-size: 9px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.entry-available {
+    background: #dcfce7;
+    color: #166534;
+    border-color: #bbf7d0;
+}
+
+.entry-occupied {
+    background: #fee2e2;
+    color: #991b1b;
+    border-color: #fecaca;
+}
+
+.block-card {
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    padding: 16px;
+}
+
+.block-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid #f3f4f6;
+}
+
+.block-code {
+    font-weight: 700;
+    font-size: 16px;
+    color: #333;
+}
+
+.block-type {
+    background: #f3f4f6;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    color: #666;
+}
+
+.block-stats {
+    display: flex;
+    justify-content: space-between;
+}
+
+.b-stat {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.b-val { font-weight: 600; font-size: 14px; }
+.b-lbl { font-size: 10px; color: #888; text-transform: uppercase; }
+
+.empty-tab {
+    text-align: center;
+    padding: 40px;
+    color: #9ca3af;
+    background: #f9fafb;
+    border-radius: 8px;
+}
+
+/* Modal Styles */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+}
+
+.modal-content {
+    background: white;
+    border-radius: 12px;
+    width: 90%;
+    max-width: 500px;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px 24px;
+    border-bottom: 1px solid #eee;
+}
+
+.modal-header h2 {
+    font-size: 20px;
+    font-weight: 600;
+    color: #333;
+    margin: 0;
+}
+
+.modal-close {
+    background: none;
+    border: none;
+    font-size: 28px;
+    color: #999;
+    cursor: pointer;
+    line-height: 1;
+    padding: 0;
+    width: 30px;
+    height: 30px;
+}
+
+.modal-close:hover {
+    color: #333;
+}
+
+.modal-content form {
+    padding: 24px;
+}
+
+.form-group {
+    margin-bottom: 20px;
+}
+
+.form-group label {
+    display: block;
+    font-size: 14px;
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 6px;
+}
+
+.required {
+    color: #dc3545;
+}
+
+.hint {
+    font-size: 12px;
+    color: #666;
+    margin-top: 4px;
+    display: block;
+}
+
+.form-input {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    font-size: 15px;
+    box-sizing: border-box;
+}
+
+.form-input:focus {
+    outline: none;
+    border-color: #6545e5;
+    box-shadow: 0 0 0 2px rgba(101, 69, 229, 0.2);
+}
+
+.error-message {
+    background: #fef2f2;
+    color: #dc2626;
+    padding: 12px;
+    border-radius: 8px;
+    margin-bottom: 16px;
+    font-size: 14px;
+}
+
+.modal-actions {
+    display: flex;
+    gap: 12px;
+    justify-content: flex-end;
+    margin-top: 24px;
+}
+
+.btn-primary, .btn-secondary {
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    border: none;
+}
+
+.btn-primary {
+    background: #6545e5;
+    color: white;
+}
+
+.btn-primary:hover:not(:disabled) {
+    background: #7c5ef0;
+}
+
+.btn-primary:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+}
+
+.btn-secondary {
+    background: #e5e7eb;
+    color: #374151;
+}
+
+.btn-secondary:hover {
+    background: #d1d5db;
+}
+</style>

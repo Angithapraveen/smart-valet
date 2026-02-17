@@ -56,6 +56,10 @@ const userInitial = computed(() => {
 
 const userName = computed(() => authStore.user?.name || 'User');
 const isOwner = computed(() => authStore.userRole === 'OWNER');
+const isManager = computed(() => {
+  const role = authStore.userRole ? authStore.userRole.toUpperCase() : '';
+  return role === 'MANAGER';
+});
 const userLocations = computed(() => authStore.accessibleLocations || []);
 const selectedLocation = ref(authStore.selectedLocationId || (userLocations.value.length ? userLocations.value[0].location_id : ''));
 
@@ -98,8 +102,8 @@ onUnmounted(() => {
 <style scoped>
 .app-header {
   height: 64px;
-  background-color: #121212;
-  border-bottom: 1px solid rgba(255,255,255,0.05);
+  background-color: #0e0e0e;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
   color: #ffffff;
   display: flex;
   align-items: center;
@@ -123,34 +127,42 @@ onUnmounted(() => {
 
 .parking-icon {
   color: var(--primary);
+  filter: drop-shadow(0 0 8px var(--primary-shadow));
 }
 
 .app-name {
-    font-weight: 600;
-    font-size: 18px;
-    letter-spacing: -0.5px;
+    font-family: 'Outfit', sans-serif;
+    font-weight: 700;
+    font-size: 20px;
+    letter-spacing: -0.03em;
+    background: linear-gradient(135deg, var(--primary), hsl(var(--primary-h), var(--primary-s), 40%));
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
 }
 
 .header-right {
   display: flex;
   align-items: center;
-  gap: 24px;
+  gap: 20px;
 }
 
 .location-dropdown {
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.05);
   border: 1px solid rgba(255, 255, 255, 0.1);
-  color: white;
-  padding: 8px 12px;
-  border-radius: 6px;
+  color: #ffffff;
+  padding: 8px 14px;
+  border-radius: 10px;
   outline: none;
   cursor: pointer;
-  font-size: 14px;
+  font-size: 13px;
+  font-weight: 600;
+  transition: var(--ts-base);
 }
 
-.location-dropdown option {
-  background-color: #121212;
-  color: white;
+.location-dropdown:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(101, 69, 229, 0.2);
 }
 
 .user-menu-wrapper {
@@ -160,84 +172,101 @@ onUnmounted(() => {
 .user-trigger {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
   cursor: pointer;
-  padding: 6px 8px;
-  border-radius: 8px;
-  transition: background 0.2s;
+  padding: 6px 12px;
+  border-radius: 12px;
+  transition: var(--ts-base);
+  border: 1px solid transparent;
 }
 
 .user-trigger:hover {
-  background-color: rgba(255,255,255,0.05);
+  background-color: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.1);
 }
 
 .avatar {
-  width: 32px;
-  height: 32px;
-  background: var(--primary);
+  width: 34px;
+  height: 34px;
+  background: linear-gradient(135deg, var(--primary), var(--primary-hover));
   color: white;
-  border-radius: 50%;
+  border-radius: 10px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-weight: 600;
+  font-weight: 700;
   font-size: 14px;
-  box-shadow: 0 2px 4px var(--primary-shadow);
+  box-shadow: 0 4px 10px var(--primary-shadow);
 }
 
 .username {
   font-size: 14px;
-  font-weight: 500;
+  font-weight: 600;
+  color: #ffffff;
 }
 
 .chevron-down {
-    opacity: 0.7;
+    opacity: 0.5;
+    transition: transform 0.2s;
+}
+
+.user-trigger:hover .chevron-down {
+  transform: translateY(1px);
+  opacity: 1;
 }
 
 .dropdown-menu {
   position: absolute;
-  top: calc(100% + 8px);
+  top: calc(100% + 12px);
   right: 0;
-  background: white;
-  border-radius: 8px;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
-  min-width: 180px;
-  padding: 8px 0;
+  background: #1a1a1a;
+  border-radius: 16px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+  min-width: 200px;
+  padding: 8px;
   overflow: hidden;
-  color: #333;
+  color: #ffffff;
   z-index: 101;
-  border: 1px solid #eee;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  animation: fadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .dropdown-item {
-  display: block;
+  display: flex;
+  align-items: center;
   width: 100%;
-  padding: 10px 16px;
-  text-align: left;
-  background: none;
-  border: none;
+  padding: 10px 14px;
+  border-radius: 10px;
   cursor: pointer;
   font-size: 14px;
-  color: #333;
+  font-weight: 500;
+  color: #9ca3af;
   text-decoration: none;
-  transition: background 0.2s;
+  transition: var(--ts-base);
 }
 
 .dropdown-item:hover {
-  background-color: #f5f6fa;
+  background-color: rgba(255, 255, 255, 0.05);
+  color: #ffffff;
 }
 
 .dropdown-divider {
   height: 1px;
-  background-color: #eee;
-  margin: 4px 0;
+  background-color: rgba(255, 255, 255, 0.05);
+  margin: 6px 0;
 }
 
 .text-danger {
-  color: var(--status-inactive);
+  color: var(--danger);
 }
 
 .text-danger:hover {
-  background-color: #fef2f2;
+  background-color: rgba(239, 68, 68, 0.1);
+  color: var(--danger);
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px) scale(0.95); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
 }
 </style>

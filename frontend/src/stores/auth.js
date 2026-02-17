@@ -33,6 +33,8 @@ export const useAuthStore = defineStore('auth', {
           this.user = {
             user_id: response.data.user_id,
             name: response.data.name,
+            email_id: response.data.email_id,
+            phone_number: response.data.phone_number,
             role_name: response.data.role,
             role: response.data.role,
             role_id: response.data.role_id

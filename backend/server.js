@@ -9,6 +9,10 @@ const authRoutes = require('./routes/authRoutes');
 const dashboardRoutes = require('./routes/dashboardRoutes');
 const adminLocationRoutes = require('./routes/adminLocationRoutes');
 const adminOwnerRoutes = require('./routes/adminOwnerRoutes');
+const adminUserRoutes = require('./routes/adminUserRoutes');
+const adminBlockRoutes = require('./routes/adminBlockRoutes');
+const ownerActionRoutes = require('./routes/ownerActionRoutes');
+const blockRoutes = require('./routes/blockRoutes');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -41,6 +45,11 @@ app.use('/api/auth', authRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/admin/locations', adminLocationRoutes);
 app.use('/api/admin/owners', adminOwnerRoutes);
+app.use('/api/admin/users', adminUserRoutes);
+app.use('/api/admin/blocks', adminBlockRoutes);
+app.use('/api/owner', ownerActionRoutes);
+app.use('/api/owner', blockRoutes);
+app.use('/api/valet', require('./routes/valetRoutes'));
 
 // 404 handler
 app.use((req, res) => {

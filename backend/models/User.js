@@ -11,7 +11,7 @@ class User {
                    u.role_id, u.status, rm.role_name
             FROM USERS u
             JOIN ROLE_MASTER rm ON u.role_id = rm.role_id
-            WHERE (u.user_id = $1 OR u.email_id = $1 OR u.phone_number = $1) 
+            WHERE (u.user_id = $1 OR LOWER(u.email_id) = LOWER($1) OR u.phone_number = $1) 
             AND u.status = TRUE
         `;
         const result = await pool.query(query, [loginId]);
@@ -66,6 +66,42 @@ class User {
         `;
         const result = await pool.query(query, [userId]);
         return result.rows[0] || null;
+    }
+    /**
+     * Update user details
+     */
+    static async update(userId, data) {
+        const { name, phone_number, email_id } = data;
+        // Build dynamic query based on provided fields
+        const fields = [];
+        const values = [];
+        let paramCount = 1;
+
+        if (name) {
+            fields.push(`name = $${paramCount++}`);
+            values.push(name);
+        }
+        if (phone_number) {
+            fields.push(`phone_number = $${paramCount++}`);
+            values.push(phone_number);
+        }
+        if (email_id) {
+            fields.push(`email_id = $${paramCount++}`);
+            values.push(email_id);
+        }
+
+        if (fields.length === 0) return null;
+
+        values.push(userId);
+        const query = `
+            UPDATE USERS 
+            SET ${fields.join(', ')} 
+            WHERE user_id = $${paramCount}
+            RETURNING user_id, name, email_id, phone_number, role_id, status
+        `;
+
+        const result = await pool.query(query, values);
+        return result.rows[0];
     }
 }
 

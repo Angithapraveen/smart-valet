@@ -1,5 +1,5 @@
 <template>
-  <div class="dashboard-page">
+  <div class="dashboard-page animate-fade-in">
     <div class="dashboard-header">
       <h1>Dashboard</h1>
     </div>
@@ -48,16 +48,26 @@
     </div>
 
     <!-- My Locations Section -->
-    <div class="bg-white rounded-xl shadow-sm overflow-hidden mb-8">
+    <div class="locations-section">
       <div class="section-header">
-        <h2 class="text-xl font-semibold text-gray-800">My Locations</h2>
-        <button class="btn btn-primary" @click="$router.push('/admin/location/add')">Add Location</button>
+        <h2>My Locations</h2>
+        <div class="header-actions">
+          <button class="btn btn-outline" @click="$router.push('/admin/owners')">Manage Owners</button>
+          <button class="btn btn-outline" @click="$router.push('/admin/locations')">All Locations</button>
+          <button class="btn btn-primary" @click="$router.push('/admin/location/add')">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+            Add Location
+          </button>
+        </div>
       </div>
 
-      <div v-if="loading" class="loading-state">Loading locations...</div>
+      <div v-if="loading" class="loading-state">
+        <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        <p class="mt-4">Loading locations...</p>
+      </div>
       
       <div v-else-if="locations.length === 0" class="empty-state">
-        No locations found. Create your first location!
+        <p>No locations found. Create your first location!</p>
       </div>
 
       <div v-else class="locations-grid">
@@ -73,8 +83,8 @@
           </div>
           
           <div class="loc-address">
-            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
-            {{ loc.address || 'No address provided' }}
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
+            <span>{{ loc.address || 'No address provided' }}</span>
           </div>
 
           <div class="loc-stats">
@@ -84,51 +94,52 @@
             </div>
             <div class="stat-item">
               <span class="stat-val text-success">{{ loc.available_slots }}</span>
-              <span class="stat-lbl">Available</span>
+              <span class="stat-lbl">Free</span>
             </div>
             <div class="stat-item">
               <span class="stat-val text-danger">{{ loc.occupied_slots }}</span>
-              <span class="stat-lbl">Occupied</span>
+              <span class="stat-lbl">Busy</span>
             </div>
             <div class="stat-item">
               <span class="stat-val text-primary">{{ loc.active_parkings }}</span>
-              <span class="stat-lbl">Active</span>
+              <span class="stat-lbl">In-use</span>
             </div>
           </div>
 
           <div class="loc-actions">
-            <!-- <button class="action-btn" @click="viewDetails(loc.location_id, 'blocks')">View Blocks</button> -->
-            <button class="action-btn" @click="toggleExpand(loc.location_id, 'owners')">View Owners</button>
-            <button class="action-btn" @click="toggleExpand(loc.location_id, 'managers')">View Managers</button>
-            <button class="action-btn" @click="toggleExpand(loc.location_id, 'drivers')">View Drivers</button>
-            <button class="action-btn primary" @click="viewDetails(loc.location_id)">View Details</button>
+            <button class="btn btn-outline" @click="viewDetails(loc.location_id)">Details</button>
+            <button class="btn btn-primary" @click="toggleExpand(loc.location_id, 'owners')">Expand View</button>
+            
+            <div class="expanded-actions" v-if="expandedLocations[loc.location_id]">
+              <button class="btn" :class="expandedLocations[loc.location_id].activeRole === 'owners' ? 'btn-primary' : 'btn-outline'" @click="toggleExpand(loc.location_id, 'owners')">Owners</button>
+              <button class="btn" :class="expandedLocations[loc.location_id].activeRole === 'managers' ? 'btn-primary' : 'btn-outline'" @click="toggleExpand(loc.location_id, 'managers')">Managers</button>
+              <button class="btn" :class="expandedLocations[loc.location_id].activeRole === 'drivers' ? 'btn-primary' : 'btn-outline'" @click="toggleExpand(loc.location_id, 'drivers')">Drivers</button>
+            </div>
           </div>
 
           <!-- Expanded Content -->
-          <div v-if="expandedLocations[loc.location_id]?.activeRole" class="mt-4 pt-4 border-t border-gray-200">
-             
+          <div v-if="expandedLocations[loc.location_id]?.activeRole" class="expanded-user-list animate-fade-in">
              <!-- Loading -->
              <div v-if="expandedLocations[loc.location_id].loading" class="text-center py-4">
-                 <div class="inline-block animate-spin rounded-full h-5 w-5 border-b-2 border-blue-500"></div>
+                 <div class="inline-block animate-spin rounded-full h-5 w-5 border-b-2 border-primary"></div>
              </div>
              
              <!-- Content List -->
              <div v-else>
-                 <div class="mb-2 text-sm font-semibold text-gray-500 uppercase">{{ expandedLocations[loc.location_id].activeRole }}</div>
-                 
-                 <div v-if="getCurrentExpandedList(loc.location_id).length > 0" class="grid grid-cols-1 md:grid-cols-2 gap-3">
-                     <div v-for="user in getCurrentExpandedList(loc.location_id)" :key="user.user_id" 
-                          class="p-3 bg-gray-50 rounded-lg border border-gray-200 hover:bg-gray-100 transition">
-                         <p class="font-semibold text-gray-800">{{ user.name }}</p>
-                         <p class="text-xs text-gray-500">{{ user.email_id }}</p>
+                 <div class="grid grid-cols-1 gap-2">
+                     <div v-for="user in getCurrentExpandedList(loc.location_id)" :key="user.user_id" class="user-tag-item">
+                         <div class="user-tag-info">
+                             <p>{{ user.name }}</p>
+                             <span>{{ user.email_id }}</span>
+                         </div>
+                         <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-muted"><polyline points="9 18 15 12 9 6"></polyline></svg>
                      </div>
                  </div>
                  
-                 <div v-else class="text-sm text-gray-500 py-2">
-                     No {{ expandedLocations[loc.location_id].activeRole }} found.
+                 <div v-if="getCurrentExpandedList(loc.location_id).length === 0" class="text-xs text-muted py-2 text-center">
+                     No {{ expandedLocations[loc.location_id].activeRole }} assigned.
                  </div>
              </div>
-
           </div>
         </div>
       </div>
@@ -232,7 +243,7 @@ const getCurrentExpandedList = (locationId) => {
 };
 
 const viewDetails = (id) => {
-    router.push({ name: 'LocationDetails', params: { id } });
+    router.push({ name: 'AdminLocationDetails', params: { id } });
 };
 
 onMounted(() => {
@@ -247,126 +258,167 @@ onMounted(() => {
 }
 
 .dashboard-header {
-  margin-bottom: 24px;
+  margin-bottom: 32px;
 }
 
 .dashboard-header h1 {
-  font-size: 28px;
+  font-size: 36px;
   font-weight: 700;
-  color: #333;
+  color: var(--text-main);
+  letter-spacing: -0.03em;
 }
 
 /* Summary Cards */
 .summary-cards {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
   gap: 24px;
-  margin-bottom: 40px;
+  margin-bottom: 48px;
 }
 
 .summary-card {
   padding: 24px;
-  border-radius: 12px;
-  color: white;
+  border-radius: 20px;
+  background: white;
+  border: 1px solid var(--border-subtle);
   display: flex;
   align-items: center;
   gap: 20px;
-  box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-  transition: transform 0.2s;
+  box-shadow: var(--shadow-sm);
+  transition: var(--ts-base);
 }
 
 .summary-card:hover {
   transform: translateY(-4px);
+  box-shadow: var(--shadow-md);
+  border-color: var(--primary-border);
 }
 
-.locations-card { background: var(--gradient-locations); }
-.owners-card { background: var(--gradient-owners); }
-.managers-card { background: var(--gradient-managers); }
-.drivers-card { background: var(--gradient-drivers); }
-
 .card-icon {
-  background: rgba(255,255,255,0.2);
-  width: 50px;
-  height: 50px;
-  border-radius: 10px;
+  width: 56px;
+  height: 56px;
+  border-radius: 14px;
   display: flex;
   align-items: center;
   justify-content: center;
+  flex-shrink: 0;
 }
 
+.locations-card .card-icon { background: var(--primary-light); color: var(--primary); }
+.owners-card .card-icon { background: var(--success-light); color: var(--success); }
+.managers-card .card-icon { background: var(--warning-light); color: var(--warning); }
+.drivers-card .card-icon { background: var(--info-light); color: var(--info); }
+
 .card-content { flex: 1; }
-.card-label { font-size: 14px; opacity: 0.9; margin-bottom: 4px; }
-.card-value { font-size: 32px; font-weight: 700; line-height: 1; }
+.card-label { font-size: 13px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 4px; }
+.card-value { font-size: 32px; font-weight: 700; color: var(--text-main); line-height: 1; font-family: 'Outfit', sans-serif; }
+
+/* My Locations Section */
+.locations-section {
+  background: white;
+  border-radius: 24px;
+  border: 1px solid var(--border-subtle);
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+}
 
 .section-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 20px 24px;
-  border-bottom: 1px solid #eee;
+  padding: 24px 32px;
+  border-bottom: 1px solid var(--border-subtle);
+  background: var(--bg-main);
+}
+
+.section-header h2 {
+  font-size: 20px;
+  color: var(--text-main);
+}
+
+.header-actions {
+  display: flex;
+  gap: 12px;
 }
 
 .loading-state, .empty-state {
   text-align: center;
-  padding: 40px;
-  color: #666;
+  padding: 60px;
+  color: var(--text-muted);
+  font-weight: 500;
 }
 
 .locations-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(420px, 1fr));
   gap: 24px;
-  padding: 24px;
+  padding: 32px;
 }
 
 .location-card {
   background: white;
-  border-radius: 12px;
+  border-radius: 20px;
   padding: 24px;
-  box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+  border: 1px solid var(--border-subtle);
   display: flex;
   flex-direction: column;
+  transition: var(--ts-base);
+}
+
+.location-card:hover {
+  border-color: var(--primary-border);
+  box-shadow: var(--shadow-md);
 }
 
 .loc-header {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  margin-bottom: 12px;
+  margin-bottom: 16px;
 }
 
 .loc-title h3 {
-  font-size: 18px;
-  font-weight: 600;
-  margin-bottom: 4px;
+  font-size: 19px;
+  font-weight: 700;
+  margin-bottom: 6px;
+  color: var(--text-main);
 }
 
 .loc-type {
-  background: #f0f0f0;
-  padding: 4px 10px;
-  border-radius: 20px;
+  background: var(--bg-main);
+  padding: 4px 12px;
+  border-radius: 9999px;
   font-size: 12px;
-  color: #666;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
 
 .loc-address {
   display: flex;
-  align-items: start;
-  gap: 8px;
-  color: #666;
+  align-items: flex-start;
+  gap: 10px;
+  color: var(--text-muted);
   font-size: 14px;
-  margin-bottom: 20px;
-  line-height: 1.4;
+  margin-bottom: 24px;
+  line-height: 1.5;
+}
+
+.loc-address svg {
+  margin-top: 3px;
+  flex-shrink: 0;
+  color: var(--primary);
 }
 
 .loc-stats {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: 12px;
-  margin-bottom: 20px;
-  background: #f8f9fa;
+  margin-bottom: 24px;
+  background: var(--bg-main);
   padding: 16px;
-  border-radius: 8px;
+  border-radius: 16px;
 }
 
 .stat-item {
@@ -376,46 +428,55 @@ onMounted(() => {
   text-align: center;
 }
 
-.stat-val { font-weight: 700; font-size: 18px; margin-bottom: 4px; }
-.stat-lbl { font-size: 11px; color: #888; text-transform: uppercase; }
+.stat-val { font-weight: 700; font-size: 18px; margin-bottom: 2px; color: var(--text-main); font-family: 'Outfit', sans-serif; }
+.stat-lbl { font-size: 10px; color: var(--text-muted); font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; }
 
-.text-success { color: var(--status-available); }
-.text-danger { color: var(--status-occupied); }
+.text-success { color: var(--success); }
+.text-danger { color: var(--danger); }
 .text-primary { color: var(--primary); }
 
 .loc-actions {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 8px;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
   margin-top: auto;
 }
 
-.action-btn {
-  padding: 8px 4px;
-  background: white;
-  border: 1px solid #ddd;
-  border-radius: 6px;
+.expanded-actions {
+  grid-column: span 2;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.loc-actions .btn {
   font-size: 12px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s;
-  color: #555;
-  white-space: nowrap;
+  padding: 8px 4px;
 }
 
-.action-btn:hover {
-  border-color: var(--primary);
-  color: var(--primary);
-  background: #f8f9ff;
+.expanded-user-list {
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 1px solid var(--border-subtle);
 }
 
-.action-btn.primary {
-  background: var(--primary);
-  color: white;
-  border-color: var(--primary);
+.user-tag-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  background: var(--bg-main);
+  border-radius: 12px;
+  border: 1px solid transparent;
+  transition: var(--ts-base);
 }
 
-.action-btn.primary:hover {
-  background: var(--primary-hover);
+.user-tag-item:hover {
+  background: white;
+  border-color: var(--primary-border);
 }
+
+.user-tag-info p { font-weight: 600; font-size: 14px; color: var(--text-main); }
+.user-tag-info span { font-size: 12px; color: var(--text-muted); }
 </style>

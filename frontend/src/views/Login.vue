@@ -135,13 +135,15 @@ export default {
 
         if (result.success) {
           // Redirect based on role
-          const role = result.role;
+          const role = result.role ? result.role.toUpperCase() : '';
           if (role === 'ADMIN') {
             router.push('/admin/dashboard');
           } else if (role === 'OWNER') {
             router.push('/owner/dashboard');
           } else if (role === 'MANAGER') {
             router.push('/manager/dashboard');
+          } else if (role === 'DRIVER') {
+            router.push('/driver/dashboard');
           } else {
             errorMessage.value = 'Invalid role. Access denied.';
             loading.value = false;

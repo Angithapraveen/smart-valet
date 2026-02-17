@@ -10,7 +10,7 @@ const pool = require('../config/database');
  */
 async function createOwner(req, res) {
     try {
-    
+
 
         const {
             name,
@@ -154,7 +154,7 @@ async function createOwner(req, res) {
             constraint: error.constraint,
             message: error.message
         });
-        
+
         if (error.code === '23505') {
             // Unique constraint violation
             if (error.constraint === 'users_email_id_key') {
@@ -174,7 +174,7 @@ async function createOwner(req, res) {
                 message: 'Owner ID, email, or phone number already exists.'
             });
         }
-        
+
         return res.status(500).json({
             success: false,
             message: error.message || 'Failed to create owner.'
@@ -191,10 +191,13 @@ async function getOwners(req, res) {
         const query = `
             SELECT u.user_id, u.name, u.email_id, u.phone_number, u.status, u.created_at,
                    rm.role_name,
-                   COUNT(la.location_id) as location_count
+                   COUNT(la.location_id) as location_count,
+                   STRING_AGG(l.location_name, ', ') as location_names,
+                   STRING_AGG(l.location_id, ',') as location_ids
             FROM USERS u
             JOIN ROLE_MASTER rm ON u.role_id = rm.role_id
             LEFT JOIN LOCATION_ACCESS la ON u.user_id = la.user_id
+            LEFT JOIN LOCATIONS l ON la.location_id = l.location_id
             WHERE rm.role_name = 'OWNER'
             GROUP BY u.user_id, u.name, u.email_id, u.phone_number, u.status, u.created_at, rm.role_name
             ORDER BY u.created_at DESC
@@ -213,7 +216,218 @@ async function getOwners(req, res) {
     }
 }
 
+/**
+ * PUT /api/admin/owners/:id/status
+ * Toggle owner status
+ */
+async function updateOwnerStatus(req, res) {
+    try {
+        const { id } = req.params;
+        const { status } = req.body;
+
+        if (typeof status !== 'boolean') {
+            return res.status(400).json({
+                success: false,
+                message: 'status must be a boolean value.'
+            });
+        }
+
+        const query = `
+            UPDATE USERS 
+            SET status = $1 
+            WHERE user_id = $2
+            RETURNING user_id, status, name
+        `;
+        const result = await pool.query(query, [status, id]);
+
+        if (result.rows.length === 0) {
+            return res.status(404).json({
+                success: false,
+                message: 'Owner not found.'
+            });
+        }
+
+        return res.json({
+            success: true,
+            message: `Owner ${status ? 'activated' : 'deactivated'} successfully.`,
+            data: result.rows[0]
+        });
+    } catch (error) {
+        console.error('Update owner status error:', error);
+        return res.status(500).json({
+            success: false,
+            message: 'Failed to update owner status.'
+        });
+    }
+}
+
+/**
+ * PUT /api/admin/users/:userId/status
+ * Generic user status toggle (Admin only)
+ */
+async function updateUserStatus(req, res) {
+    try {
+        const { userId } = req.params;
+        const { status } = req.body;
+
+        if (typeof status !== 'boolean') {
+            return res.status(400).json({
+                success: false,
+                message: 'status must be a boolean value.'
+            });
+        }
+
+        const query = `
+            UPDATE USERS 
+            SET status = $1 
+            WHERE user_id = $2
+            RETURNING user_id, status, name
+        `;
+        const result = await pool.query(query, [status, userId]);
+
+        if (result.rows.length === 0) {
+            return res.status(404).json({
+                success: false,
+                message: 'User not found.'
+            });
+        }
+
+        return res.json({
+            success: true,
+            message: `User ${status ? 'activated' : 'deactivated'} successfully.`,
+            data: result.rows[0]
+        });
+    } catch (error) {
+        console.error('Update user status error:', error);
+        return res.status(500).json({
+            success: false,
+            message: 'Failed to update user status.'
+        });
+    }
+}
+
+/**
+ * PUT /api/admin/users/:userId
+ * Update user basic details (Admin only)
+ */
+async function updateUserDetails(req, res) {
+    try {
+        const { userId } = req.params;
+        const { name, email_id, phone_number } = req.body;
+
+        if (!name || !email_id || !phone_number) {
+            return res.status(400).json({
+                success: false,
+                message: 'name, email_id, and phone_number are required.'
+            });
+        }
+
+        const query = `
+            UPDATE USERS 
+            SET name = $1, email_id = $2, phone_number = $3
+            WHERE user_id = $4
+            RETURNING user_id, name, email_id, phone_number, status
+        `;
+        const result = await pool.query(query, [name, email_id, phone_number, userId]);
+
+        if (result.rows.length === 0) {
+            return res.status(404).json({
+                success: false,
+                message: 'User not found.'
+            });
+        }
+
+        return res.json({
+            success: true,
+            message: 'User details updated successfully.',
+            data: result.rows[0]
+        });
+    } catch (error) {
+        console.error('Update user details error:', error);
+
+        if (error.code === '23505') {
+            return res.status(409).json({
+                success: false,
+                message: 'Email or phone number already exists.'
+            });
+        }
+
+        return res.status(500).json({
+            success: false,
+            message: 'Failed to update user details.'
+        });
+    }
+}
+
+/**
+ * PUT /api/admin/owners/:ownerId/locations
+ * Update owner's location assignments
+ */
+async function updateOwnerLocations(req, res) {
+    try {
+        const { ownerId } = req.params;
+        const { location_ids } = req.body;
+
+        if (!Array.isArray(location_ids)) {
+            return res.status(400).json({
+                success: false,
+                message: 'location_ids must be an array.'
+            });
+        }
+
+        // STEP 1 - Verify owner exists
+        const ownerCheck = await pool.query(
+            'SELECT * FROM USERS WHERE user_id = $1 AND role_id = (SELECT role_id FROM ROLE_MASTER WHERE role_name = \'OWNER\')',
+            [ownerId]
+        );
+        if (ownerCheck.rows.length === 0) {
+            return res.status(404).json({
+                success: false,
+                message: 'Owner not found.'
+            });
+        }
+
+        // STEP 2 - Database transaction
+        await pool.query('BEGIN');
+
+        try {
+            // Remove existing assignments
+            await pool.query('DELETE FROM LOCATION_ACCESS WHERE user_id = $1', [ownerId]);
+
+            // Insert new assignments
+            if (location_ids.length > 0) {
+                for (const locId of location_ids) {
+                    await pool.query(
+                        'INSERT INTO LOCATION_ACCESS (user_id, location_id) VALUES ($1, $2)',
+                        [ownerId, locId]
+                    );
+                }
+            }
+
+            await pool.query('COMMIT');
+
+            return res.json({
+                success: true,
+                message: 'Owner locations updated successfully.'
+            });
+        } catch (error) {
+            await pool.query('ROLLBACK');
+            throw error;
+        }
+    } catch (error) {
+        console.error('Update owner locations error:', error);
+        return res.status(500).json({
+            success: false,
+            message: 'Failed to update owner locations.'
+        });
+    }
+}
+
 module.exports = {
     createOwner,
-    getOwners
+    getOwners,
+    updateOwnerStatus,
+    updateUserStatus,
+    updateUserDetails,
+    updateOwnerLocations
 };

@@ -1,112 +1,149 @@
 <template>
   <div class="add-location-page">
+    <div class="page-top-actions">
+        <router-link to="/admin/dashboard" class="back-link">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+            Back to Dashboard
+        </router-link>
+    </div>
+
     <header class="page-header">
-      <router-link to="/admin/admindashboard" class="back-link"><--Back</router-link>
-      <h1>Add Location</h1>
+      <div class="header-info">
+          <h1>Configure New Location</h1>
+          <p class="subtitle">Set up a new parking facility in the system</p>
+      </div>
     </header>
 
-    <form @submit.prevent="handleSubmit" class="location-form">
-      <section class="form-section">
-        <h2>Location Details</h2>
-
-        <div v-if="errorMessage" class="error-message">{{ errorMessage }}</div>
-
-        <div class="form-group">
-          <label for="location_name">Location Name <span class="required">*</span></label>
-          <input
-            id="location_name"
-            v-model="form.location_name"
-            type="text"
-            required
-            placeholder="e.g. Downtown Mall Parking"
-            class="form-input"
-          />
-        </div>
-
-        <div class="form-group">
-          <label for="location_short_code">Location Short Code (3 characters) <span class="required">*</span></label>
-          <input
-            id="location_short_code"
-            v-model="form.location_short_code"
-            type="text"
-            maxlength="3"
-            required
-            placeholder="e.g. ABC"
-            class="form-input"
-            @input="form.location_short_code = form.location_short_code.toUpperCase()"
-          />
-          <span class="hint">Uppercase, exactly 3 characters. Used in Location ID.</span>
-        </div>
-
-        <div class="form-group">
-          <label for="location_type">Location Type <span class="required">*</span></label>
-          <select id="location_type" v-model="form.location_type" required class="form-input">
-            <option value="">Select type</option>
-            <option value="Mall">Mall</option>
-            <option value="Hotel">Hotel</option>
-            <option value="Other">Other</option>
-          </select>
-        </div>
-
-        <div v-if="form.location_type === 'Other'" class="form-group">
-          <label for="location_type_other">Specify Location Type</label>
-          <input
-            id="location_type_other"
-            v-model="form.location_type_other"
-            type="text"
-            placeholder="e.g. Airport"
-            class="form-input"
-          />
-        </div>
-
-        <div class="form-group">
-          <label for="address">Address</label>
-          <textarea
-            id="address"
-            v-model="form.address"
-            rows="2"
-            placeholder="Full address"
-            class="form-input"
-          ></textarea>
-        </div>
-
-        <div class="form-row">
-          <div class="form-group">
-            <label for="valid_from">Valid From <span class="required">*</span></label>
-            <input
-              id="valid_from"
-              v-model="form.valid_from"
-              type="date"
-              required
-              class="form-input"
-            />
+    <div class="form-container">
+      <form @submit.prevent="handleSubmit" class="location-form">
+        <div class="form-card">
+          <div class="card-header">
+            <div class="title-with-icon">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
+                <h2>General Information</h2>
+            </div>
           </div>
-          <div class="form-group">
-            <label for="valid_to">Valid To</label>
-            <input
-              id="valid_to"
-              v-model="form.valid_to"
-              type="date"
-              class="form-input"
-            />
+
+          <div v-if="errorMessage" class="error-alert">
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+              {{ errorMessage }}
+          </div>
+
+          <div class="form-grid">
+            <div class="form-group full-width">
+              <label for="location_name">Location Display Name <span class="required">*</span></label>
+              <div class="input-wrapper">
+                  <input
+                    id="location_name"
+                    v-model="form.location_name"
+                    type="text"
+                    required
+                    placeholder="e.g. Grand Plaza Parking"
+                    class="form-control"
+                  />
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="location_short_code">Short Code (ID Prefix) <span class="required">*</span></label>
+              <div class="input-wrapper">
+                  <input
+                    id="location_short_code"
+                    v-model="form.location_short_code"
+                    type="text"
+                    maxlength="3"
+                    required
+                    placeholder="e.g. GPZ"
+                    class="form-control uppercase"
+                    @input="form.location_short_code = form.location_short_code.toUpperCase()"
+                  />
+              </div>
+              <span class="field-hint">Uppercase, exactly 3 characters.</span>
+            </div>
+
+            <div class="form-group">
+              <label for="location_type">Facility Category <span class="required">*</span></label>
+              <div class="input-wrapper">
+                  <select id="location_type" v-model="form.location_type" required class="form-control">
+                    <option value="" disabled>Select category</option>
+                    <option value="Mall">Shopping Mall</option>
+                    <option value="Hotel">Luxury Hotel</option>
+                    <option value="Hospital">Hospital</option>
+                    <option value="Other">Custom Type</option>
+                  </select>
+              </div>
+            </div>
+
+            <div v-if="form.location_type === 'Other'" class="form-group full-width animate-fade">
+              <label for="location_type_other">Specify Custom Type</label>
+              <div class="input-wrapper">
+                  <input
+                    id="location_type_other"
+                    v-model="form.location_type_other"
+                    type="text"
+                    placeholder="e.g. Airport, Event Venue"
+                    class="form-control"
+                  />
+              </div>
+            </div>
+
+            <div class="form-group full-width">
+              <label for="address">Postal Address</label>
+              <div class="input-wrapper">
+                  <textarea
+                    id="address"
+                    v-model="form.address"
+                    rows="2"
+                    placeholder="Enter full physical address"
+                    class="form-control"
+                  ></textarea>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="valid_from">Activate From <span class="required">*</span></label>
+              <div class="input-wrapper">
+                  <input
+                    id="valid_from"
+                    v-model="form.valid_from"
+                    type="date"
+                    required
+                    class="form-control"
+                  />
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="valid_to">Expiration Date</label>
+              <div class="input-wrapper">
+                  <input
+                    id="valid_to"
+                    v-model="form.valid_to"
+                    type="date"
+                    class="form-control"
+                  />
+              </div>
+            </div>
+          </div>
+
+          <div class="form-group checkbox-wrapper">
+            <label class="toggle-switch">
+              <input v-model="form.status" type="checkbox" />
+              <span class="slider"></span>
+              <span class="label-text">Status: <b>{{ form.status ? 'LIVE' : 'MAINTENANCE' }}</b></span>
+            </label>
           </div>
         </div>
 
-        <div class="form-group checkbox-group">
-          <label class="checkbox-label">
-            <input v-model="form.status" type="checkbox" />
-            Active
-          </label>
+        <div class="form-footer-actions">
+          <router-link to="/admin/dashboard" class="btn btn-ghost">Cancel</router-link>
+          <button type="submit" class="btn btn-primary" :disabled="loading">
+            <span v-if="loading" class="btn-spinner"></span>
+            {{ loading ? 'Configuring...' : 'Deploy Location' }}
+          </button>
         </div>
-      </section>
-
-      <div class="form-actions">
-        <router-link to="/admin/locations" class="btn btn-secondary">Cancel</router-link>
-        <button type="submit" class="btn btn-primary" :disabled="loading">
-          {{ loading ? 'Creating...' : 'Create Location' }}
-        </button>
-      </div>
-    </form>
+      </form>
+    </div>
   </div>
 </template>
 
@@ -182,115 +219,296 @@ export default {
 
 <style scoped>
 .add-location-page {
-  max-width: 640px;
+  padding: 24px;
+  max-width: 800px;
   margin: 0 auto;
-  padding: 24px;
 }
-.page-header {
-  margin-bottom: 24px;
+
+.page-top-actions {
+    margin-bottom: 20px;
 }
+
 .back-link {
-  display: inline-block;
-  color: #6545e5;
-  text-decoration: none;
-  margin-bottom: 8px;
-  font-size: 14px;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    color: #64748b;
+    text-decoration: none;
+    font-size: 14px;
+    font-weight: 500;
+    transition: color 0.2s;
 }
+
 .back-link:hover {
-  text-decoration: underline;
+    color: var(--primary);
 }
-.page-header h1 {
-  font-size: 24px;
-  color: #333;
+
+.page-header {
+    margin-bottom: 32px;
 }
-.form-section {
-  background: white;
-  padding: 24px;
-  border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-  margin-bottom: 24px;
+
+.header-info h1 {
+    font-size: 28px;
+    font-weight: 800;
+    color: #0f172a;
+    margin: 0 0 4px 0;
+    letter-spacing: -0.025em;
 }
-.form-section h2 {
-  font-size: 18px;
-  color: #333;
-  margin-bottom: 20px;
+
+.subtitle {
+    font-size: 15px;
+    color: #64748b;
+    margin: 0;
 }
+
+/* Form Container & Card */
+.form-container {
+    perspective: 1000px;
+}
+
+.form-card {
+    background: white;
+    border-radius: 20px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.04);
+    border: 1px solid #f1f5f9;
+    padding: 32px;
+}
+
+.card-header {
+    margin-bottom: 24px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid #f1f5f9;
+}
+
+.title-with-icon {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    color: #0f172a;
+}
+
+.title-with-icon h2 {
+    font-size: 18px;
+    font-weight: 700;
+    margin: 0;
+}
+
+.title-with-icon svg {
+    color: var(--primary);
+}
+
+/* Form Grid */
+.form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+    margin-bottom: 24px;
+}
+
+.full-width {
+    grid-column: span 2;
+}
+
+/* Form Groups */
 .form-group {
-  margin-bottom: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
 }
+
 .form-group label {
-  display: block;
-  font-size: 14px;
-  font-weight: 600;
-  color: #333;
-  margin-bottom: 6px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #475569;
 }
-.required { color: #dc3545; }
-.form-input {
-  width: 100%;
-  padding: 10px 12px;
-  border: 1px solid #ddd;
-  border-radius: 8px;
-  font-size: 15px;
-  box-sizing: border-box;
+
+.required {
+    color: #ef4444;
 }
-.form-input:focus {
-  outline: none;
-  border-color: #6545e5;
-  box-shadow: 0 0 0 2px rgba(101, 69, 229, 0.2);
+
+.input-wrapper {
+    position: relative;
 }
-textarea.form-input { resize: vertical; min-height: 60px; }
-.hint { font-size: 12px; color: #666; margin-top: 4px; display: block; }
-.form-row {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 16px;
+
+.form-control {
+    width: 100%;
+    padding: 12px 16px;
+    border-radius: 12px;
+    border: 1.5px solid #e2e8f0;
+    font-size: 15px;
+    color: #1e293b;
+    transition: all 0.2s;
+    background: #f8fafc;
 }
-.checkbox-group { margin-top: 8px; }
-.checkbox-label {
+
+.form-control:focus {
+    outline: none;
+    background: white;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 4px rgba(101, 69, 229, 0.1);
+}
+
+.form-control::placeholder {
+    color: #94a3b8;
+}
+
+.uppercase {
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    font-weight: 700;
+    font-family: 'JetBrains Mono', monospace;
+}
+
+textarea.form-control {
+    resize: vertical;
+    min-height: 80px;
+}
+
+.field-hint {
+    font-size: 12px;
+    color: #94a3b8;
+    margin-top: 4px;
+}
+
+/* Toggle Switch */
+.checkbox-wrapper {
+    margin-top: 16px;
+    padding-top: 24px;
+    border-top: 1px solid #f1f5f9;
+}
+
+.toggle-switch {
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+    cursor: pointer;
+}
+
+.toggle-switch input {
+    display: none;
+}
+
+.slider {
+    width: 44px;
+    height: 24px;
+    background: #e2e8f0;
+    border-radius: 100px;
+    position: relative;
+    transition: all 0.3s;
+}
+
+.slider::before {
+    content: '';
+    position: absolute;
+    width: 18px;
+    height: 18px;
+    background: white;
+    border-radius: 50%;
+    left: 3px;
+    top: 3px;
+    transition: all 0.3s;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.toggle-switch input:checked + .slider {
+    background: var(--primary);
+}
+
+.toggle-switch input:checked + .slider::before {
+    left: 23px;
+}
+
+.label-text {
+    font-size: 14px;
+    color: #475569;
+}
+
+.label-text b {
+    color: var(--primary);
+    margin-left: 4px;
+}
+
+/* Alert */
+.error-alert {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 16px;
+    background: #fef2f2;
+    border: 1px solid #fee2e2;
+    border-radius: 12px;
+    color: #dc2626;
+    font-size: 14px;
+    margin-bottom: 24px;
+}
+
+/* Actions */
+.form-footer-actions {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 16px;
+    margin-top: 32px;
+}
+
+.btn {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 8px;
-  cursor: pointer;
-  font-weight: 500;
-}
-.checkbox-label input { width: auto; }
-.error-message {
-  background: #fef2f2;
-  color: #dc2626;
-  padding: 12px;
-  border-radius: 8px;
-  margin-bottom: 16px;
-  font-size: 14px;
-}
-.form-actions {
-  display: flex;
-  gap: 12px;
-  justify-content: flex-end;
-}
-.btn {
-  padding: 10px 20px;
-  border-radius: 8px;
+  padding: 12px 24px;
+  border-radius: 12px;
   font-size: 15px;
   font-weight: 600;
-  cursor: pointer;
   text-decoration: none;
   border: none;
+  cursor: pointer;
+  transition: all 0.2s;
 }
+
 .btn-primary {
-  background: #6545e5;
+  background: var(--primary);
   color: white;
+  min-width: 180px;
+  box-shadow: 0 4px 6px -1px rgba(101, 69, 229, 0.2);
 }
+
 .btn-primary:hover:not(:disabled) {
-  background: #7c5ef0;
+    background: var(--primary-hover);
+    transform: translateY(-1px);
+    box-shadow: 0 10px 15px -3px rgba(101, 69, 229, 0.3);
 }
-.btn-primary:disabled { opacity: 0.7; cursor: not-allowed; }
-.btn-secondary {
-  background: #e5e7eb;
-  color: #374151;
+
+.btn-primary:disabled {
+    opacity: 0.7;
+    cursor: wait;
 }
-.btn-secondary:hover { background: #d1d5db; }
-@media (max-width: 600px) {
-  .form-row { grid-template-columns: 1fr; }
+
+.btn-ghost {
+    background: transparent;
+    color: #64748b;
+}
+
+.btn-ghost:hover {
+    background: #f1f5f9;
+    color: #1e293b;
+}
+
+/* Animations */
+.animate-fade {
+    animation: fadeIn 0.3s ease-out;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+@media (max-width: 640px) {
+    .form-grid { grid-template-columns: 1fr; }
+    .full-width { grid-column: span 1; }
+    .form-card { padding: 20px; }
+    .form-footer-actions { flex-direction: column-reverse; }
+    .btn { width: 100%; }
 }
 </style>

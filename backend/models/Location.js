@@ -58,6 +58,7 @@ class Location {
         const query = `
             SELECT 
                 l.location_id, l.location_name, l.location_type, l.address, l.status,
+                l.valid_from, l.valid_to,
                 COALESCE(b.total_blocks, 0) as total_blocks,
                 COALESCE(be.available_slots, 0) as available_slots,
                 COALESCE(be.occupied_slots, 0) as occupied_slots,
