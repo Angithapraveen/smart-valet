@@ -197,8 +197,8 @@ export default {
 
 <style scoped>
 .location-access-page {
-  padding: 24px;
-  max-width: 1200px;
+  padding: 32px;
+  max-width: 1400px;
   margin: 0 auto;
 }
 
@@ -223,20 +223,20 @@ export default {
 .header-info h1 {
     font-size: 28px;
     font-weight: 800;
-    color: #0f172a;
+    color: var(--text-main);
     margin: 0 0 4px 0;
 }
 
 .subtitle {
     font-size: 15px;
-    color: #64748b;
+    color: var(--text-muted);
 }
 
 .table-card {
-    background: white;
+    background: var(--bg-card);
     border-radius: 16px;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
-    border: 1px solid #f1f5f9;
+    box-shadow: var(--shadow-sm);
+    border: 1px solid var(--border-subtle);
     overflow: hidden;
 }
 
@@ -246,20 +246,21 @@ export default {
 }
 
 .data-table th {
-    background: #f8fafc;
+    background: var(--bg-main);
     padding: 16px 24px;
     text-align: left;
     font-size: 12px;
     font-weight: 700;
-    color: #64748b;
+    color: var(--text-muted);
     text-transform: uppercase;
-    border-bottom: 1px solid #f1f5f9;
+    border-bottom: 1px solid var(--border-subtle);
 }
 
 .data-table td {
     padding: 18px 24px;
     font-size: 14px;
-    border-bottom: 1px solid #f1f5f9;
+    border-bottom: 1px solid var(--border-subtle);
+    color: var(--text-main);
 }
 
 .id-hint {
@@ -276,12 +277,12 @@ export default {
 
 .location-name-pill {
     font-size: 11px;
-    background: #eef2ff;
-    color: #4338ca;
+    background: var(--primary-light);
+    color: var(--primary);
     padding: 2px 8px;
     border-radius: 4px;
     font-weight: 600;
-    border: 1px solid #e0e7ff;
+    border: 1px solid var(--primary-border, var(--primary-light));
 }
 
 .empty-hint {
@@ -300,8 +301,8 @@ export default {
     transition: all 0.2s;
 }
 
-.btn-edit { background: #eff6ff; color: #2563eb; }
-.btn-edit:hover { background: #dbeafe; }
+.btn-edit { background: var(--primary-light); color: var(--primary); border: 1px solid var(--primary-border, var(--primary-light)); }
+.btn-edit:hover { background: var(--primary); color: white; }
 
 /* Modal Styles */
 .modal-overlay {
@@ -319,19 +320,20 @@ export default {
 }
 
 .modal-content {
-    background: white;
+    background: var(--bg-card);
     border-radius: 20px;
     width: 90%;
     max-width: 600px;
     max-height: 80vh;
     display: flex;
     flex-direction: column;
-    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+    box-shadow: var(--shadow-xl);
+    border: 1px solid var(--border-subtle);
 }
 
 .modal-header {
     padding: 20px 24px;
-    border-bottom: 1px solid #f1f5f9;
+    border-bottom: 1px solid var(--border-subtle);
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -358,7 +360,7 @@ export default {
 
 .modal-hint {
     font-size: 14px;
-    color: #64748b;
+    color: var(--text-muted);
     margin-bottom: 20px;
 }
 
@@ -373,20 +375,21 @@ export default {
     align-items: center;
     gap: 12px;
     padding: 12px 16px;
-    border: 2px solid #f1f5f9;
+    border: 2px solid var(--border-subtle);
+    background: var(--bg-main);
     border-radius: 12px;
     cursor: pointer;
-    transition: all 0.2s;
+    transition: var(--ts-base);
 }
 
 .location-checkbox-card:hover {
-    border-color: #cbd5e1;
-    background: #f8fafc;
+    border-color: var(--primary-light);
+    background: var(--bg-card);
 }
 
 .location-checkbox-card.checked {
     border-color: var(--primary);
-    background: #f5f3ff;
+    background: var(--primary-light);
 }
 
 .loc-card-content {
@@ -397,7 +400,7 @@ export default {
 .loc-name {
     font-size: 14px;
     font-weight: 600;
-    color: #1e293b;
+    color: var(--text-main);
 }
 
 .loc-id {
@@ -407,7 +410,7 @@ export default {
 
 .modal-footer {
     padding: 20px 24px;
-    border-top: 1px solid #f1f5f9;
+    border-top: 1px solid var(--border-subtle);
     display: flex;
     justify-content: flex-end;
     gap: 12px;
@@ -423,7 +426,7 @@ export default {
 }
 
 .btn-primary { background: var(--primary); color: white; }
-.btn-secondary { background: #f1f5f9; color: #475569; }
+.btn-secondary { background: var(--bg-main); color: var(--text-main); border: 1px solid var(--border-subtle); }
 
 .loading-state, .spinner {
     display: flex;

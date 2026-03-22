@@ -7,11 +7,9 @@ const User = require('../models/User');
  * Handles login for ADMIN, OWNER, MANAGER
  * Driver login is handled separately in mobile app
  * 
- * Accepts login_id which can be: user_id, email_id, or phone_number
+ * Accepts login_id which can be: email_id, or phone_number
  * 
  */
-
-
 const login = async (req, res) => {
     try {
         const { login_id, password } = req.body;
@@ -24,7 +22,7 @@ const login = async (req, res) => {
             });
         }
 
-        // Find user by user_id, email_id, or phone_number
+        // Find user by email_id, or phone_number
         const user = await User.findByLoginId(login_id);
 
         if (!user) {

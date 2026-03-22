@@ -296,7 +296,9 @@ onMounted(fetchData);
 
 <style scoped>
 .users-management {
-  width: 100%;
+  padding: 32px;
+  max-width: 1400px;
+  margin: 0 auto;
 }
 
 .subtitle {
@@ -337,9 +339,10 @@ onMounted(fetchData);
 }
 
 .tab-btn.active {
-  background: white;
+  background: var(--bg-card);
   color: var(--primary);
   box-shadow: var(--shadow-sm);
+  border: 1px solid var(--border-subtle);
 }
 
 .count-badge {
@@ -358,7 +361,7 @@ onMounted(fetchData);
 }
 
 .user-card {
-  background: white;
+  background: var(--bg-card);
   border: 1px solid var(--border-subtle);
   border-radius: 20px;
   padding: 24px;
@@ -401,7 +404,7 @@ onMounted(fetchData);
 .user-main-info h3 { font-size: 17px; margin: 0 0 2px 0; color: var(--text-main); font-weight: 700; }
 .user-role-tag { font-size: 11px; color: var(--text-muted); font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; }
 
-.status-dot { width: 10px; height: 10px; border-radius: 50%; border: 2px solid white; box-shadow: 0 0 0 1px var(--border-subtle); }
+.status-dot { width: 10px; height: 10px; border-radius: 50%; border: 2px solid var(--bg-card); box-shadow: 0 0 0 1px var(--border-subtle); }
 .status-dot.active { background: var(--success); }
 .status-dot.inactive { background: var(--text-muted); }
 
@@ -441,7 +444,7 @@ onMounted(fetchData);
 
 .btn-action-outline {
   padding: 10px;
-  background: white;
+  background: var(--bg-card);
   border: 1px solid var(--border-subtle);
   color: var(--text-main);
   border-radius: 12px;
@@ -496,7 +499,7 @@ onMounted(fetchData);
 .modal-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(15, 23, 42, 0.4);
+  background: rgba(0, 0, 0, 0.4);
   backdrop-filter: blur(8px);
   display: flex;
   align-items: center;
@@ -506,7 +509,7 @@ onMounted(fetchData);
 }
 
 .modal-card {
-  background: white;
+  background: var(--bg-card);
   width: 100%;
   max-width: 480px;
   border-radius: 24px;

@@ -128,6 +128,9 @@ const getOwnerDashboard = async (req, res) => {
 /**
  * Manager Dashboard Controller
  */
+/**
+ * Manager Dashboard Controller
+ */
 const getManagerDashboard = async (req, res) => {
     try {
         const locationIds = req.locationIds;
@@ -139,7 +142,14 @@ const getManagerDashboard = async (req, res) => {
                     location: null,
                     totalTransactions: 0,
                     activeParkings: 0,
-                    availableBlocks: 0
+                    availableBlocks: 0,
+                    blocksData: [],
+                    recentActivity: [],
+                    drivers: [],
+                    todayStats: {
+                        entered: 0,
+                        returned: 0
+                    }
                 }
             });
         }
@@ -147,11 +157,11 @@ const getManagerDashboard = async (req, res) => {
         // Manager has only one location
         const locationId = locationIds[0];
 
-        // Get manager's location
+        // 1. Get manager's location
         const locationQuery = 'SELECT * FROM LOCATIONS WHERE location_id = $1 AND status = TRUE';
         const locationResult = await pool.query(locationQuery, [locationId]);
 
-        // Get total transactions
+        // 2. Total Transactions (All time)
         const transactionsQuery = `
             SELECT COUNT(*) as total 
             FROM VALET_TRANSACTIONS 
@@ -159,7 +169,7 @@ const getManagerDashboard = async (req, res) => {
         `;
         const transactionsResult = await pool.query(transactionsQuery, [locationId]);
 
-        // Get active parkings
+        // 3. Active Parkings (Currently in system)
         const activeParkingsQuery = `
             SELECT COUNT(*) as total 
             FROM VALET_TRANSACTIONS 
@@ -167,7 +177,7 @@ const getManagerDashboard = async (req, res) => {
         `;
         const activeParkingsResult = await pool.query(activeParkingsQuery, [locationId]);
 
-        // Get available block entries
+        // 4. Available Block Entries (Total)
         const availableEntriesQuery = `
             SELECT COUNT(*) as total 
             FROM BLOCK_ENTRIES 
@@ -175,13 +185,66 @@ const getManagerDashboard = async (req, res) => {
         `;
         const availableEntriesResult = await pool.query(availableEntriesQuery, [locationId]);
 
+        // 5. Detailed Block Data (Capacity vs Occupancy)
+        const blocksQuery = `
+            SELECT 
+                b.block_id, 
+                b.block_name, 
+                b.capacity,
+                (SELECT COUNT(*) FROM BLOCK_ENTRIES be WHERE be.block_id = b.block_id AND be.status = 'AVAILABLE') as available,
+                (SELECT COUNT(*) FROM BLOCK_ENTRIES be WHERE be.block_id = b.block_id AND be.status = 'OCCUPIED') as occupied
+            FROM BLOCKS b
+            WHERE b.location_id = $1 AND b.status = TRUE
+            ORDER BY b.block_name
+        `;
+        const blocksResult = await pool.query(blocksQuery, [locationId]);
+
+        // 6. Recent Activity (Last 5 transactions)
+        const activityQuery = `
+            SELECT valet_id, car_model, customer_name, status, created_at, returned_time
+            FROM VALET_TRANSACTIONS
+            WHERE location_id = $1
+            ORDER BY created_at DESC
+            LIMIT 5
+        `;
+        const activityResult = await pool.query(activityQuery, [locationId]);
+
+        // 7. Active Drivers (Drivers associated with this location)
+        // Assuming drivers are linked via LOCATION_ACCESS table same as managers
+        const driversQuery = `
+            SELECT u.user_id, u.name, u.phone_number, u.status
+            FROM USERS u
+            JOIN LOCATION_ACCESS la ON u.user_id = la.user_id
+            JOIN ROLE_MASTER rm ON u.role_id = rm.role_id
+            WHERE la.location_id = $1 AND rm.role_name = 'DRIVER' AND u.status = TRUE
+        `;
+        const driversResult = await pool.query(driversQuery, [locationId]);
+
+        // 8. Today's Stats
+        const todayStatsQuery = `
+            SELECT 
+                COUNT(*) FILTER (WHERE created_at::date = CURRENT_DATE) as entered,
+                COUNT(*) FILTER (WHERE returned_time::date = CURRENT_DATE) as returned
+            FROM VALET_TRANSACTIONS
+            WHERE location_id = $1
+        `;
+        const todayStatsResult = await pool.query(todayStatsQuery, [locationId]);
+
+
         res.json({
             success: true,
             data: {
                 location: locationResult.rows[0] || null,
                 totalTransactions: parseInt(transactionsResult.rows[0].total),
                 activeParkings: parseInt(activeParkingsResult.rows[0].total),
-                availableBlocks: parseInt(availableEntriesResult.rows[0].total)
+                availableBlocks: parseInt(availableEntriesResult.rows[0].total),
+                blocksData: blocksResult.rows,
+                recentActivity: activityResult.rows,
+                drivers: driversResult.rows,
+                todayStats: {
+                    entered: parseInt(todayStatsResult.rows[0].entered || 0),
+                    returned: parseInt(todayStatsResult.rows[0].returned || 0)
+                }
             }
         });
     } catch (error) {

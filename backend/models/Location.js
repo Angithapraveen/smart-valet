@@ -57,7 +57,8 @@ class Location {
     static async findAllWithStats() {
         const query = `
             SELECT 
-                l.location_id, l.location_name, l.location_type, l.address, l.status,
+                l.location_id, l.location_name, l.location_short_code, l.location_type, l.address,
+                (l.status AND l.valid_from <= CURRENT_DATE AND (l.valid_to IS NULL OR l.valid_to >= CURRENT_DATE)) as status,
                 l.valid_from, l.valid_to,
                 COALESCE(b.total_blocks, 0) as total_blocks,
                 COALESCE(be.available_slots, 0) as available_slots,
@@ -68,6 +69,8 @@ class Location {
                 SELECT location_id, COUNT(*) as total_blocks 
                 FROM BLOCKS 
                 WHERE status = TRUE 
+                AND valid_from <= CURRENT_DATE 
+                AND (valid_to IS NULL OR valid_to >= CURRENT_DATE)
                 GROUP BY location_id
             ) b ON l.location_id = b.location_id
             LEFT JOIN (

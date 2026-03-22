@@ -80,7 +80,8 @@ const getOwnerLocations = async (req, res) => {
 
         const query = `
             SELECT 
-                l.location_id, l.location_name, l.location_type, l.address, l.status,
+                l.location_id, l.location_name, l.location_short_code, l.location_type, l.address, 
+                (l.status AND l.valid_from <= CURRENT_DATE AND (l.valid_to IS NULL OR l.valid_to >= CURRENT_DATE)) as status,
                 l.valid_from, l.valid_to,
                 COALESCE(b.total_blocks, 0) as total_blocks,
                 COALESCE(be.available_slots, 0) as available_slots,
@@ -91,6 +92,8 @@ const getOwnerLocations = async (req, res) => {
                 SELECT location_id, COUNT(*) as total_blocks 
                 FROM BLOCKS 
                 WHERE status = TRUE 
+                AND valid_from <= CURRENT_DATE 
+                AND (valid_to IS NULL OR valid_to >= CURRENT_DATE)
                 GROUP BY location_id
             ) b ON l.location_id = b.location_id
             LEFT JOIN (
@@ -152,7 +155,8 @@ const getOwnerLocationDetails = async (req, res) => {
 
         const query = `
             SELECT 
-                l.location_id, l.location_name, l.location_type, l.address, l.status,
+                l.location_id, l.location_name, l.location_short_code, l.location_type, l.address, 
+                (l.status AND l.valid_from <= CURRENT_DATE AND (l.valid_to IS NULL OR l.valid_to >= CURRENT_DATE)) as status,
                 l.valid_from, l.valid_to,
                 COALESCE(b.total_blocks, 0) as total_blocks,
                 COALESCE(be.available_slots, 0) as available_slots,
@@ -163,6 +167,8 @@ const getOwnerLocationDetails = async (req, res) => {
                 SELECT location_id, COUNT(*) as total_blocks 
                 FROM BLOCKS 
                 WHERE status = TRUE 
+                AND valid_from <= CURRENT_DATE 
+                AND (valid_to IS NULL OR valid_to >= CURRENT_DATE)
                 GROUP BY location_id
             ) b ON l.location_id = b.location_id
             LEFT JOIN (
@@ -209,6 +215,7 @@ const getOwnerLocationDetails = async (req, res) => {
         const locationData = {
             location_id: row.location_id,
             location_name: row.location_name,
+            location_short_code: row.location_short_code,
             location_type: row.location_type,
             address: row.address,
             status: row.status,
@@ -279,13 +286,6 @@ const getOwnerLocationUsers = async (req, res) => {
         const result = await pool.query(query, [id]);
         const users = result.rows;
 
-        // If a specific type was requested, return just that list (or object with that key for consistency? Spec says "load data BELOW", likely array expected if implicit from "tabData = ref([])")
-        // But the previous implementation returned { owners: [], ... }.
-        // If I want to support the OLD behavior, I should stick to the structure.
-        // If I use type, I will return the list directly OR the structure.
-        // The spec example for LIST DISPLAY is `v-for="user in tabData"`.
-        // So if type is present, return the array directly.
-
         if (type) {
             res.json({
                 success: true,
@@ -332,13 +332,13 @@ const getOwnerLocationBlocks = async (req, res) => {
 
         const query = `
             SELECT 
-                b.block_id, b.block_code, b.block_type, b.floor_number, b.status,
-                b.capacity,
+                b.block_id, b.block_name, (b.status AND b.valid_from <= CURRENT_DATE AND (b.valid_to IS NULL OR b.valid_to >= CURRENT_DATE)) as status,
+                b.capacity, b.valid_from, b.valid_to,
                 (SELECT COUNT(*) FROM BLOCK_ENTRIES be WHERE be.block_id = b.block_id AND be.status = 'AVAILABLE') as available_slots,
                 (SELECT COUNT(*) FROM BLOCK_ENTRIES be WHERE be.block_id = b.block_id AND be.status = 'OCCUPIED') as occupied_slots
             FROM BLOCKS b
             WHERE b.location_id = $1
-            ORDER BY b.floor_number, b.block_code
+            ORDER BY b.created_at ASC
         `;
 
         const result = await pool.query(query, [id]);
@@ -364,10 +364,57 @@ const getOwnerLocationBlocks = async (req, res) => {
     }
 };
 
+/**
+ * Get Active Parking Records for a specific location
+ */
+const getOwnerLocationActiveParking = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const locationIds = req.locationIds || [];
+
+        // Verify access
+        if (!locationIds.includes(id)) {
+            return res.status(403).json({
+                success: false,
+                message: 'Access denied to this location.'
+            });
+        }
+
+        const query = `
+            SELECT 
+                vt.valet_id, vt.customer_name, vt.phone_number, vt.car_model, vt.car_category,
+                vt.status, vt.parked_time, vt.return_requested_time, vt.ready_time,
+                vt.block_entry_id,
+                b.block_name
+            FROM VALET_TRANSACTIONS vt
+            LEFT JOIN BLOCK_ENTRIES be ON vt.block_entry_id = be.block_entry_id
+            LEFT JOIN BLOCKS b ON be.block_id = b.block_id
+            WHERE vt.location_id = $1 
+            AND vt.status IN ('PARKED', 'RETURN_REQUESTED', 'READY', 'ON_THE_WAY')
+            ORDER BY vt.created_at DESC
+        `;
+
+        const result = await pool.query(query, [id]);
+
+        res.json({
+            success: true,
+            data: result.rows
+        });
+
+    } catch (error) {
+        console.error('Get owner location active parking error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to fetch active parking records.'
+        });
+    }
+};
+
 module.exports = {
     getOwnerSummary,
     getOwnerLocations,
     getOwnerLocationUsers,
     getOwnerLocationBlocks,
-    getOwnerLocationDetails
+    getOwnerLocationDetails,
+    getOwnerLocationActiveParking
 };

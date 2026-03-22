@@ -1,8 +1,6 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700&display=swap');
 
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+
 
 :root {
   /* Brand Colors - Sophisticated Indigo/Zinc Palette */
@@ -16,12 +14,17 @@
   --primary-border: hsl(var(--primary-h), var(--primary-s), 90%);
   --primary-shadow: hsla(var(--primary-h), var(--primary-s), var(--primary-l), 0.2);
 
-  /* Neutrals */
+  /* Neutrals - Light Mode */
   --bg-main: hsl(240, 10%, 98%);
   --bg-card: hsl(0, 0%, 100%);
+  --bg-header: #ffffff;
   --text-main: hsl(240, 10%, 4%);
   --text-muted: hsl(240, 4%, 46%);
   --border-subtle: hsl(240, 5%, 90%);
+  --glass-bg: rgba(255, 255, 255, 0.7);
+  --header-border: rgba(0, 0, 0, 0.05);
+  
+  --primary-accent: hsl(var(--primary-h), var(--primary-s), 40%);
 
   /* Status Colors */
   --success: hsl(142, 70%, 45%);
@@ -43,6 +46,33 @@
   --shadow-lg: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
 }
 
+.dark-theme {
+  /* Neutrals - Dark Mode (Zinc inspired) */
+  --bg-main: #09090b;
+  --bg-card: #121215;
+  --bg-header: #121215;
+  --text-main: #fafafa;
+  --text-muted: #a1a1aa;
+  --border-subtle: #27272a;
+  --glass-bg: rgba(9, 9, 11, 0.7);
+  --header-border: #27272a;
+  
+  --primary-light: hsla(var(--primary-h), var(--primary-s), var(--primary-l), 0.1);
+  --primary-border: hsla(var(--primary-h), var(--primary-s), var(--primary-l), 0.2);
+  --primary-shadow: hsla(var(--primary-h), var(--primary-s), var(--primary-l), 0.4);
+  --primary-accent: hsl(var(--primary-h), var(--primary-s), 75%);
+
+  /* Adjusted Status for Dark Mode */
+  --success-light: rgba(34, 197, 94, 0.15);
+  --danger-light: rgba(239, 68, 68, 0.15);
+  --warning-light: rgba(245, 158, 11, 0.15);
+  --info-light: rgba(59, 130, 246, 0.15);
+
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.5);
+  --shadow-md: 0 4px 12px -2px rgba(0, 0, 0, 0.6), 0 2px 6px -1px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 20px 25px -5px rgba(0, 0, 0, 0.7), 0 10px 10px -5px rgba(0, 0, 0, 0.5);
+}
+
 * {
   margin: 0;
   padding: 0;
@@ -55,6 +85,7 @@ body {
   color: var(--text-main);
   -webkit-font-smoothing: antialiased;
   line-height: 1.5;
+  transition: background-color 0.3s var(--ease-out), color 0.3s var(--ease-out);
 }
 
 h1,
@@ -70,9 +101,9 @@ h6 {
 
 /* Glassmorphism Utility */
 .glass {
-  background: rgba(255, 255, 255, 0.7);
+  background: var(--glass-bg);
   backdrop-filter: blur(12px) saturate(180%);
-  border: 1px solid rgba(255, 255, 255, 0.125);
+  border: 1px solid var(--border-subtle);
 }
 
 /* Card System */
@@ -104,6 +135,19 @@ h6 {
   transition: all 0.2s var(--ease-out);
   border: 1px solid transparent;
 }
+
+/*
+- [x] UI Professionalization
+    - [x] Correct `loc-type` alignment
+    - [x] Enhance card aesthetics (shadows, borders, gradients)
+    - [x] Review typography and spacing for a premium feel
+- [x] Refine Hierarchy & Positioning
+    - [x] Move `loc-type` to a "label" position above title
+    - [x] Optimize `loc-stats` grid spacing and container style
+- [x] Verification
+    - [x] Verify vertical alignment of buttons across rows
+    - [x] Verify card expansion with dynamic data
+*/
 
 .btn-primary {
   background: var(--primary);
@@ -157,7 +201,7 @@ h6 {
 .form-input {
   width: 100%;
   padding: 12px 16px;
-  background: white;
+  background: var(--bg-card);
   border: 1px solid var(--border-subtle);
   border-radius: 12px;
   font-size: 14px;
@@ -168,7 +212,7 @@ h6 {
 .form-input:focus {
   outline: none;
   border-color: var(--primary);
-  box-shadow: 0 0 0 4px var(--primary-light);
+  box-shadow: 0 0 0 4px var(--primary-shadow);
 }
 
 .form-input::placeholder {
@@ -215,7 +259,7 @@ h6 {
 .table {
   width: 100%;
   border-collapse: collapse;
-  background: white;
+  background: var(--bg-card);
 }
 
 .table th {
@@ -239,15 +283,27 @@ h6 {
   background: var(--bg-main);
 }
 
+
 /* Layout Utilities */
-.page-header {
-  margin-bottom: 32px;
+.page-header,
+.dashboard-header {
+  position: -webkit-sticky;
+  position: sticky;
+  top: 0;
+  /* Height of AppHeader */
+  z-index: 40;
+  background-color: var(--bg-main);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  margin-bottom: 24px;
   display: flex;
   justify-content: space-between;
-  align-items: flex-end;
+  align-items: center;
+  padding-bottom: 20px;
 }
 
 .page-title {
+
   font-size: 32px;
   color: var(--text-main);
 }

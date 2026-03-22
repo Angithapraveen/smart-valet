@@ -24,17 +24,22 @@ const isManager = computed(() => {
 </script>
 
 <style scoped>
+
 .main-layout {
-  min-height: 100vh;
+  height: 100vh;
   background-color: var(--bg-main);
   display: flex;
   flex-direction: column;
+  overflow: hidden; /* Prevent body scroll */
 }
 
 .layout-body {
   display: flex;
   flex: 1;
   position: relative;
+  margin-top: 64px; /* Space for fixed header */
+  height: calc(100vh - 64px);
+  overflow: hidden;
 }
 
 .has-sidebar .page-container {
@@ -43,10 +48,12 @@ const isManager = computed(() => {
 
 .page-container {
   flex: 1;
-  padding: 40px;
-  max-width: 1600px;
+  padding: 0 32px 32px 32px;
+  max-width: 1400px;
   margin: 0 auto;
   width: 100%;
+  height: 100%;
+  overflow-y: auto; /* Scrollable content area */
   transition: margin-left 0.3s var(--ease-out);
 }
 
@@ -62,3 +69,4 @@ const isManager = computed(() => {
   }
 }
 </style>
+

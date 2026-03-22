@@ -85,7 +85,7 @@
              <!-- Loading State for Tab Data -->
              <div v-if="tabLoading" class="tab-loading">
                  <div class="spinner"></div>
-                 <span>Loading {{ activeTab }}...</span>
+                 <span>Loading {{ activeTab.replace('_', ' ') }}...</span>
              </div>
 
              <!-- Data Display -->
@@ -170,6 +170,63 @@
                      </div>
                      <div v-else class="empty-tab">
                          No blocks found.
+                     </div>
+                 </div>
+
+                 <!-- ACTIVE PARKING LIST -->
+                 <div v-if="activeTab === 'active_parking'">
+                     <div v-if="tabData.length > 0" class="parking-table-container">
+                         <table class="parking-table">
+                             <thead>
+                                 <tr>
+                                     <th>Ticket ID</th>
+                                     <th>Customer</th>
+                                     <th>Vehicle</th>
+                                     <th>Details</th>
+                                     <th>Status</th>
+                                     <th>Parked At</th>
+                                 </tr>
+                             </thead>
+                             <tbody>
+                                 <tr v-for="record in tabData" :key="record.valet_id">
+                                     <td>
+                                         <span class="ticket-id-badge">{{ record.valet_id }}</span>
+                                     </td>
+                                     <td>
+                                         <div class="customer-info">
+                                             <p class="c-name">{{ record.customer_name }}</p>
+                                             <p class="c-phone">{{ record.phone_number }}</p>
+                                         </div>
+                                     </td>
+                                     <td>
+                                         <div class="vehicle-info">
+                                             <p class="v-model">{{ record.car_model || 'Unknown Model' }}</p>
+                                             <p class="v-cat">{{ record.car_category }}</p>
+                                         </div>
+                                     </td>
+                                     <td>
+                                          <div class="parking-loc">
+                                              <span class="loc-block">{{ record.block_name || 'Unassigned' }}</span>
+                                              <span class="loc-entry">{{ record.block_entry_id || 'N/A' }}</span>
+                                          </div>
+                                      </td>
+                                      <td>
+                                          <span :class="['status-pill', getStatusClass(record.status)]">
+                                              {{ record.status.replace('_', ' ') }}
+                                          </span>
+                                      </td>
+                                      <td>
+                                          <div class="time-info">
+                                              <p class="t-date">{{ formatDate(record.parked_time) }}</p>
+                                              <p class="t-time">{{ record.parked_time ? new Date(record.parked_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'N/A' }}</p>
+                                          </div>
+                                      </td>
+                                 </tr>
+                             </tbody>
+                         </table>
+                     </div>
+                     <div v-else class="empty-tab">
+                         No active parking records found.
                      </div>
                  </div>
              </div>
@@ -420,6 +477,7 @@ const editBlockForm = ref({
 
 const tabs = [
     { id: 'blocks', label: 'Blocks' },
+    { id: 'active_parking', label: 'Active Parking' },
     { id: 'managers', label: 'Managers' },
     { id: 'drivers', label: 'Drivers' },
     { id: 'owners', label: 'Owners' }
@@ -452,6 +510,8 @@ const switchTab = async (tabId) => {
         let endpoint = '';
         if (tabId === 'blocks') {
             endpoint = `${API_URL}/owner/locations/${locationId}/blocks`;
+        } else if (tabId === 'active_parking') {
+            endpoint = `${API_URL}/dashboard/owner/location/${locationId}/active-parking`;
         } else {
             endpoint = `${API_URL}/dashboard/owner/locations/${locationId}/users?type=${tabId}`;
         }
@@ -701,6 +761,16 @@ const formatDate = (dateString) => {
     return date.toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' });
 };
 
+const getStatusClass = (status) => {
+    switch (status) {
+        case 'PARKED': return 'badge-success';
+        case 'RETURN_REQUESTED': return 'badge-warning';
+        case 'READY': return 'badge-primary';
+        case 'RETURNED': return 'badge-info';
+        default: return 'badge-secondary';
+    }
+};
+
 onMounted(() => {
     fetchLocationDetails();
 });
@@ -782,38 +852,39 @@ onMounted(() => {
 }
 
 .stat-card {
-    background: white;
+    background: var(--bg-card);
     padding: 20px;
     border-radius: 12px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.02);
+    box-shadow: var(--shadow-sm);
     text-align: center;
+    border: 1px solid var(--border-subtle);
 }
 
 .stat-value {
     font-size: 24px;
     font-weight: 700;
-    color: #333;
+    color: var(--text-main);
     line-height: 1.2;
     margin-bottom: 4px;
 }
 
 .stat-label {
     font-size: 12px;
-    color: #888;
+    color: var(--text-muted);
     text-transform: uppercase;
     font-weight: 600;
 }
 
 .text-primary { color: var(--primary); }
-.text-success { color: #15803d; }
-.text-danger { color: #b91c1c; }
+.text-success { color: var(--success); }
+.text-danger { color: var(--danger); }
 
 /* Tabs Section */
 .tabs-section {
-    background: white;
+    background: var(--bg-card);
     border-radius: 12px;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.03);
-    border: 1px solid #f0f0f0;
+    box-shadow: var(--shadow-sm);
+    border: 1px solid var(--border-subtle);
     overflow: hidden;
     min-height: 400px;
 }
@@ -822,8 +893,8 @@ onMounted(() => {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    border-bottom: 1px solid #eee;
-    background: #fafafa;
+    border-bottom: 1px solid var(--border-subtle);
+    background: var(--bg-main);
     padding: 0 20px;
 }
 
@@ -842,16 +913,16 @@ onMounted(() => {
     border: none;
     font-size: 14px;
     font-weight: 500;
-    color: #666;
+    color: var(--text-muted);
     cursor: pointer;
     border-bottom: 2px solid transparent;
 }
 
-.tab-btn:hover { color: #333; }
+.tab-btn:hover { color: var(--text-main); }
 .tab-btn.active {
     color: var(--primary);
     border-bottom-color: var(--primary);
-    background: white;
+    background: var(--bg-card);
 }
 
 .btn-add {
@@ -878,14 +949,14 @@ onMounted(() => {
     align-items: center;
     justify-content: center;
     padding: 40px;
-    color: #888;
+    color: var(--text-muted);
     gap: 12px;
 }
 
 .spinner {
     width: 24px;
     height: 24px;
-    border: 3px solid #eee;
+    border: 3px solid var(--border-subtle);
     border-top-color: var(--primary);
     border-radius: 50%;
     animation: spin 1s linear infinite;
@@ -901,10 +972,10 @@ onMounted(() => {
 }
 
 .user-card {
-    background: #f8fafc;
+    background: var(--bg-main);
     padding: 16px;
     border-radius: 12px;
-    border: 1px solid #e2e8f0;
+    border: 1px solid var(--border-subtle);
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -918,13 +989,13 @@ onMounted(() => {
 
 .user-name {
     font-weight: 600;
-    color: #1e293b;
+    color: var(--text-main);
     margin: 0;
 }
 
 .user-email {
     font-size: 13px;
-    color: #64748b;
+    color: var(--text-muted);
     margin: 0;
 }
 
@@ -959,23 +1030,23 @@ onMounted(() => {
 }
 
 .btn-activate {
-    background: #f0fdf4;
-    color: #166534;
-    border-color: #bcf0da;
+    background: var(--success-light);
+    color: var(--success);
+    border-color: var(--success);
 }
 
 .btn-activate:hover {
-    background: #dcfce7;
+    background: var(--bg-main);
 }
 
 .btn-deactivate {
-    background: #fef2f2;
-    color: #991b1b;
-    border-color: #fecaca;
+    background: var(--danger-light);
+    color: var(--danger);
+    border-color: var(--danger);
 }
 
 .btn-deactivate:hover {
-    background: #fee2e2;
+    background: var(--bg-main);
 }
 
 .action-btn-sm:disabled {
@@ -991,22 +1062,22 @@ onMounted(() => {
 }
 
 .block-detail-card {
-    background: white;
-    border: 1px solid #e5e7eb;
+    background: var(--bg-card);
+    border: 1px solid var(--border-subtle);
     border-radius: 12px;
     padding: 24px;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    box-shadow: var(--shadow-sm);
     transition: box-shadow 0.2s;
 }
 
 .block-detail-card:hover {
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    box-shadow: var(--shadow-md);
 }
 
 .block-card-header {
     margin-bottom: 20px;
     padding-bottom: 16px;
-    border-bottom: 2px solid #f3f4f6;
+    border-bottom: 2px solid var(--border-subtle);
 }
 
 .block-info-row {
@@ -1018,14 +1089,14 @@ onMounted(() => {
 .block-name {
     font-size: 20px;
     font-weight: 700;
-    color: #111;
+    color: var(--text-main);
     margin: 0 0 6px 0;
 }
 
 .block-id {
     display: inline-block;
-    background: #f3f4f6;
-    color: #6b7280;
+    background: var(--bg-main);
+    color: var(--text-muted);
     padding: 4px 12px;
     border-radius: 6px;
     font-size: 13px;
@@ -1066,13 +1137,13 @@ onMounted(() => {
 
 .detail-label {
     font-size: 12px;
-    color: #6b7280;
+    color: var(--text-muted);
     font-weight: 500;
 }
 
 .detail-value {
     font-size: 15px;
-    color: #111;
+    color: var(--text-main);
     font-weight: 600;
 }
 
@@ -1098,13 +1169,13 @@ onMounted(() => {
 .entries-section {
     margin-top: 20px;
     padding-top: 20px;
-    border-top: 2px solid #f3f4f6;
+    border-top: 2px solid var(--border-subtle);
 }
 
 .entries-heading {
     font-size: 15px;
     font-weight: 600;
-    color: #374151;
+    color: var(--text-main);
     margin: 0 0 16px 0;
 }
 
@@ -1143,20 +1214,20 @@ onMounted(() => {
 }
 
 .entry-available {
-    background: #dcfce7;
-    color: #166534;
-    border-color: #bbf7d0;
+    background: var(--success-light);
+    color: var(--success);
+    border-color: var(--success);
 }
 
 .entry-occupied {
-    background: #fee2e2;
-    color: #991b1b;
-    border-color: #fecaca;
+    background: var(--danger-light);
+    color: var(--danger);
+    border-color: var(--danger);
 }
 
 .block-card {
-    background: white;
-    border: 1px solid #e5e7eb;
+    background: var(--bg-card);
+    border: 1px solid var(--border-subtle);
     border-radius: 8px;
     padding: 16px;
 }
@@ -1167,21 +1238,21 @@ onMounted(() => {
     align-items: center;
     margin-bottom: 12px;
     padding-bottom: 12px;
-    border-bottom: 1px solid #f3f4f6;
+    border-bottom: 1px solid var(--border-subtle);
 }
 
 .block-code {
     font-weight: 700;
     font-size: 16px;
-    color: #333;
+    color: var(--text-main);
 }
 
 .block-type {
-    background: #f3f4f6;
+    background: var(--bg-main);
     padding: 2px 8px;
     border-radius: 4px;
     font-size: 12px;
-    color: #666;
+    color: var(--text-muted);
 }
 
 .block-stats {
@@ -1195,14 +1266,14 @@ onMounted(() => {
     align-items: center;
 }
 
-.b-val { font-weight: 600; font-size: 14px; }
-.b-lbl { font-size: 10px; color: #888; text-transform: uppercase; }
+.b-val { font-weight: 600; font-size: 14px; color: var(--text-main); }
+.b-lbl { font-size: 10px; color: var(--text-muted); text-transform: uppercase; }
 
 .empty-tab {
     text-align: center;
     padding: 40px;
-    color: #9ca3af;
-    background: #f9fafb;
+    color: var(--text-muted);
+    background: var(--bg-main);
     border-radius: 8px;
 }
 
@@ -1221,13 +1292,14 @@ onMounted(() => {
 }
 
 .modal-content {
-    background: white;
+    background: var(--bg-card);
     border-radius: 12px;
     width: 90%;
     max-width: 500px;
     max-height: 90vh;
     overflow-y: auto;
-    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+    box-shadow: var(--shadow-lg);
+    border: 1px solid var(--border-subtle);
 }
 
 .modal-header {
@@ -1235,13 +1307,13 @@ onMounted(() => {
     justify-content: space-between;
     align-items: center;
     padding: 20px 24px;
-    border-bottom: 1px solid #eee;
+    border-bottom: 1px solid var(--border-subtle);
 }
 
 .modal-header h2 {
     font-size: 20px;
     font-weight: 600;
-    color: #333;
+    color: var(--text-main);
     margin: 0;
 }
 
@@ -1273,7 +1345,7 @@ onMounted(() => {
     display: block;
     font-size: 14px;
     font-weight: 600;
-    color: #333;
+    color: var(--text-main);
     margin-bottom: 6px;
 }
 
@@ -1283,7 +1355,7 @@ onMounted(() => {
 
 .hint {
     font-size: 12px;
-    color: #666;
+    color: var(--text-muted);
     margin-top: 4px;
     display: block;
 }
@@ -1291,25 +1363,28 @@ onMounted(() => {
 .form-input {
     width: 100%;
     padding: 10px 12px;
-    border: 1px solid #ddd;
+    background: var(--bg-card);
+    border: 1px solid var(--border-subtle);
     border-radius: 8px;
     font-size: 15px;
+    color: var(--text-main);
     box-sizing: border-box;
 }
 
 .form-input:focus {
     outline: none;
-    border-color: #6545e5;
-    box-shadow: 0 0 0 2px rgba(101, 69, 229, 0.2);
+    border-color: var(--primary);
+    box-shadow: 0 0 0 2px var(--primary-light);
 }
 
 .error-message {
-    background: #fef2f2;
-    color: #dc2626;
+    background: var(--danger-light);
+    color: var(--danger);
     padding: 12px;
     border-radius: 8px;
     margin-bottom: 16px;
     font-size: 14px;
+    border: 1px solid var(--danger);
 }
 
 .modal-actions {
@@ -1343,11 +1418,96 @@ onMounted(() => {
 }
 
 .btn-secondary {
-    background: #e5e7eb;
-    color: #374151;
+    background: var(--bg-main);
+    color: var(--text-muted);
 }
 
 .btn-secondary:hover {
-    background: #d1d5db;
+    background: var(--bg-card);
+    color: var(--text-main);
+    border: 1px solid var(--border-subtle);
+}
+
+/* Parking Table Styles */
+.parking-table-container {
+    overflow-x: auto;
+    background: var(--bg-card);
+    border-radius: 8px;
+}
+
+.parking-table {
+    width: 100%;
+    border-collapse: collapse;
+    text-align: left;
+}
+
+.parking-table th {
+    background: var(--bg-main);
+    padding: 12px 16px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-muted);
+    border-bottom: 1px solid var(--border-subtle);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.parking-table td {
+    padding: 16px;
+    border-bottom: 1px solid var(--border-subtle);
+    vertical-align: middle;
+}
+
+.ticket-id-badge {
+    background: var(--bg-main);
+    color: var(--text-muted);
+    padding: 4px 8px;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 700;
+    font-family: 'Courier New', monospace;
+}
+
+.customer-info .c-name, .vehicle-info .v-model {
+    font-weight: 600;
+    color: var(--text-main);
+    margin: 0;
+}
+
+.customer-info .c-phone, .vehicle-info .v-cat, .parking-loc .loc-entry, .time-info .t-time {
+    font-size: 13px;
+    color: var(--text-muted);
+    margin: 2px 0 0 0;
+}
+
+.parking-loc {
+    display: flex;
+    flex-direction: column;
+}
+
+.loc-block {
+    font-weight: 600;
+    color: var(--text-main);
+}
+
+.status-pill {
+    display: inline-block;
+    padding: 4px 10px;
+    border-radius: 99px;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+}
+
+.badge-success { background: var(--success-light); color: var(--success); }
+.badge-warning { background: var(--warning-light); color: var(--warning); }
+.badge-primary { background: var(--primary-light); color: var(--primary); }
+.badge-info { background: var(--info-light); color: var(--info); }
+.badge-secondary { background: var(--bg-main); color: var(--text-muted); }
+
+.time-info .t-date {
+    font-weight: 600;
+    color: var(--text-main);
+    margin: 0;
 }
 </style>

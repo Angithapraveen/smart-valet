@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div class="location-details-page">
     <!-- Standalone Back Button -->
     <div class="top-navigation">
@@ -13,46 +13,49 @@
         Loading location details...
     </div>
 
-    <!-- Main Content Grid -->
-    <div class="content-grid" v-if="location">
-        
-        <!-- Left Column: Details -->
-        <aside class="details-sidebar">
-            <!-- Identity Card -->
-            <div class="identity-card">
-                <div class="identity-header">
-                    <div class="loc-icon-lg">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
-                    </div>
-                    <span class="badge" :class="location.status ? 'badge-success' : 'badge-danger'">
-                        {{ location.status ? 'Active' : 'Inactive' }}
-                    </span>
+    <!-- Main Content Details (Now on Top) -->
+    <div class="content-header-info" v-if="location">
+        <!-- Identity Card -->
+        <div class="identity-panel">
+            <div class="identity-main">
+                <div class="loc-icon-lg">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
                 </div>
-                <h1>{{ location.location_name }}</h1>
-                <div class="location-codes">
-                    <span class="location-type">{{ location.location_type }}</span>
-                    <span class="location-code">{{ location.location_short_code }}</span>
+                <div>
+                    <h1>{{ location.location_name }}</h1>
+                    <div class="location-codes">
+                        <span class="location-type">{{ location.location_type }}</span>
+                        <span class="location-code" title="Location Short Code">{{ location.location_short_code || '---' }}</span>
+                        <span class="badge" :class="location.status ? 'badge-success' : 'badge-danger'">
+                            {{ location.status ? 'Active' : 'Inactive' }}
+                        </span>
+                    </div>
                 </div>
             </div>
 
-            <div class="info-card">
-                <h3>Details</h3>
-                <div class="info-list">
-                    <div class="info-item">
-                        <label>Address</label>
-                        <p>{{ location.address || 'No address provided' }}</p>
-                    </div>
-                    <div class="info-item">
-                        <label>Valid From</label>
-                        <p>{{ location.valid_from ? new Date(location.valid_from).toLocaleDateString() : 'N/A' }}</p>
-                    </div>
-                     <div class="info-item">
-                        <label>Valid To</label>
-                        <p>{{ location.valid_to ? new Date(location.valid_to).toLocaleDateString() : 'N/A' }}</p>
-                    </div>
+            <div class="info-row">
+                <div class="info-item-flat">
+                    <label>Location ID</label>
+                    <p class="font-mono">{{ location.location_id }}</p>
+                </div>
+                <div class="info-item-flat">
+                    <label>Address</label>
+                    <p>{{ location.address || 'No address provided' }}</p>
+                </div>
+                <div class="info-item-flat">
+                    <label>Valid From</label>
+                    <p>{{ location.valid_from ? new Date(location.valid_from).toLocaleDateString() : 'N/A' }}</p>
+                </div>
+                <div class="info-item-flat">
+                    <label>Valid To</label>
+                    <p>{{ location.valid_to ? new Date(location.valid_to).toLocaleDateString() : 'N/A' }}</p>
                 </div>
             </div>
-        </aside>
+        </div>
+    </div>
+
+    <!-- Main Content Grid -->
+    <div class="content-area-wide" v-if="location">
 
         <!-- Right Column: Tabs & Data -->
         <main class="main-data-area">
@@ -912,13 +915,6 @@ onMounted(async () => {
 </script>
 
 <style scoped>
-.location-details-page {
-    max-width: 1400px;
-    margin: 0 auto;
-    padding: 20px;
-    min-height: 80vh;
-}
-
 .top-navigation {
     margin-bottom: 24px;
 }
@@ -941,75 +937,116 @@ onMounted(async () => {
     color: var(--primary);
 }
 
-/* Sidebar Styling */
-.details-sidebar {
+/* Layout Grid (Now Wide) */
+.content-area-wide {
+    width: 100%;
+}
+
+/* Header Panel Styling */
+.content-header-info {
+    margin-bottom: 30px;
+}
+
+.identity-panel {
+    background: var(--bg-card);
+    padding: 30px;
+    border-radius: 20px;
+    box-shadow: var(--shadow-sm);
+    border: 1px solid var(--border-subtle);
+}
+
+.identity-main {
+    display: flex;
+    align-items: center;
+    gap: 24px;
+    margin-bottom: 24px;
+    padding-bottom: 24px;
+    border-bottom: 1px solid var(--border-subtle);
+}
+
+.identity-main h1 {
+    font-size: 28px;
+    font-weight: 800;
+    color: var(--text-main);
+    margin: 0 0 8px 0;
+    line-height: 1.2;
+}
+
+.info-row {
+    display: grid;
+    grid-template-columns: 1fr 2fr 1fr 1fr;
+    gap: 30px;
+}
+
+.info-item-flat {
     display: flex;
     flex-direction: column;
-    gap: 24px;
+    gap: 6px;
 }
 
-.identity-card {
-    background: white;
-    padding: 24px;
-    border-radius: 16px;
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
-    border: 1px solid #f1f5f9;
+.font-mono {
+    font-family: 'JetBrains Mono', 'Courier New', monospace;
+    font-size: 14px;
 }
 
-.identity-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    margin-bottom: 16px;
-}
-
-.identity-card h1 {
-    font-size: 24px;
+.info-item-flat label {
+    font-size: 11px;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    letter-spacing: 1px;
     font-weight: 700;
-    color: #0f172a;
-    margin: 0 0 12px 0;
-    line-height: 1.3;
+}
+
+.info-item-flat p {
+    color: var(--text-main);
+    font-size: 16px;
+    font-weight: 600;
+    line-height: 1.4;
+    margin: 0;
+}
+
+.loc-icon-lg {
+    width: 64px;
+    height: 64px;
+    background: var(--bg-main);
+    color: var(--primary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 16px;
 }
 
 .location-codes {
     display: flex;
-    gap: 8px;
-    flex-wrap: wrap;
+    gap: 12px;
+    align-items: center;
 }
 
 .location-type {
-    background: #f1f5f9;
-    color: #475569;
-    padding: 4px 10px;
-    border-radius: 6px;
-    font-size: 12px;
-    font-weight: 600;
+    background: var(--primary-light);
+    color: var(--primary);
+    padding: 6px 14px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
 }
 
 .location-code {
-    background: #f8fafc;
-    color: #64748b;
-    padding: 4px 10px;
-    border-radius: 6px;
-    font-size: 12px;
-    font-family: monospace;
-    border: 1px solid #e2e8f0;
+    background: var(--bg-main);
+    color: var(--text-muted);
+    padding: 5px 12px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 700;
+    font-family: 'JetBrains Mono', 'Courier New', monospace;
+    border: 1px solid var(--border-subtle);
 }
 
-/* Layout Grid */
-.content-grid {
-    display: grid;
-    grid-template-columns: 320px 1fr;
-    gap: 30px;
-}
-
-/* Sidebar */
-.info-card {
-    background: white;
-    border-radius: 12px;
-    padding: 24px;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.02);
-    border: 1px solid #f0f0f0;
+/* Standardized Sidebar/Card Removal (using new layout) */
+.details-sidebar, .info-card, .identity-card, .content-grid {
+    display: none;
 }
 
 .info-card h3 {
@@ -1041,19 +1078,19 @@ onMounted(async () => {
 
 /* Main Tabs Area */
 .tabs-container {
-    background: white;
+    background: var(--bg-card);
     border-radius: 12px;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.02);
-    border: 1px solid #f0f0f0;
+    box-shadow: var(--shadow-sm);
+    border: 1px solid var(--border-subtle);
     overflow: hidden;
     min-height: 500px;
 }
 
 .tabs-header {
     display: flex;
-    border-bottom: 1px solid #eee;
+    border-bottom: 1px solid var(--border-subtle);
     padding: 0 24px;
-    background: #fafafa;
+    background: var(--bg-card);
 }
 
 .tab-btn {
@@ -1062,17 +1099,17 @@ onMounted(async () => {
     background: none;
     font-size: 14px;
     font-weight: 500;
-    color: #666;
+    color: var(--text-muted);
     cursor: pointer;
     border-bottom: 2px solid transparent;
-    transition: all 0.2s;
+    transition: var(--ts-base);
 }
 
 .tab-btn:hover { color: #333; }
 .tab-btn.active {
     color: var(--primary);
     border-bottom-color: var(--primary);
-    background: white;
+    background: var(--bg-card);
 }
 
 .tab-content-area { padding: 0; }
@@ -1089,12 +1126,12 @@ onMounted(async () => {
 .pane-header h3 {
     font-size: 18px;
     font-weight: 600;
-    color: #333;
+    color: var(--text-main);
 }
 
 /* Tables */
 .table-container {
-    border: 1px solid #eee;
+    border: 1px solid var(--border-subtle);
     border-radius: 8px;
     overflow: hidden;
 }
@@ -1107,7 +1144,7 @@ onMounted(async () => {
 .data-table th, .data-table td {
     padding: 14px 20px;
     text-align: left;
-    border-bottom: 1px solid #eee;
+    border-bottom: 1px solid var(--border-subtle);
 }
 
 .status-container {
@@ -1127,9 +1164,9 @@ onMounted(async () => {
 }
 
 .btn-activate {
-    background: #f0fdf4;
-    color: #166534;
-    border-color: #bcf0da;
+    background: var(--success-light);
+    color: var(--success);
+    border-color: var(--success-border, var(--success));
 }
 
 .btn-activate:hover {
@@ -1137,9 +1174,9 @@ onMounted(async () => {
 }
 
 .btn-deactivate {
-    background: #fef2f2;
-    color: #991b1b;
-    border-color: #fecaca;
+    background: var(--danger-light);
+    color: var(--danger);
+    border-color: var(--danger);
 }
 
 .btn-deactivate:hover {
@@ -1152,10 +1189,10 @@ onMounted(async () => {
 }
 
 .data-table th {
-    background: #f9f9f9;
+    background: var(--bg-main);
     font-size: 12px;
     font-weight: 600;
-    color: #666;
+    color: var(--text-muted);
     text-transform: uppercase;
     letter-spacing: 0.5px;
 }
@@ -1163,8 +1200,8 @@ onMounted(async () => {
 .data-table tr:last-child td { border-bottom: none; }
 .data-table tbody tr:hover { background: #fcfcfc; }
 
-.font-medium { font-weight: 600; color: #333; }
-.text-dim { color: #666; font-size: 14px; }
+.font-medium { font-weight: 600; color: var(--text-main); }
+.text-dim { color: var(--text-muted); font-size: 14px; }
 .text-right { text-align: right; }
 
 .status-dot {
@@ -1227,8 +1264,8 @@ onMounted(async () => {
 .loading-state, .empty-state-pane, .empty-message {
     text-align: center;
     padding: 40px;
-    color: #888;
-    background: #f9f9f9;
+    color: var(--text-muted);
+    background: var(--bg-main);
     border-radius: 8px;
 }
 
@@ -1246,12 +1283,12 @@ onMounted(async () => {
 }
 
 .block-detail-card {
-    background: white;
-    border: 1px solid #e5e7eb;
+    background: var(--bg-card);
+    border: 1px solid var(--border-subtle);
     border-radius: 12px;
     padding: 24px;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-    transition: box-shadow 0.2s;
+    box-shadow: var(--shadow-sm);
+    transition: var(--ts-base);
 }
 
 .block-detail-card:hover {
@@ -1261,7 +1298,7 @@ onMounted(async () => {
 .block-card-header {
     margin-bottom: 20px;
     padding-bottom: 16px;
-    border-bottom: 2px solid #f3f4f6;
+    border-bottom: 2px solid var(--border-subtle);
 }
 
 .block-info-row {
@@ -1273,19 +1310,19 @@ onMounted(async () => {
 .block-name {
     font-size: 20px;
     font-weight: 700;
-    color: #111;
+    color: var(--text-main);
     margin: 0 0 6px 0;
 }
 
 .block-id {
     display: inline-block;
-    background: #f3f4f6;
-    color: #6b7280;
+    background: var(--bg-main);
+    color: var(--text-muted);
     padding: 4px 12px;
     border-radius: 6px;
     font-size: 13px;
     font-weight: 600;
-    font-family: 'Courier New', monospace;
+    font-family: 'JetBrains Mono', 'Courier New', monospace;
 }
 
 .status-badge {
@@ -1321,13 +1358,13 @@ onMounted(async () => {
 
 .detail-label {
     font-size: 12px;
-    color: #6b7280;
+    color: var(--text-muted);
     font-weight: 500;
 }
 
 .detail-value {
     font-size: 15px;
-    color: #111;
+    color: var(--text-main);
     font-weight: 600;
 }
 
@@ -1353,13 +1390,13 @@ onMounted(async () => {
 .entries-section {
     margin-top: 20px;
     padding-top: 20px;
-    border-top: 2px solid #f3f4f6;
+    border-top: 2px solid var(--border-subtle);
 }
 
 .entries-heading {
     font-size: 15px;
     font-weight: 600;
-    color: #374151;
+    color: var(--text-main);
     margin: 0 0 16px 0;
 }
 
@@ -1398,15 +1435,15 @@ onMounted(async () => {
 }
 
 .entry-available {
-    background: #dcfce7;
-    color: #166534;
-    border-color: #bbf7d0;
+    background: var(--success-light);
+    color: var(--success);
+    border-color: var(--success-border, var(--success-light));
 }
 
 .entry-occupied {
-    background: #fee2e2;
-    color: #991b1b;
-    border-color: #fecaca;
+    background: var(--danger-light);
+    color: var(--danger);
+    border-color: var(--danger);
 }
 
 /* Modal Styles */
@@ -1416,7 +1453,7 @@ onMounted(async () => {
     left: 0;
     right: 0;
     bottom: 0;
-    background: rgba(0, 0, 0, 0.5);
+    background: rgba(0, 0, 0, 0.4);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -1424,12 +1461,13 @@ onMounted(async () => {
 }
 
 .modal-content {
-    background: white;
+    background: var(--bg-card);
     border-radius: 12px;
     width: 100%;
     max-width: 500px;
     padding: 30px;
-    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+    box-shadow: var(--shadow-xl);
+    border: 1px solid var(--border-subtle);
 }
 
 .modal-header {
@@ -1442,7 +1480,7 @@ onMounted(async () => {
 .modal-header h2 {
     font-size: 20px;
     font-weight: 700;
-    color: #111;
+    color: var(--text-main);
     margin: 0;
 }
 
@@ -1462,16 +1500,18 @@ onMounted(async () => {
     display: block;
     font-size: 14px;
     font-weight: 600;
-    color: #374151;
+    color: var(--text-main);
     margin-bottom: 6px;
 }
 
 .form-input {
     width: 100%;
     padding: 10px 12px;
-    border: 1px solid #d1d5db;
+    border: 1px solid var(--border-subtle);
     border-radius: 8px;
     font-size: 15px;
+    background: var(--bg-main);
+    color: var(--text-main);
 }
 
 /* User Management Modal Additions */
@@ -1490,11 +1530,12 @@ onMounted(async () => {
 }
 
 .modal-container {
-    background: white;
+    background: var(--bg-card);
     border-radius: 16px;
     width: 90%;
     max-width: 450px;
-    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    box-shadow: var(--shadow-xl);
+    border: 1px solid var(--border-subtle);
 }
 
 .modal-form {
@@ -1530,11 +1571,11 @@ onMounted(async () => {
 .close-btn {
     background: none;
     border: none;
-    color: #94a3b8;
+    color: var(--text-muted);
     cursor: pointer;
     padding: 4px;
     border-radius: 4px;
-    transition: all 0.2s;
+    transition: var(--ts-base);
 }
 
 .close-btn:hover {
@@ -1551,7 +1592,7 @@ onMounted(async () => {
 .hint {
     display: block;
     font-size: 12px;
-    color: #6b7280;
+    color: var(--text-muted);
     margin-top: 4px;
 }
 
@@ -1573,10 +1614,10 @@ onMounted(async () => {
 
 .btn-secondary {
     padding: 10px 20px;
-    background: #f3f4f6;
-    border: none;
+    background: var(--bg-main);
+    border: 1px solid var(--border-subtle);
     border-radius: 8px;
-    color: #374151;
+    color: var(--text-main);
     font-weight: 600;
     cursor: pointer;
 }
@@ -1585,10 +1626,11 @@ onMounted(async () => {
 .professional-modal {
     max-width: 600px;
     width: 95%;
-    background: #fff;
+    background: var(--bg-card);
     border-radius: 24px;
     padding: 32px;
-    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+    box-shadow: var(--shadow-xl);
+    border: 1px solid var(--border-subtle);
 }
 
 .header-icon-title {
@@ -1611,7 +1653,7 @@ onMounted(async () => {
 .header-icon-title h2 {
     font-size: 20px;
     font-weight: 700;
-    color: #1e293b;
+    color: var(--text-main);
     margin: 0;
 }
 
@@ -1638,11 +1680,12 @@ onMounted(async () => {
 .form-input-styled {
     width: 100%;
     padding: 12px 16px;
-    border: 1.5px solid #e2e8f0;
+    border: 1.5px solid var(--border-subtle);
     border-radius: 10px;
     font-size: 14px;
-    transition: all 0.2s;
-    background: #f8fafc;
+    transition: var(--ts-base);
+    background: var(--bg-main);
+    color: var(--text-main);
 }
 
 .form-input-styled:focus {

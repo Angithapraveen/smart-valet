@@ -314,7 +314,7 @@ onMounted(fetchData);
 }
 
 .block-row-card {
-  background: white;
+  background: var(--bg-card);
   border: 1px solid var(--border-subtle);
   border-radius: 20px;
   padding: 24px;
@@ -406,7 +406,7 @@ onMounted(fetchData);
   justify-content: center;
   gap: 8px;
   padding: 10px;
-  background: white;
+  background: var(--bg-card);
   border: 1px solid var(--border-subtle);
   color: var(--text-main);
   border-radius: 12px;
@@ -427,7 +427,7 @@ onMounted(fetchData);
 .modal-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(15, 23, 42, 0.4);
+  background: rgba(0, 0, 0, 0.4);
   backdrop-filter: blur(8px);
   display: flex;
   align-items: center;
@@ -437,7 +437,7 @@ onMounted(fetchData);
 }
 
 .modal-card {
-  background: white;
+  background: var(--bg-card);
   width: 100%;
   max-width: 520px;
   border-radius: 24px;

@@ -124,14 +124,16 @@ onMounted(() => {
 }
 
 .profile-header-card {
-    background: #121212;
-    color: white;
+    background: var(--bg-card);
+    color: var(--text-main);
     padding: 60px 40px 40px; /* Increased top padding for back button */
-    border-radius: 12px;
+    border-radius: 20px;
     margin-bottom: 30px;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    box-shadow: var(--shadow-sm);
+    border: 1px solid var(--border-subtle);
     position: relative;
     overflow: hidden;
+    transition: var(--ts-base);
 }
 
 .back-btn {
@@ -141,20 +143,22 @@ onMounted(() => {
     display: flex;
     align-items: center;
     gap: 8px;
-    background: rgba(255,255,255,0.1);
-    border: 1px solid rgba(255,255,255,0.1);
-    color: white;
+    background: var(--bg-main);
+    border: 1px solid var(--border-subtle);
+    color: var(--text-muted);
     padding: 8px 16px;
     border-radius: 20px;
     cursor: pointer;
     font-size: 13px;
     font-weight: 500;
-    transition: all 0.2s;
+    transition: var(--ts-base);
     z-index: 10;
 }
 
 .back-btn:hover {
-    background: rgba(255,255,255,0.2);
+    background: var(--primary-light);
+    color: var(--primary);
+    border-color: var(--primary-border, var(--primary));
     transform: translateY(-1px);
 }
 
@@ -194,11 +198,12 @@ onMounted(() => {
 }
 
 /* Specific Badge Colors for Dark Background */
-.badge-secondary { background: #4b5563; color: white; }
-.badge-danger { background: #ef4444; color: white; }
-.badge-success { background: #22c55e; color: white; }
-.badge-warning { background: #f59e0b; color: white; }
-.badge-info { background: #3b82f6; color: white; }
+/* Specific Badge Colors */
+.badge-secondary { background: var(--bg-main); color: var(--text-muted); border: 1px solid var(--border-subtle); }
+.badge-danger { background: var(--danger-light); color: var(--danger); border: 1px solid var(--danger); }
+.badge-success { background: var(--success-light); color: var(--success); border: 1px solid var(--success); }
+.badge-warning { background: var(--warning-light); color: var(--warning); border: 1px solid var(--warning); }
+.badge-info { background: var(--info-light); color: var(--info); border: 1px solid var(--info); }
 
 .profile-content {
     display: grid;
@@ -207,19 +212,20 @@ onMounted(() => {
 }
 
 .info-card, .locations-card {
-    background: white;
+    background: var(--bg-card);
     padding: 30px;
-    border-radius: 12px;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+    border-radius: 20px;
+    box-shadow: var(--shadow-sm);
+    border: 1px solid var(--border-subtle);
 }
 
 h3 {
     font-size: 18px;
     font-weight: 600;
-    color: #333;
+    color: var(--text-main);
     margin-bottom: 24px;
     padding-bottom: 15px;
-    border-bottom: 1px solid #eee;
+    border-bottom: 1px solid var(--border-subtle);
 }
 
 .info-grid {
@@ -231,7 +237,7 @@ h3 {
 .info-item label {
     display: block;
     font-size: 13px;
-    color: #888;
+    color: var(--text-muted);
     margin-bottom: 6px;
     text-transform: uppercase;
     letter-spacing: 0.5px;
@@ -239,7 +245,7 @@ h3 {
 
 .info-item .value {
     font-size: 16px;
-    color: #333;
+    color: var(--text-main);
     font-weight: 500;
 }
 
@@ -250,25 +256,27 @@ h3 {
 }
 
 .location-item-card {
-    border: 1px solid #eee;
+    background: var(--bg-main);
+    border: 1px solid var(--border-subtle);
     padding: 20px;
-    border-radius: 8px;
+    border-radius: 16px;
     display: flex;
     align-items: flex-start;
     gap: 15px;
-    transition: transform 0.2s, box-shadow 0.2s;
+    transition: var(--ts-base);
 }
 
 .location-item-card:hover {
     transform: translateY(-2px);
-    box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+    box-shadow: var(--shadow-md);
+    border-color: var(--primary-border, var(--primary));
 }
 
 .loc-icon {
-    background: #f0fdf4;
-    color: #22c55e;
+    background: var(--primary-light);
+    color: var(--primary);
     padding: 10px;
-    border-radius: 8px;
+    border-radius: 12px;
 }
 
 .loc-details h4 {
@@ -279,7 +287,7 @@ h3 {
 
 .loc-details p {
     font-size: 14px;
-    color: #666;
+    color: var(--text-muted);
     margin-bottom: 10px;
 }
 

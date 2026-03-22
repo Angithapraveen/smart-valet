@@ -143,7 +143,7 @@ const getBlocksWithEntries = async (req, res) => {
                 b.capacity,
                 b.valid_from,
                 b.valid_to,
-                b.status,
+                (b.status AND b.valid_from <= CURRENT_DATE AND (b.valid_to IS NULL OR b.valid_to >= CURRENT_DATE)) as status,
                 b.created_at,
                 COALESCE(
                     json_agg(
@@ -227,11 +227,24 @@ const updateBlock = async (req, res) => {
 
         const existingBlock = blockResult.rows[0];
 
-        // Verify owner has access to this location
+        // Verify owner has access to this block
         if (!locationIds.includes(existingBlock.location_id)) {
             return res.status(403).json({
                 success: false,
                 message: 'Access denied to this block.'
+            });
+        }
+
+        // Check if new name already exists for another block in the same location
+        const duplicateCheck = await pool.query(
+            'SELECT block_id FROM BLOCKS WHERE location_id = $1 AND block_name = $2 AND block_id != $3',
+            [existingBlock.location_id, block_name.trim(), blockId]
+        );
+
+        if (duplicateCheck.rows.length > 0) {
+            return res.status(409).json({
+                success: false,
+                message: 'Another block with this name already exists in this location.'
             });
         }
 

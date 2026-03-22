@@ -313,7 +313,7 @@ async function updateUserStatus(req, res) {
 async function updateUserDetails(req, res) {
     try {
         const { userId } = req.params;
-        const { name, email_id, phone_number } = req.body;
+        const { name, email_id, phone_number, password } = req.body;
 
         if (!name || !email_id || !phone_number) {
             return res.status(400).json({
@@ -322,13 +322,29 @@ async function updateUserDetails(req, res) {
             });
         }
 
-        const query = `
-            UPDATE USERS 
-            SET name = $1, email_id = $2, phone_number = $3
-            WHERE user_id = $4
-            RETURNING user_id, name, email_id, phone_number, status
-        `;
-        const result = await pool.query(query, [name, email_id, phone_number, userId]);
+        let query;
+        let params;
+
+        if (password && password.trim() !== '') {
+            const hashedPassword = await bcrypt.hash(password, 10);
+            query = `
+                UPDATE USERS 
+                SET name = $1, email_id = $2, phone_number = $3, password = $4
+                WHERE user_id = $5
+                RETURNING user_id, name, email_id, phone_number, status
+            `;
+            params = [name, email_id, phone_number, hashedPassword, userId];
+        } else {
+            query = `
+                UPDATE USERS 
+                SET name = $1, email_id = $2, phone_number = $3
+                WHERE user_id = $4
+                RETURNING user_id, name, email_id, phone_number, status
+            `;
+            params = [name, email_id, phone_number, userId];
+        }
+
+        const result = await pool.query(query, params);
 
         if (result.rows.length === 0) {
             return res.status(404).json({
@@ -423,9 +439,42 @@ async function updateOwnerLocations(req, res) {
     }
 }
 
+/**
+ * GET /api/admin/users
+ * Get all users with roles and location counts (Admin only)
+ */
+async function getAllUsers(req, res) {
+    try {
+        const query = `
+            SELECT u.user_id, u.name, u.email_id, u.phone_number, u.status, u.created_at,
+                   rm.role_name,
+                   COUNT(la.location_id) as location_count,
+                   STRING_AGG(l.location_name, ', ') as location_names
+            FROM USERS u
+            JOIN ROLE_MASTER rm ON u.role_id = rm.role_id
+            LEFT JOIN LOCATION_ACCESS la ON u.user_id = la.user_id
+            LEFT JOIN LOCATIONS l ON la.location_id = l.location_id
+            GROUP BY u.user_id, u.name, u.email_id, u.phone_number, u.status, u.created_at, rm.role_name
+            ORDER BY u.created_at DESC
+        `;
+        const result = await pool.query(query);
+        return res.json({
+            success: true,
+            data: result.rows
+        });
+    } catch (error) {
+        console.error('Get all users error:', error);
+        return res.status(500).json({
+            success: false,
+            message: 'Failed to fetch users.'
+        });
+    }
+}
+
 module.exports = {
     createOwner,
     getOwners,
+    getAllUsers,
     updateOwnerStatus,
     updateUserStatus,
     updateUserDetails,

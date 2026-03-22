@@ -1,12 +1,4 @@
 import { createRouter, createWebHistory } from 'vue-router';
-
-import AdminDashboard from '../views/admin/AdminDashboard.vue';
-import AddLocation from '../views/admin/AddLocation.vue';
-import LocationList from '../views/admin/LocationList.vue';
-import AddOwner from '../views/admin/AddOwner.vue';
-import OwnerList from '../views/admin/OwnerList.vue';
-import OwnerDashboard from '../views/owner/OwnerDashboard.vue';
-import ManagerDashboard from '../views/manager/ManagerDashboard.vue';
 import { useAuthStore } from '../stores/auth';
 
 const routes = [
@@ -35,19 +27,13 @@ const routes = [
       {
         path: 'admin/dashboard',
         name: 'AdminDashboard',
-        component: AdminDashboard,
-        meta: { role: 'ADMIN' }
-      },
-      {
-        path: 'admin/location/add',
-        name: 'AddLocation',
-        component: AddLocation,
+        component: () => import('../views/admin/AdminDashboard.vue'),
         meta: { role: 'ADMIN' }
       },
       {
         path: 'admin/locations',
         name: 'LocationList',
-        component: LocationList,
+        component: () => import('../views/admin/LocationList.vue'),
         meta: { role: 'ADMIN' }
       },
       {
@@ -57,22 +43,22 @@ const routes = [
         meta: { role: 'ADMIN' }
       },
       {
-        path: 'admin/owner/add',
-        name: 'AddOwner',
-        component: AddOwner,
+        path: 'admin/owners',
+        name: 'OwnerList',
+        component: () => import('../views/admin/OwnerList.vue'),
         meta: { role: 'ADMIN' }
       },
       {
-        path: 'admin/owners',
-        name: 'OwnerList',
-        component: OwnerList,
+        path: 'admin/users',
+        name: 'UserList',
+        component: () => import('../views/admin/UserList.vue'),
         meta: { role: 'ADMIN' }
       },
       // Owner Routes
       {
         path: 'owner/dashboard',
         name: 'OwnerDashboard',
-        component: OwnerDashboard,
+        component: () => import('../views/owner/OwnerDashboard.vue'),
         meta: { role: 'OWNER' }
       },
       {
@@ -85,7 +71,7 @@ const routes = [
       {
         path: 'manager/dashboard',
         name: 'ManagerDashboard',
-        component: ManagerDashboard,
+        component: () => import('../views/manager/ManagerDashboard.vue'),
         meta: { role: 'MANAGER' }
       },
       {
@@ -104,6 +90,24 @@ const routes = [
         path: 'manager/users',
         name: 'ManagerUsers',
         component: () => import('../views/manager/Users.vue'),
+        meta: { role: 'MANAGER' }
+      },
+      {
+        path: 'manager/livetransactions',
+        name: 'LiveTransactions',
+        component: () => import('../views/manager/LiveTransactions.vue'),
+        meta: { role: 'MANAGER' }
+      },
+      {
+        path: 'manager/returnrequests',
+        name: 'ReturnRequests',
+        component: () => import('../views/manager/ReturnRequest.vue'),
+        meta: { role: 'MANAGER' }
+      },
+      {
+        path: 'manager/vehicles',
+        name: 'VehiclesTransactions',
+        component: () => import('../views/manager/VehiclesTransactions.vue'),
         meta: { role: 'MANAGER' }
       }
     ]
@@ -125,6 +129,18 @@ const routes = [
     name: 'VehicleDetails',
     component: () => import('../views/driver/VehicleDetails.vue'),
     meta: { requiresAuth: true, role: 'DRIVER' }
+  },
+  {
+    path: '/driver/update-vehicle/:valetId',
+    name: 'UpdateVehicleMake',
+    component: () => import('../views/driver/UpdateVehicleMake.vue'),
+    meta: { requiresAuth: true, role: 'DRIVER' }
+  },
+  // Public/Guest Route
+  {
+    path: '/track/:valetId',
+    name: 'RequestCar',
+    component: () => import('../views/guest/RequestCar.vue')
   },
   {
     path: '/:pathMatch(.*)*',

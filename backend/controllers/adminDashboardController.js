@@ -6,7 +6,9 @@ const pool = require('../config/database');
  */
 const getDashboardSummary = async (req, res) => {
     try {
-        const locationsCount = await pool.query('SELECT COUNT(*) FROM LOCATIONS WHERE status = TRUE');
+        const locationsCount = await pool.query(
+            'SELECT COUNT(*) FROM LOCATIONS WHERE status = TRUE AND valid_from <= CURRENT_DATE AND (valid_to IS NULL OR valid_to >= CURRENT_DATE)'
+        );
 
         // Count users by role
         const ownersCount = await pool.query(

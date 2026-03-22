@@ -43,7 +43,7 @@
 
               <Transition name="fade-up" appear :style="{ transitionDelay: '0.4s' }">
                 <div class="form-group">
-                  <label for="loginId" class="form-label">User ID, Email ID, or Phone Number</label>
+                  <label for="loginId" class="form-label">Email ID or Phone Number</label>
                   <div class="input-wrapper">
                     <svg class="input-icon" viewBox="0 0 20 20" fill="currentColor">
                       <path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z" />
@@ -54,7 +54,7 @@
                       type="text"
                       v-model="loginId"
                       required
-                      placeholder="Enter user ID, email, or phone"
+                      placeholder="Enter email or phone number"
                       class="form-input"
                     />
                   </div>
@@ -261,11 +261,12 @@ export default {
 .parkplus-card {
   position: relative;
   z-index: 1;
-  background: #0e0e0e;
-  color: #ffffff;
+  background: var(--bg-card);
+  color: var(--text-main);
   border-radius: 18px;
   padding: 48px 40px;
-  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6);
+  box-shadow: var(--shadow-xl);
+  transition: var(--ts-base);
 }
 
 /* Header */
@@ -295,14 +296,14 @@ export default {
 .login-title {
   font-size: 28px;
   font-weight: 700;
-  color: #ffffff;
+  color: var(--text-main);
   margin-bottom: 8px;
   letter-spacing: -0.5px;
 }
 
 .login-subtitle {
   font-size: 14px;
-  color: #9ca3af;
+  color: var(--text-muted);
   font-weight: 500;
 }
 
@@ -319,7 +320,7 @@ export default {
   display: block;
   font-size: 13px;
   font-weight: 600;
-  color: #ffffff;
+  color: var(--text-main);
   margin-bottom: 8px;
   letter-spacing: 0.3px;
 }
@@ -335,7 +336,7 @@ export default {
   left: 16px;
   width: 20px;
   height: 20px;
-  color: #9ca3af;
+  color: var(--text-muted);
   pointer-events: none;
   z-index: 1;
 }
@@ -343,24 +344,24 @@ export default {
 .form-input {
   width: 100%;
   padding: 14px 16px 14px 48px;
-  border: 1px solid #2a2a2a;
+  border: 1px solid var(--border-subtle);
   border-radius: 12px;
   font-size: 15px;
-  color: #ffffff;
-  background: #1a1a1a;
+  color: var(--text-main);
+  background: var(--bg-main);
   transition: all 0.3s ease;
   box-sizing: border-box;
 }
 
 .form-input:focus {
   outline: none;
-  border-color: #6545e5;
-  background: #1a1a1a;
-  box-shadow: 0 0 0 4px rgba(101, 69, 229, 0.2);
+  border-color: var(--primary);
+  background: var(--bg-main);
+  box-shadow: 0 0 0 4px var(--primary-light);
 }
 
 .form-input::placeholder {
-  color: #9ca3af;
+  color: var(--text-muted);
 }
 
 /* Error Message */
@@ -368,9 +369,9 @@ export default {
   display: flex;
   align-items: center;
   gap: 10px;
-  background: #FEF2F2;
-  border: 1px solid #FECACA;
-  color: #DC2626;
+  background: var(--danger-light);
+  border: 1px solid var(--danger);
+  color: var(--danger);
   padding: 12px 16px;
   border-radius: 10px;
   margin-bottom: 24px;
@@ -388,23 +389,23 @@ export default {
 .login-button {
   width: 100%;
   padding: 14px 24px;
-  background: #6545e5;
-  color: #ffffff;
+  background: var(--primary);
+  color: white;
   border: none;
   border-radius: 12px;
   font-size: 16px;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.3s ease;
-  box-shadow: 0 4px 14px 0 rgba(101, 69, 229, 0.4);
+  box-shadow: var(--shadow-md);
   position: relative;
   overflow: hidden;
 }
 
 .login-button:hover:not(:disabled) {
   transform: translateY(-2px);
-  box-shadow: 0 6px 20px 0 rgba(101, 69, 229, 0.5);
-  background: #7c5ef0;
+  box-shadow: var(--shadow-lg);
+  opacity: 0.95;
 }
 
 .login-button:active:not(:disabled) {
@@ -446,7 +447,7 @@ export default {
 .login-footer {
   text-align: center;
   font-size: 12px;
-  color: #9ca3af;
+  color: var(--text-muted);
   font-weight: 500;
   margin-top: 24px;
 }

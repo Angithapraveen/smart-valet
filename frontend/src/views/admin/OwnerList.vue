@@ -12,6 +12,16 @@
           <h1>Owners List</h1>
           <p class="subtitle">Manage and monitor all platform owners</p>
       </div>
+      <button class="btn btn-primary" @click="showAddOwnerModal = true">
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+          Add New Owner
+      </button>
+
+      <AddOwnerModal 
+        :show="showAddOwnerModal" 
+        @close="showAddOwnerModal = false"
+        @success="fetchOwners"
+      />
     </header>
 
     <div v-if="loading" class="loading-state">
@@ -119,11 +129,15 @@
 import { ref, onMounted } from 'vue';
 import { useAuthStore } from '../../stores/auth';
 import axios from 'axios';
+import AddOwnerModal from '../../components/admin/AddOwnerModal.vue';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
 
 export default {
   name: 'OwnerList',
+  components: {
+    AddOwnerModal
+  },
   setup() {
     const authStore = useAuthStore();
     const owners = ref([]);
@@ -131,6 +145,7 @@ export default {
     const errorMessage = ref('');
     const togglingId = ref(null);
     const showModal = ref(false);
+    const showAddOwnerModal = ref(false);
     const selectedOwner = ref(null);
     const allLocations = ref([]);
     const tempSelectedLocations = ref([]);
@@ -248,19 +263,14 @@ export default {
       openEditModal,
       closeModal,
       isSelected,
-      saveAccess
+      saveAccess,
+      showAddOwnerModal
     };
   }
 };
 </script>
 
 <style scoped>
-.owner-list-page {
-  padding: 24px;
-  max-width: 1300px;
-  margin: 0 auto;
-}
-
 .page-top-actions {
     margin-bottom: 20px;
 }
@@ -269,7 +279,7 @@ export default {
     display: inline-flex;
     align-items: center;
     gap: 8px;
-    color: #64748b;
+    color: var(--text-muted);
     text-decoration: none;
     font-size: 14px;
     font-weight: 500;
@@ -283,21 +293,21 @@ export default {
 .page-header {
     display: flex;
     justify-content: space-between;
-    align-items: flex-end;
+    align-items: center;
     margin-bottom: 32px;
 }
 
 .header-info h1 {
     font-size: 28px;
     font-weight: 800;
-    color: #0f172a;
+    color: var(--text-main);
     margin: 0 0 4px 0;
     letter-spacing: -0.025em;
 }
 
 .subtitle {
     font-size: 15px;
-    color: #64748b;
+    color: var(--text-muted);
     margin: 0;
 }
 
@@ -329,10 +339,10 @@ export default {
 
 /* Table Design */
 .table-card {
-    background: white;
+    background: var(--bg-card);
     border-radius: 16px;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
-    border: 1px solid #f1f5f9;
+    box-shadow: var(--shadow-sm);
+    border: 1px solid var(--border-subtle);
     overflow: hidden;
 }
 
@@ -347,26 +357,26 @@ export default {
 }
 
 .data-table th {
-    background: #f8fafc;
+    background: var(--bg-main);
     padding: 16px 24px;
     text-align: left;
     font-size: 12px;
     font-weight: 700;
-    color: #64748b;
+    color: var(--text-muted);
     text-transform: uppercase;
     letter-spacing: 0.05em;
-    border-bottom: 1px solid #f1f5f9;
+    border-bottom: 1px solid var(--border-subtle);
 }
 
 .data-table td {
     padding: 18px 24px;
     font-size: 14px;
-    color: #334155;
-    border-bottom: 1px solid #f1f5f9;
+    color: var(--text-main);
+    border-bottom: 1px solid var(--border-subtle);
 }
 
 .data-table tr:hover {
-    background: #f8fafc;
+    background: var(--bg-main);
 }
 
 .data-table tr:last-child td {
@@ -378,15 +388,15 @@ export default {
     font-family: 'JetBrains Mono', 'Fira Code', monospace;
     font-size: 12px;
     font-weight: 600;
-    background: #f1f5f9;
-    color: #475569;
+    background: var(--bg-main);
+    color: var(--text-muted);
     padding: 4px 8px;
     border-radius: 6px;
 }
 
 .font-bold {
     font-weight: 600;
-    color: #1e293b;
+    color: var(--text-main);
     font-size: 15px;
 }
 
@@ -399,17 +409,17 @@ export default {
 
 .location-name-pill {
     font-size: 11px;
-    background: #eef2ff;
-    color: #4338ca;
+    background: var(--primary-light);
+    color: var(--primary);
     padding: 2px 8px;
     border-radius: 4px;
     font-weight: 600;
     white-space: nowrap;
-    border: 1px solid #e0e7ff;
+    border: 1px solid var(--primary-border);
 }
 
 .empty-hint {
-    color: #94a3b8;
+    color: var(--text-muted);
     font-size: 12px;
     font-style: italic;
 }
@@ -425,8 +435,8 @@ export default {
     width: fit-content;
 }
 
-.pill-active { background: #dcfce7; color: #166534; }
-.pill-inactive { background: #fee2e2; color: #991b1b; }
+.pill-active { background: var(--success-light); color: var(--success); }
+.pill-inactive { background: var(--danger-light); color: var(--danger); }
 
 .text-right { text-align: right; }
 
@@ -440,11 +450,11 @@ export default {
     border: none;
 }
 
-.btn-enable { background: #f0fdf4; color: #15803d; }
-.btn-enable:hover:not(:disabled) { background: #dcfce7; }
+.btn-enable { background: var(--success-light); color: var(--success); }
+.btn-enable:hover:not(:disabled) { background: var(--bg-main); border: 1px solid var(--success); }
 
-.btn-disable { background: #fff1f2; color: #be123c; }
-.btn-disable:hover:not(:disabled) { background: #fee2e2; }
+.btn-disable { background: var(--danger-light); color: var(--danger); }
+.btn-disable:hover:not(:disabled) { background: var(--bg-main); border: 1px solid var(--danger); }
 
 .action-btn:disabled {
     opacity: 0.5;
@@ -458,24 +468,27 @@ export default {
 }
 
 .btn-edit-access {
-    background: #eff6ff;
-    color: #2563eb;
+    background: var(--primary-light);
+    color: var(--primary);
     text-decoration: none;
     display: inline-flex;
     align-items: center;
 }
 
 .btn-edit-access:hover {
-    background: #dbeafe;
+    background: var(--bg-main);
+    border: 1px solid var(--primary);
 }
 
 .btn-secondary {
-    background: #f1f5f9;
-    color: #475569;
+    background: var(--bg-main);
+    color: var(--text-muted);
 }
 
 .btn-secondary:hover {
-    background: #e2e8f0;
+    background: var(--bg-card);
+    color: var(--text-main);
+    border: 1px solid var(--border-subtle);
 }
 
 /* Modal Styles */
@@ -485,7 +498,7 @@ export default {
     left: 0;
     right: 0;
     bottom: 0;
-    background: rgba(15, 23, 42, 0.5);
+    background: rgba(0, 0, 0, 0.5);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -494,19 +507,20 @@ export default {
 }
 
 .modal-content {
-    background: white;
+    background: var(--bg-card);
     border-radius: 20px;
     width: 90%;
     max-width: 600px;
     max-height: 80vh;
     display: flex;
     flex-direction: column;
-    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+    box-shadow: var(--shadow-lg);
+    border: 1px solid var(--border-subtle);
 }
 
 .modal-header {
     padding: 20px 24px;
-    border-bottom: 1px solid #f1f5f9;
+    border-bottom: 1px solid var(--border-subtle);
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -516,13 +530,14 @@ export default {
     margin: 0;
     font-size: 18px;
     font-weight: 700;
+    color: var(--text-main);
 }
 
 .close-btn {
     background: none;
     border: none;
     font-size: 24px;
-    color: #64748b;
+    color: var(--text-muted);
     cursor: pointer;
 }
 
@@ -533,7 +548,7 @@ export default {
 
 .modal-hint {
     font-size: 14px;
-    color: #64748b;
+    color: var(--text-muted);
     margin-bottom: 20px;
 }
 
@@ -556,20 +571,20 @@ export default {
     align-items: center;
     gap: 12px;
     padding: 12px 16px;
-    border: 2px solid #f1f5f9;
+    border: 2px solid var(--border-subtle);
     border-radius: 12px;
     cursor: pointer;
     transition: all 0.2s;
 }
 
 .location-checkbox-card:hover {
-    border-color: #cbd5e1;
-    background: #f8fafc;
+    border-color: var(--text-muted);
+    background: var(--bg-main);
 }
 
 .location-checkbox-card.checked {
     border-color: var(--primary);
-    background: #f5f3ff;
+    background: var(--primary-light);
 }
 
 .loc-card-content {
@@ -580,17 +595,17 @@ export default {
 .loc-name {
     font-size: 14px;
     font-weight: 600;
-    color: #1e293b;
+    color: var(--text-main);
 }
 
 .loc-id {
     font-size: 11px;
-    color: #94a3b8;
+    color: var(--text-muted);
 }
 
 .modal-footer {
     padding: 20px 24px;
-    border-top: 1px solid #f1f5f9;
+    border-top: 1px solid var(--border-subtle);
     display: flex;
     justify-content: flex-end;
     gap: 12px;
@@ -622,9 +637,9 @@ export default {
 .error-message {
     padding: 24px;
     text-align: center;
-    color: #ef4444;
-    background: #fef2f2;
-    border: 1px solid #fee2e2;
+    color: var(--danger);
+    background: var(--danger-light);
+    border: 1px solid var(--danger);
     border-radius: 12px;
     margin: 20px 0;
 }
@@ -632,7 +647,7 @@ export default {
 .empty-state {
     padding: 60px 24px;
     text-align: center;
-    color: #94a3b8;
+    color: var(--text-muted);
     font-size: 15px;
 }
 

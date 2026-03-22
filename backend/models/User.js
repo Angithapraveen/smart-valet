@@ -2,8 +2,8 @@ const pool = require('../config/database');
 
 class User {
     /**
-     * Find user by user_id, email_id, or phone_number (for login)
-     * login_id can be any of: user_id, email_id, or phone_number
+     * Find user by email_id or phone_number (for login)
+     * login_id can be any of: email_id or phone_number
      */
     static async findByLoginId(loginId) {
         const query = `
@@ -11,28 +11,41 @@ class User {
                    u.role_id, u.status, rm.role_name
             FROM USERS u
             JOIN ROLE_MASTER rm ON u.role_id = rm.role_id
-            WHERE (u.user_id = $1 OR LOWER(u.email_id) = LOWER($1) OR u.phone_number = $1) 
+            WHERE (LOWER(u.email_id) = LOWER($1) OR u.phone_number = $1) 
             AND u.status = TRUE
         `;
         const result = await pool.query(query, [loginId]);
         return result.rows[0] || null;
     }
 
-    /**
-     * Get user accessible locations based on role
-     */
     static async getAccessibleLocations(userId, roleName) {
         if (roleName === 'ADMIN') {
             const result = await pool.query(
-                'SELECT location_id, location_name, location_type, address, status FROM LOCATIONS WHERE status = TRUE'
+                `SELECT location_id, location_name, location_short_code, location_type, address, 
+                        (status AND valid_from <= CURRENT_DATE AND (valid_to IS NULL OR valid_to >= CURRENT_DATE)) as status 
+                 FROM LOCATIONS`
+            );
+            return result.rows;
+        } else if (roleName === 'OWNER') {
+            const result = await pool.query(
+                `SELECT l.location_id, l.location_name, l.location_short_code, l.location_type, l.address, 
+                        (l.status AND l.valid_from <= CURRENT_DATE AND (l.valid_to IS NULL OR l.valid_to >= CURRENT_DATE)) as status
+                 FROM LOCATION_ACCESS la
+                 JOIN LOCATIONS l ON la.location_id = l.location_id
+                 WHERE la.user_id = $1`,
+                [userId]
             );
             return result.rows;
         } else {
+            // Managers, Drivers, etc. - only see ACTIVE and VALID locations
             const result = await pool.query(
-                `SELECT l.location_id, l.location_name, l.location_type, l.address, l.status
+                `SELECT l.location_id, l.location_name, l.location_short_code, l.location_type, l.address, l.status
                  FROM LOCATION_ACCESS la
                  JOIN LOCATIONS l ON la.location_id = l.location_id
-                 WHERE la.user_id = $1 AND l.status = TRUE`,
+                 WHERE la.user_id = $1 
+                 AND l.status = TRUE
+                 AND l.valid_from <= CURRENT_DATE 
+                 AND (l.valid_to IS NULL OR l.valid_to >= CURRENT_DATE)`,
                 [userId]
             );
             return result.rows;

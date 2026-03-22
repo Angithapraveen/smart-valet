@@ -1,38 +1,50 @@
 <template>
   <header class="app-header">
-    <div class="header-left">
-      <div class="logo-container">
-        <!-- Parking Icon SVG -->
-        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="parking-icon">
-          <rect x="2" y="2" width="20" height="20" rx="2" ry="2"></rect>
-          <path d="M9 17V7h4a3 3 0 0 1 0 6H9"></path>
-        </svg>
-        <span class="app-name">Valet Parking</span>
-      </div>
-    </div>
-
-    <div class="header-right">
-      <div v-if="isOwner && userLocations.length > 0 && $route.path !== '/profile'" class="location-selector-wrapper">
-        <select v-model="selectedLocation" @change="handleLocationChange" class="location-dropdown">
-          <option v-for="loc in userLocations" :key="loc.location_id" :value="loc.location_id">
-            {{ loc.location_name }}
-          </option>
-        </select>
-      </div>
-
-      <div class="user-menu-wrapper" ref="userMenuRef">
-        <div class="user-trigger" @click="toggleUserMenu">
-          <div class="avatar">{{ userInitial }}</div>
-          <span class="username">{{ userName }}</span>
-          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="chevron-down">
-            <polyline points="6 9 12 15 18 9"></polyline>
+    <div class="header-inner">
+      <div class="header-left">
+        <div class="logo-container">
+          <!-- Parking Icon SVG -->
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="parking-icon">
+            <rect x="2" y="2" width="20" height="20" rx="2" ry="2"></rect>
+            <path d="M9 17V7h4a3 3 0 0 1 0 6H9"></path>
           </svg>
+          <span class="app-name">Valet Parking</span>
         </div>
+      </div>
 
-        <div v-if="showUserMenu" class="dropdown-menu">
-            <a @click="goToProfile" class="dropdown-item">Profile</a>
-            <div class="dropdown-divider"></div>
-            <a @click="handleLogout" class="dropdown-item text-danger">Logout</a>
+      <div class="header-right">
+        <button class="theme-toggle" @click="themeStore.toggleTheme" :title="themeStore.isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode'">
+          <svg v-if="themeStore.isDark" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="5"></circle>
+            <line x1="12" y1="1" x2="12" y2="3"></line>
+            <line x1="12" y1="21" x2="12" y2="23"></line>
+            <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+            <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+            <line x1="1" y1="12" x2="3" y2="12"></line>
+            <line x1="21" y1="12" x2="23" y2="12"></line>
+            <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+            <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+          </svg>
+          <svg v-else xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+          </svg>
+        </button>
+
+
+        <div class="user-menu-wrapper" ref="userMenuRef">
+          <div class="user-trigger" @click="toggleUserMenu">
+            <div class="avatar">{{ userInitial }}</div>
+            <span class="username">{{ userName }}</span>
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="chevron-down">
+              <polyline points="6 9 12 15 18 9"></polyline>
+            </svg>
+          </div>
+
+          <div v-if="showUserMenu" class="dropdown-menu">
+              <a @click="goToProfile" class="dropdown-item">Profile</a>
+              <div class="dropdown-divider"></div>
+              <a @click="handleLogout" class="dropdown-item text-danger">Logout</a>
+          </div>
         </div>
       </div>
     </div>
@@ -42,9 +54,11 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { useAuthStore } from '../stores/auth';
+import { useThemeStore } from '../stores/theme';
 import { useRouter } from 'vue-router';
 
 const authStore = useAuthStore();
+const themeStore = useThemeStore();
 const router = useRouter();
 const showUserMenu = ref(false);
 const userMenuRef = ref(null);
@@ -102,17 +116,27 @@ onUnmounted(() => {
 <style scoped>
 .app-header {
   height: 64px;
-  background-color: #0e0e0e;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-  color: #ffffff;
+  background-color: var(--bg-header);
+  border-bottom: 1px solid var(--header-border);
+  color: var(--text-main);
+  position: fixed;
+  width: 100%;
+  top: 0;
+  left: 0;
+  z-index: 100;
+}
+
+.header-inner {
+  max-width: 1400px;
+  margin: 0 auto;
+  width: 100%;
+  height: 100%;
+  padding: 0 32px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 24px;
-  position: sticky;
-  top: 0;
-  z-index: 100;
 }
+
 
 .header-left {
   display: flex;
@@ -135,7 +159,7 @@ onUnmounted(() => {
     font-weight: 700;
     font-size: 20px;
     letter-spacing: -0.03em;
-    background: linear-gradient(135deg, var(--primary), hsl(var(--primary-h), var(--primary-s), 40%));
+    background: linear-gradient(135deg, var(--primary), var(--primary-accent));
     -webkit-background-clip: text;
     background-clip: text;
     -webkit-text-fill-color: transparent;
@@ -144,13 +168,33 @@ onUnmounted(() => {
 .header-right {
   display: flex;
   align-items: center;
-  gap: 20px;
+  gap: 12px;
+}
+
+.theme-toggle {
+  background: none;
+  border: none;
+  padding: 8px;
+  cursor: pointer;
+  color: var(--text-muted);
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: var(--ts-base);
+  border: 1px solid transparent;
+}
+
+.theme-toggle:hover {
+  background-color: var(--bg-main);
+  color: var(--primary);
+  border-color: var(--border-subtle);
 }
 
 .location-dropdown {
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  color: #ffffff;
+  background: var(--bg-main);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-main);
   padding: 8px 14px;
   border-radius: 10px;
   outline: none;
@@ -181,8 +225,8 @@ onUnmounted(() => {
 }
 
 .user-trigger:hover {
-  background-color: rgba(255, 255, 255, 0.05);
-  border-color: rgba(255, 255, 255, 0.1);
+  background-color: var(--bg-main);
+  border-color: var(--border-subtle);
 }
 
 .avatar {
@@ -202,7 +246,7 @@ onUnmounted(() => {
 .username {
   font-size: 14px;
   font-weight: 600;
-  color: #ffffff;
+  color: var(--text-main);
 }
 
 .chevron-down {
@@ -219,15 +263,15 @@ onUnmounted(() => {
   position: absolute;
   top: calc(100% + 12px);
   right: 0;
-  background: #1a1a1a;
+  background: var(--bg-card);
   border-radius: 16px;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+  box-shadow: var(--shadow-lg);
   min-width: 200px;
   padding: 8px;
   overflow: hidden;
-  color: #ffffff;
+  color: var(--text-main);
   z-index: 101;
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--border-subtle);
   animation: fadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
@@ -240,19 +284,19 @@ onUnmounted(() => {
   cursor: pointer;
   font-size: 14px;
   font-weight: 500;
-  color: #9ca3af;
+  color: var(--text-muted);
   text-decoration: none;
   transition: var(--ts-base);
 }
 
 .dropdown-item:hover {
-  background-color: rgba(255, 255, 255, 0.05);
-  color: #ffffff;
+  background-color: var(--bg-main);
+  color: var(--text-main);
 }
 
 .dropdown-divider {
   height: 1px;
-  background-color: rgba(255, 255, 255, 0.05);
+  background-color: var(--border-subtle);
   margin: 6px 0;
 }
 

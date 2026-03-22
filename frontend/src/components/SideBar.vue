@@ -180,11 +180,11 @@ const menuItems = [
   { path: '/manager/dashboard', label: 'Dashboard', icon: DashboardIcon },
   { path: '/manager/parkingstatus', label: 'Parking Status', icon: ParkingStatusIcon },
   { path: '/manager/blockmanagement', label: 'Block Management', icon: LocationsIcon },
-  { path: '/manager/transactions', label: 'Parking Transactions', icon: TransactionsIcon },
+  { path: '/manager/livetransactions', label: 'Live Transactions', icon: TransactionsIcon },
   { path: '/manager/returnrequests', label: 'Return Requests', icon: ReturnRequestsIcon },
-  { path: '/manager/vehicles', label: 'Vehicles', icon: VehiclesIcon },
+  { path: '/manager/vehicles', label: 'Vehicles Transactions', icon: VehiclesIcon },
   { path: '/manager/users', label: 'Users & Roles', icon: UsersIcon },
-  { path: '/whatsapp-logs', label: 'WhatsApp Logs', icon: WhatsAppLogsIcon },
+ // { path: '/whatsapp-logs', label: 'WhatsApp Logs', icon: WhatsAppLogsIcon },
   { path: '/reports', label: 'Reports', icon: ReportsIcon },
   { path: '/settings', label: 'Settings', icon: SettingsIcon }
 ]
@@ -198,26 +198,26 @@ const menuItems = [
   top: 64px;
   left: 0;
   z-index: 50;
-  background: #0e0e0e;
-  border-right: 1px solid rgba(255, 255, 255, 0.05);
+  background: var(--bg-header);
+  border-right: 1px solid var(--header-border);
 }
 
 .sidebar-header {
   padding: 24px 20px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  border-bottom: 1px solid var(--header-border);
 }
 
 .sidebar-icon {
   width: 24px;
   height: 24px;
-  color: #ffffff;
+  color: var(--text-main);
   flex-shrink: 0;
 }
 
 .sidebar-title {
   font-size: 18px;
   font-weight: 700;
-  color: #ffffff;
+  color: var(--text-main);
   letter-spacing: -0.5px;
 }
 
@@ -239,7 +239,7 @@ const menuItems = [
   align-items: center;
   gap: 12px;
   padding: 12px 16px;
-  color: #9ca3af;
+  color: var(--text-muted);
   text-decoration: none;
   border-radius: 10px;
   transition: all 0.2s ease;
@@ -249,8 +249,8 @@ const menuItems = [
 }
 
 .nav-link:hover {
-  background: rgba(255, 255, 255, 0.05);
-  color: #ffffff;
+  background: var(--bg-main);
+  color: var(--text-main);
 }
 
 .nav-link:hover .nav-icon-wrapper {
@@ -258,8 +258,8 @@ const menuItems = [
 }
 
 .nav-link.active {
-  background: rgba(101, 69, 229, 0.15);
-  color: #ffffff;
+  background: var(--primary-light);
+  color: var(--primary);
   font-weight: 500;
 }
 
@@ -271,12 +271,12 @@ const menuItems = [
   transform: translateY(-50%);
   width: 3px;
   height: 60%;
-  background: #6545e5;
+  background: var(--primary);
   border-radius: 0 2px 2px 0;
 }
 
 .nav-link.active .nav-icon {
-  color: #6545e5;
+  color: var(--primary);
 }
 
 .nav-icon-wrapper {

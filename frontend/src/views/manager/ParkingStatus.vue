@@ -143,7 +143,9 @@ onMounted(() => {
 
 <style scoped>
 .parking-status {
-  width: 100%;
+  padding: 32px;
+  max-width: 1400px;
+  margin: 0 auto;
 }
 
 .subtitle {
@@ -159,7 +161,7 @@ onMounted(() => {
 }
 
 .block-card {
-  background: white;
+  background: var(--bg-card);
   border-radius: 24px;
   padding: 32px;
   border: 1px solid var(--border-subtle);

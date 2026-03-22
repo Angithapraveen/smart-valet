@@ -61,8 +61,8 @@
                         <span class="hash">#</span>
                         <span class="ticket-id">{{ vehicle.ticket_id }}</span>
                     </div>
-                    <span class="status-badge" :class="activeTab === 'returning' ? 'badge-orange' : 'badge-green'">
-                        {{ activeTab === 'returning' ? 'Return Requested' : 'Parked' }}
+                    <span class="status-badge" :class="getStatusBadgeClass(vehicle.status)">
+                        {{ vehicle.status.replace('_', ' ') }}
                     </span>
                 </div>
 
@@ -81,8 +81,8 @@
                     </div>
                 </div>
 
-                <button class="action-btn" :class="activeTab === 'returning' ? 'btn-gold' : 'btn-green'" @click.stop="handleVehicleAction(vehicle)">
-                    {{ activeTab === 'returning' ? 'Change Status' : 'Update Car Make' }}
+                <button class="action-btn" :class="getActionBtnClass(vehicle.status)" @click.stop="handleVehicleAction(vehicle)">
+                    {{ getActionText(vehicle.status) }}
                 </button>
             </div>
         </div>
@@ -111,6 +111,37 @@
             <button class="close-btn" @click="showQrModal = false">Close</button>
         </div>
     </div>
+
+    <!-- Block Assignment Modal -->
+    <div v-if="showBlockModal" class="modal-overlay">
+        <div class="qr-modal block-modal">
+            <h3>Assign Block</h3>
+            <p v-if="pendingVehicle" class="instruction">
+                Select a block for {{ pendingVehicle.car_model }}
+            </p>
+            <p class="instruction" style="font-size: 12px; margin-top: -10px;">{{ pendingVehicle?.valet_id }}</p>
+            
+            <div class="form-group" style="margin-top: 20px; text-align: left;">
+                <label>Select Block</label>
+                <select v-model="selectedBlockId" class="form-input">
+                    <option value="" disabled>Choose a block</option>
+                    <option v-for="block in activeBlocks" :key="block.block_id" :value="block.block_id">
+                        {{ block.block_name }} ({{ block.available_slots }} slots)
+                    </option>
+                </select>
+                <div v-if="!activeBlocks || activeBlocks.length === 0" class="error-text" style="color: #ef4444; font-size: 12px; margin-top: 5px;">
+                    No active blocks found.
+                </div>
+            </div>
+
+            <div class="modal-actions" style="margin-top: 24px; display: flex; gap: 12px;">
+                <button class="close-btn" @click="closeBlockModal" :disabled="isAssigning" style="flex: 1; background: rgba(255,255,255,0.1);">Cancel</button>
+                <button class="close-btn" @click="confirmBlockAssignment" :disabled="!selectedBlockId || isAssigning" style="flex: 1; background: #f59e0b; color: white;">
+                    {{ isAssigning ? 'Assigning...' : 'Confirm' }}
+                </button>
+            </div>
+        </div>
+    </div>
 </div>
 </template>
 
@@ -120,8 +151,11 @@ import { useRouter } from 'vue-router';
 import { useAuthStore } from '../../stores/auth';
 import axios from 'axios';
 
+import { useToast } from '../../stores/toast';
+
 const router = useRouter();
 const authStore = useAuthStore();
+const toast = useToast();
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
 const activeTab = ref('returning');
 const loading = ref(false);
@@ -129,6 +163,13 @@ const vehicles = ref([]);
 
 // QR Modal State
 const showQrModal = ref(false);
+
+// Block Assignment State
+const showBlockModal = ref(false);
+const selectedBlockId = ref('');
+const activeBlocks = ref([]);
+const isAssigning = ref(false);
+const pendingVehicle = ref(null);
 
 const userInitial = computed(() => authStore.profileInitial);
 const locationName = computed(() => {
@@ -147,14 +188,14 @@ const qrCodeUrl = computed(() => {
     return `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(whatsappUrl)}`;
 });
 
-const returningCount = computed(() => vehicles.value.filter(v => v.status === 'requested').length);
-const parkedCount = computed(() => vehicles.value.filter(v => v.status === 'parked').length);
+const returningCount = computed(() => vehicles.value.filter(v => ['RETURN_REQUESTED', 'ON_THE_WAY', 'READY'].includes(v.status.toUpperCase())).length);
+const parkedCount = computed(() => vehicles.value.filter(v => v.status.toUpperCase() === 'PARKED').length);
 
 const currentVehicles = computed(() => {
     if (activeTab.value === 'returning') {
-        return vehicles.value.filter(v => v.status === 'requested');
+        return vehicles.value.filter(v => ['RETURN_REQUESTED', 'ON_THE_WAY', 'READY'].includes(v.status.toUpperCase()));
     }
-    return vehicles.value.filter(v => v.status === 'parked');
+    return vehicles.value.filter(v => v.status.toUpperCase() === 'PARKED');
 });
 
 const formatTime = (isoString) => {
@@ -163,8 +204,29 @@ const formatTime = (isoString) => {
     return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 };
 
+const getStatusBadgeClass = (status) => {
+    switch (status.toUpperCase()) {
+        case 'PARKED': return 'badge-green';
+        case 'RETURN_REQUESTED': return 'badge-orange';
+        case 'ON_THE_WAY': return 'badge-orange';
+        case 'READY': return 'badge-orange';
+        default: return 'badge-orange';
+    }
+};
+
+const getActionBtnClass = (status) => {
+    return status.toUpperCase() === 'PARKED' ? 'btn-green' : 'btn-gold';
+};
+
+const getActionText = (status) => {
+    return status.toUpperCase() === 'PARKED' ? 'Update Car Make' : 'Change Status';
+};
+
 const fetchVehicles = async () => {
+    console.log('Accessible Locations:', authStore.accessibleLocations);
     const locId = authStore.accessibleLocations?.[0]?.location_id;
+    console.log('Location ID used:', locId);
+    
     if (!locId) {
         console.warn('No location assigned to driver.');
         return;
@@ -178,33 +240,73 @@ const fetchVehicles = async () => {
 
         if (response.data.success) {
             vehicles.value = response.data.data.map(v => ({
-                ticket_id: v.valet_id, // Map database column to frontend prop
-                valet_id: v.valet_id,  // Keep original for navigation
+                ticket_id: v.valet_id, 
+                valet_id: v.valet_id,
                 customer_name: v.customer_name,
                 phone_number: v.phone_number,
                 entry_time: v.parked_time,
                 car_model: v.car_model,
-                status: v.status === 'RETURN_REQUESTED' ? 'requested' : v.status.toLowerCase()
+                status: v.status,
+                block_entry_id: v.block_entry_id,
+                needsBlockAssignment: (v.status.toUpperCase() === 'PARKED') && !v.block_entry_id
             }));
+            
+            console.log('Vehicles fetched:', vehicles.value);
+            const needing = vehicles.value.filter(v => v.needsBlockAssignment);
+            console.log('Needs assignment:', needing);
+
+            // Check for unassigned blocks
+            const needsAssignment = vehicles.value.find(v => v.needsBlockAssignment);
+            if (needsAssignment && !showBlockModal.value && !isAssigning.value) {
+                await fetchBlocks();
+                // Force open even if blocks are 0, so we can debug visualized
+                openBlockAssignment(needsAssignment);
+            }
         }
     } catch (error) {
         console.error('Error fetching vehicles:', error);
     }
 };
 
+const fetchBlocks = async () => {
+    const locId = authStore.accessibleLocations?.[0]?.location_id;
+    if (!locId) return;
+
+    try {
+        const response = await axios.get(`${API_URL}/valet/blocks/active`, {
+            params: { location_id: locId },
+            headers: { Authorization: `Bearer ${authStore.token}` }
+        });
+        if (response.data.success) {
+            activeBlocks.value = response.data.data;
+            console.log('Active blocks fetched:', activeBlocks.value);
+        }
+    } catch (error) {
+        console.error('Error fetching blocks:', error);
+    }
+};
+
 const handleVehicleAction = (vehicle) => {
-    console.log('Clicked vehicle:', vehicle); // Debug log
-    if (!vehicle.valet_id && !vehicle.ticket_id) {
-        console.error('Missing valet_id', vehicle);
+    console.log('Clicked vehicle:', vehicle);
+    if (vehicle.needsBlockAssignment) {
+        openBlockAssignment(vehicle);
         return;
     }
-    // Navigate to details page
-    router.push({
-        name: 'VehicleDetails',
-        params: { valetId: vehicle.valet_id || vehicle.ticket_id }
-    }).catch(err => {
-        console.error('Navigation error:', err);
-    });
+
+    const vId = vehicle.valet_id || vehicle.ticket_id;
+    if (!vId) {
+        console.error('Missing valet_id', vehicle);
+        toast.error('Error: Missing Ticket ID');
+        return;
+    }
+    
+    // If PARKED, go to dedicated update page
+    // If anything else (Returning flow), go to status timeline page
+    if (vehicle.status.toUpperCase() === 'PARKED') {
+        router.push(`/driver/update-vehicle/${vId}`);
+    } else {
+        router.push(`/driver/vehicle/${vId}`);
+    }
 };
 
 const logout = () => {
@@ -216,12 +318,48 @@ const openQrModal = () => {
     showQrModal.value = true;
 };
 
+const openBlockAssignment = (vehicle) => {
+    pendingVehicle.value = vehicle;
+    selectedBlockId.value = '';
+    showBlockModal.value = true;
+};
+
+const closeBlockModal = () => {
+    showBlockModal.value = false;
+    pendingVehicle.value = null;
+    selectedBlockId.value = '';
+};
+
+const confirmBlockAssignment = async () => {
+    if (!selectedBlockId.value) return;
+    
+    isAssigning.value = true;
+    try {
+        const response = await axios.post(`${API_URL}/valet/${pendingVehicle.value.valet_id}/assign-block`, {
+            block_id: selectedBlockId.value
+        }, {
+            headers: { Authorization: `Bearer ${authStore.token}` }
+        });
+
+        if (response.data.success) {
+            toast.success(`Block Assigned! Slot: ${response.data.slot_id}`);
+            closeBlockModal();
+            fetchVehicles();
+        }
+    } catch (error) {
+        console.error('Assignment error:', error);
+        toast.error(`Failed to assign: ${error.response?.data?.message || error.message}`);
+    } finally {
+        isAssigning.value = false;
+    }
+};
+
 onMounted(async () => {
     loading.value = true;
     try {
         await fetchVehicles();
-        // Poll every 30 seconds
-        setInterval(fetchVehicles, 30000);
+        // Poll every 10 seconds (faster for testing)
+        setInterval(fetchVehicles, 10000);
     } finally {
         loading.value = false;
     }
@@ -232,18 +370,19 @@ onMounted(async () => {
 .driver-dashboard {
     max-width: 420px;
     margin: 0 auto;
-    background: linear-gradient(180deg, #0b0f1a 0%, #020617 100%);
+    background: var(--bg-main);
     min-height: 100vh;
-    color: white;
+    color: var(--text-main);
     font-family: 'Inter', sans-serif;
     padding-bottom: 80px; /* Space for bottom nav */
+    transition: var(--ts-base);
 }
 
 /* Header */
 .dashboard-header {
-    background: rgba(255, 255, 255, 0.03);
-    border-bottom: 1px solid rgba(245, 158, 11, 0.3);
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+    background: var(--bg-card);
+    border-bottom: 1px solid var(--primary-border, var(--border-subtle));
+    box-shadow: var(--shadow-sm);
     padding: 20px;
     padding-top: 40px; /* Safe area */
     border-radius: 0 0 24px 24px;
@@ -257,7 +396,7 @@ onMounted(async () => {
     font-size: 11px;
     text-transform: uppercase;
     letter-spacing: 1px;
-    color: #94a3b8;
+    color: var(--text-muted);
     margin-bottom: 4px;
     display: block;
 }
@@ -266,7 +405,7 @@ onMounted(async () => {
     display: flex;
     align-items: center;
     gap: 8px;
-    color: #f59e0b; /* Gold */
+    color: var(--primary);
 }
 
 .venue-name {
@@ -279,8 +418,8 @@ onMounted(async () => {
     width: 40px;
     height: 40px;
     border-radius: 50%;
-    background: rgba(245, 158, 11, 0.1);
-    border: 1px solid rgba(245, 158, 11, 0.5);
+    background: var(--primary-light);
+    border: 1px solid var(--primary-border, var(--border-subtle));
     display: flex;
     align-items: center;
     justify-content: center;
@@ -289,14 +428,14 @@ onMounted(async () => {
 }
 
 .avatar-sm {
-    color: #f59e0b;
+    color: var(--primary);
     font-weight: 700;
     font-size: 14px;
 }
 
 /* QR Button */
 .qr-option-btn {
-    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    background: linear-gradient(135deg, var(--success) 0%, var(--success-dark, var(--success)) 100%);
     color: white;
     border: none;
     border-radius: 16px;
@@ -309,7 +448,7 @@ onMounted(async () => {
     font-size: 16px;
     margin: 0 20px 24px;
     width: calc(100% - 40px);
-    box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
+    box-shadow: var(--shadow-md);
     cursor: pointer;
 }
 
@@ -323,11 +462,11 @@ onMounted(async () => {
 
 .tab-btn {
     flex: 1;
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: var(--bg-card);
+    border: 1px solid var(--border-subtle);
     border-radius: 16px;
     padding: 12px;
-    color: #94a3b8;
+    color: var(--text-muted);
     font-weight: 600;
     font-size: 14px;
     display: flex;
@@ -338,15 +477,15 @@ onMounted(async () => {
 }
 
 .tab-btn.active {
-    background: rgba(245, 158, 11, 0.15);
-    border-color: #f59e0b;
-    color: #f59e0b;
-    box-shadow: 0 0 15px rgba(245, 158, 11, 0.1);
+    background: var(--primary-light);
+    border-color: var(--primary);
+    color: var(--primary);
+    box-shadow: var(--shadow-sm);
 }
 
 .badge {
-    background: #f59e0b;
-    color: black;
+    background: var(--primary);
+    color: white;
     font-size: 10px;
     padding: 2px 6px;
     border-radius: 12px;
@@ -364,12 +503,12 @@ onMounted(async () => {
 }
 
 .vehicle-card {
-    background: rgba(255, 255, 255, 0.03);
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: var(--bg-card);
+    border: 1px solid var(--border-subtle);
     border-radius: 20px;
     padding: 20px;
     margin-bottom: 16px;
-    box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.5);
+    box-shadow: var(--shadow-sm);
 }
 
 .card-header {
@@ -378,18 +517,18 @@ onMounted(async () => {
     align-items: center;
     margin-bottom: 20px;
     padding-bottom: 16px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    border-bottom: 1px solid var(--border-subtle);
 }
 
 .vehicle-number {
     font-size: 24px;
     font-weight: 800;
-    color: white;
+    color: var(--text-main);
     letter-spacing: -0.5px;
 }
 
 .hash {
-    color: #64748b;
+    color: var(--text-muted);
     font-size: 18px;
     margin-right: 2px;
 }
@@ -403,15 +542,15 @@ onMounted(async () => {
 }
 
 .badge-orange {
-    background: rgba(245, 158, 11, 0.1);
-    color: #f59e0b;
-    border: 1px solid rgba(245, 158, 11, 0.2);
+    background: var(--warning-light);
+    color: var(--warning);
+    border: 1px solid var(--warning-border, var(--warning));
 }
 
 .badge-green {
-    background: rgba(16, 185, 129, 0.1);
-    color: #10b981;
-    border: 1px solid rgba(16, 185, 129, 0.2);
+    background: var(--success-light);
+    color: var(--success);
+    border: 1px solid var(--success-border, var(--success));
 }
 
 .vehicle-details {
@@ -435,7 +574,7 @@ onMounted(async () => {
 .detail-row .value {
     font-size: 14px;
     font-weight: 600;
-    color: #e2e8f0;
+    color: var(--text-main);
 }
 
 .action-btn {
@@ -456,15 +595,15 @@ onMounted(async () => {
 }
 
 .btn-gold {
-    background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+    background: linear-gradient(135deg, var(--warning) 0%, var(--warning-dark, var(--warning)) 100%);
     color: white;
-    box-shadow: 0 4px 15px rgba(245, 158, 11, 0.3);
+    box-shadow: var(--shadow-sm);
 }
 
 .btn-green {
-    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    background: linear-gradient(135deg, var(--success) 0%, var(--success-dark, var(--success)) 100%);
     color: white;
-    box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
+    box-shadow: var(--shadow-sm);
 }
 
 /* Bottom Nav */
@@ -475,8 +614,8 @@ onMounted(async () => {
     transform: translateX(-50%);
     width: 100%;
     max-width: 420px;
-    background: #0f172a;
-    border-top: 1px solid rgba(255, 255, 255, 0.05);
+    background: var(--bg-card);
+    border-top: 1px solid var(--border-subtle);
     display: flex;
     justify-content: space-around;
     padding: 12px;
@@ -486,7 +625,7 @@ onMounted(async () => {
 .nav-item {
     background: none;
     border: none;
-    color: #64748b;
+    color: var(--text-muted);
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -496,25 +635,25 @@ onMounted(async () => {
 }
 
 .nav-item.active {
-    color: #f59e0b;
+    color: var(--primary);
 }
 
 .nav-item.active svg {
-    stroke: #f59e0b;
-    filter: drop-shadow(0 0 8px rgba(245, 158, 11, 0.5));
+    stroke: var(--primary);
+    filter: drop-shadow(0 0 8px var(--primary-light));
 }
 
 .loading-state, .empty-state {
     text-align: center;
     padding: 40px;
-    color: #64748b;
+    color: var(--text-muted);
 }
 
 .spinner {
     width: 24px;
     height: 24px;
-    border: 3px solid rgba(245, 158, 11, 0.3);
-    border-top-color: #f59e0b;
+    border: 3px solid var(--border-subtle);
+    border-top-color: var(--primary);
     border-radius: 50%;
     margin: 0 auto 16px;
     animation: spin 1s linear infinite;
@@ -531,27 +670,28 @@ onMounted(async () => {
     left: 0;
     width: 100%;
     height: 100%;
-    background: rgba(0, 0, 0, 0.8);
+    background: rgba(0, 0, 0, 0.6);
     display: flex;
     align-items: center;
     justify-content: center;
     z-index: 200;
-    backdrop-filter: blur(5px);
+    backdrop-filter: blur(8px);
 }
 
 .qr-modal {
-    background: #1a1a1a;
+    background: var(--bg-card);
     padding: 24px;
     border-radius: 20px;
     text-align: center;
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    max-width: 320px;
+    border: 1px solid var(--border-subtle);
+    max-width: 380px;
     width: 90%;
+    box-shadow: var(--shadow-lg);
 }
 
 .qr-modal h3 {
     margin-top: 0;
-    color: white;
+    color: var(--text-main);
 }
 
 .qr-container {
@@ -567,15 +707,15 @@ onMounted(async () => {
 }
 
 .instruction {
-    color: #94a3b8;
+    color: var(--text-muted);
     font-size: 14px;
     margin-bottom: 20px;
 }
 
 .close-btn {
-    background: rgba(255, 255, 255, 0.1);
-    color: white;
-    border: none;
+    background: var(--bg-main);
+    color: var(--text-main);
+    border: 1px solid var(--border-subtle);
     padding: 10px 24px;
     border-radius: 12px;
     font-weight: 600;

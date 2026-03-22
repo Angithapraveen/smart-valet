@@ -82,9 +82,11 @@ import { computed, ref, reactive, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '../../stores/auth';
 import axios from 'axios';
+import { useToast } from '../../stores/toast';
 
 const router = useRouter();
 const authStore = useAuthStore();
+const toast = useToast();
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
 
 const user = computed(() => authStore.user || {});
@@ -113,7 +115,7 @@ const closeEditModal = () => {
 
 const saveProfile = async () => {
     if (!editForm.name || !editForm.phone_number) {
-        alert('Please fill in all fields');
+        toast.warning('Please fill in all fields');
         return;
     }
 
@@ -133,7 +135,7 @@ const saveProfile = async () => {
         }
     } catch (error) {
         console.error('Failed to update profile:', error);
-        alert(error.response?.data?.message || 'Failed to update profile');
+        toast.error(error.response?.data?.message || 'Failed to update profile');
     } finally {
         saving.value = false;
     }
@@ -153,11 +155,12 @@ onMounted(() => {
 .driver-profile-page {
     max-width: 420px;
     margin: 0 auto;
-    background: linear-gradient(180deg, #0b0f1a 0%, #020617 100%);
+    background: var(--bg-main);
     min-height: 100vh;
-    color: white;
+    color: var(--text-main);
     font-family: 'Inter', sans-serif;
     padding: 20px;
+    transition: var(--ts-base);
 }
 
 .profile-header {
@@ -169,9 +172,9 @@ onMounted(() => {
 }
 
 .back-btn {
-    background: rgba(255, 255, 255, 0.1);
-    border: none;
-    color: white;
+    background: var(--bg-card);
+    border: 1px solid var(--border-subtle);
+    color: var(--text-main);
     width: 40px;
     height: 40px;
     border-radius: 12px;
@@ -179,12 +182,14 @@ onMounted(() => {
     align-items: center;
     justify-content: center;
     cursor: pointer;
+    transition: var(--ts-base);
 }
 
 .profile-header h1 {
     font-size: 18px;
     font-weight: 600;
     margin: 0;
+    color: var(--text-main);
 }
 
 .placeholder {
@@ -202,7 +207,7 @@ onMounted(() => {
     width: 80px;
     height: 80px;
     border-radius: 50%;
-    background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+    background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark, var(--primary)) 100%);
     color: white;
     font-size: 32px;
     font-weight: 700;
@@ -210,18 +215,19 @@ onMounted(() => {
     align-items: center;
     justify-content: center;
     margin-bottom: 16px;
-    box-shadow: 0 0 20px rgba(245, 158, 11, 0.3);
-    border: 3px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 0 20px rgba(var(--primary-rgb, 101, 69, 229), 0.3);
+    border: 3px solid var(--border-subtle);
 }
 
 .user-name {
     font-size: 20px;
     font-weight: 700;
     margin: 0 0 4px 0;
+    color: var(--text-main);
 }
 
 .user-role {
-    color: #94a3b8;
+    color: var(--text-muted);
     font-size: 14px;
     text-transform: uppercase;
     letter-spacing: 1px;
@@ -233,7 +239,7 @@ onMounted(() => {
 
 .info-group label {
     display: block;
-    color: #94a3b8;
+    color: var(--text-muted);
     font-size: 12px;
     margin-bottom: 8px;
     text-transform: uppercase;
@@ -241,8 +247,8 @@ onMounted(() => {
 }
 
 .info-card {
-    background: rgba(255, 255, 255, 0.03);
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: var(--bg-card);
+    border: 1px solid var(--border-subtle);
     border-radius: 16px;
     padding: 16px;
 }
@@ -251,7 +257,7 @@ onMounted(() => {
     display: flex;
     align-items: center;
     gap: 12px;
-    color: #f59e0b;
+    color: var(--primary);
     font-weight: 600;
 }
 
@@ -263,29 +269,29 @@ onMounted(() => {
 }
 
 .info-row .label {
-    color: #64748b;
+    color: var(--text-muted);
     font-size: 14px;
     text-transform: none;
     margin: 0;
 }
 
 .info-row .value {
-    color: white;
+    color: var(--text-main);
     font-weight: 500;
 }
 
 .separator {
     height: 1px;
-    background: rgba(255, 255, 255, 0.05);
+    background: var(--border-subtle);
     margin: 12px 0;
 }
 
 .logout-btn {
     width: 100%;
     margin-top: 20px;
-    background: rgba(239, 68, 68, 0.1);
-    color: #ef4444;
-    border: 1px solid rgba(239, 68, 68, 0.2);
+    background: var(--danger-light);
+    color: var(--danger);
+    border: 1px solid var(--danger);
     padding: 16px;
     border-radius: 16px;
     font-weight: 600;
@@ -312,7 +318,7 @@ onMounted(() => {
     left: 0;
     width: 100%;
     height: 100%;
-    background: rgba(0, 0, 0, 0.8);
+    background: rgba(0, 0, 0, 0.5);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -321,18 +327,19 @@ onMounted(() => {
 }
 
 .edit-modal {
-    background: #1a1a1a;
+    background: var(--bg-card);
     padding: 24px;
     border-radius: 20px;
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    border: 1px solid var(--border-subtle);
     max-width: 340px;
     width: 90%;
+    box-shadow: var(--shadow-xl);
 }
 
 .edit-modal h3 {
     margin-top: 0;
     margin-bottom: 20px;
-    color: white;
+    color: var(--text-main);
     text-align: center;
 }
 
@@ -342,24 +349,24 @@ onMounted(() => {
 
 .form-group label {
     display: block;
-    color: #94a3b8;
+    color: var(--text-muted);
     font-size: 12px;
     margin-bottom: 6px;
 }
 
 .form-input {
     width: 100%;
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: var(--bg-main);
+    border: 1px solid var(--border-subtle);
     padding: 12px;
     border-radius: 12px;
-    color: white;
+    color: var(--text-main);
     font-size: 14px;
     outline: none;
 }
 
 .form-input:focus {
-    border-color: #f59e0b;
+    border-color: var(--primary);
 }
 
 .modal-actions {
@@ -379,19 +386,20 @@ onMounted(() => {
 }
 
 .cancel-btn {
-    background: rgba(255, 255, 255, 0.1);
-    color: white;
+    background: var(--bg-main);
+    color: var(--text-muted);
+    border: 1px solid var(--border-subtle);
 }
 
 .save-btn {
-    background: #f59e0b;
-    color: black;
+    background: var(--primary);
+    color: white;
 }
 
 .edit-btn {
-    background: rgba(255, 255, 255, 0.1);
-    border: none;
-    color: #f59e0b;
+    background: var(--bg-card);
+    border: 1px solid var(--border-subtle);
+    color: var(--primary);
     width: 32px;
     height: 32px;
     border-radius: 8px;
@@ -399,5 +407,6 @@ onMounted(() => {
     align-items: center;
     justify-content: center;
     cursor: pointer;
+    transition: var(--ts-base);
 }
 </style>
