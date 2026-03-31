@@ -82,7 +82,7 @@ const getOwnerLocations = async (req, res) => {
             SELECT 
                 l.location_id, l.location_name, l.location_short_code, l.location_type, l.address, 
                 (l.status AND l.valid_from <= CURRENT_DATE AND (l.valid_to IS NULL OR l.valid_to >= CURRENT_DATE)) as status,
-                l.valid_from, l.valid_to,
+                l.valid_from, l.valid_to, l.total_capacity,
                 COALESCE(b.total_blocks, 0) as total_blocks,
                 COALESCE(be.available_slots, 0) as available_slots,
                 COALESCE(be.occupied_slots, 0) as occupied_slots,
@@ -121,6 +121,7 @@ const getOwnerLocations = async (req, res) => {
             total_blocks: parseInt(row.total_blocks),
             available_slots: parseInt(row.available_slots),
             occupied_slots: parseInt(row.occupied_slots),
+            total_capacity: parseInt(row.total_capacity) || 100,
             active_parkings: parseInt(row.active_parkings)
         }));
 
@@ -157,7 +158,7 @@ const getOwnerLocationDetails = async (req, res) => {
             SELECT 
                 l.location_id, l.location_name, l.location_short_code, l.location_type, l.address, 
                 (l.status AND l.valid_from <= CURRENT_DATE AND (l.valid_to IS NULL OR l.valid_to >= CURRENT_DATE)) as status,
-                l.valid_from, l.valid_to,
+                l.valid_from, l.valid_to, l.total_capacity,
                 COALESCE(b.total_blocks, 0) as total_blocks,
                 COALESCE(be.available_slots, 0) as available_slots,
                 COALESCE(be.occupied_slots, 0) as occupied_slots,
@@ -220,7 +221,8 @@ const getOwnerLocationDetails = async (req, res) => {
             address: row.address,
             status: row.status,
             valid_from: row.valid_from,
-            valid_to: row.valid_to
+            valid_to: row.valid_to,
+            total_capacity: row.total_capacity || 100
         };
 
         const statsData = {

@@ -22,7 +22,7 @@ psql -U postgres -d smart_valet -f schema/04_location_access.sql
 psql -U postgres -d smart_valet -f schema/05_blocks.sql
 psql -U postgres -d smart_valet -f schema/06_block_entries.sql
 psql -U postgres -d smart_valet -f schema/07_valet_transactions.sql
-psql -U postgres -d smart_valet -f schema/08_return_requests.sql
+
 psql -U postgres -d smart_valet -f schema/09_feedback.sql
 ```
 

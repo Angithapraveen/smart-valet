@@ -4,11 +4,25 @@ import axios from 'axios';
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
 
 export const useAuthStore = defineStore('auth', {
-  state: () => ({
-    token: localStorage.getItem('token') || null,
-    user: JSON.parse(localStorage.getItem('user') || 'null'),
-    accessibleLocations: JSON.parse(localStorage.getItem('accessibleLocations') || '[]')
-  }),
+  state: () => {
+    let token = null;
+    let user = null;
+    let accessibleLocations = [];
+    
+    try {
+      token = localStorage.getItem('token');
+      user = JSON.parse(localStorage.getItem('user') || 'null');
+      accessibleLocations = JSON.parse(localStorage.getItem('accessibleLocations') || '[]');
+    } catch (e) {
+      console.warn('LocalStorage access failed during initialization:', e);
+    }
+    
+    return {
+      token,
+      user,
+      accessibleLocations
+    };
+  },
 
   getters: {
     isAuthenticated: (state) => !!state.token,
@@ -40,10 +54,14 @@ export const useAuthStore = defineStore('auth', {
             role_id: response.data.role_id
           };
           this.accessibleLocations = response.data.accessibleLocations || [];
-
-          localStorage.setItem('token', this.token);
-          localStorage.setItem('user', JSON.stringify(this.user));
-          localStorage.setItem('accessibleLocations', JSON.stringify(this.accessibleLocations));
+          
+          try {
+            localStorage.setItem('token', this.token);
+            localStorage.setItem('user', JSON.stringify(this.user));
+            localStorage.setItem('accessibleLocations', JSON.stringify(this.accessibleLocations));
+          } catch (e) {
+            console.warn('Failed to persist auth data to localStorage:', e);
+          }
 
           return {
             success: true,
@@ -62,9 +80,13 @@ export const useAuthStore = defineStore('auth', {
       this.token = null;
       this.user = null;
       this.accessibleLocations = [];
-      localStorage.removeItem('token');
-      localStorage.removeItem('user');
-      localStorage.removeItem('accessibleLocations');
+      try {
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        localStorage.removeItem('accessibleLocations');
+      } catch (e) {
+        console.warn('Failed to clear localStorage during logout:', e);
+      }
     },
 
     async fetchCurrentUser() {
@@ -87,8 +109,12 @@ export const useAuthStore = defineStore('auth', {
             role_id: userData.role_id
           };
           this.accessibleLocations = response.data.data.accessibleLocations || [];
-          localStorage.setItem('user', JSON.stringify(this.user));
-          localStorage.setItem('accessibleLocations', JSON.stringify(this.accessibleLocations));
+          try {
+            localStorage.setItem('user', JSON.stringify(this.user));
+            localStorage.setItem('accessibleLocations', JSON.stringify(this.accessibleLocations));
+          } catch (e) {
+            console.warn('Failed to persist user data to localStorage:', e);
+          }
         }
       } catch (error) {
         console.error('Failed to fetch user:', error);

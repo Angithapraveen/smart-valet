@@ -8,26 +8,10 @@
         </p>
       </div>
       <div class="header-actions">
-        <button @click="fetchHistory" class="btn btn-primary" :disabled="loading">
-          <svg
-            class="refresh-icon"
-            :class="{ spinning: loading }"
-            width="18"
-            height="18"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="2"
-              d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-            />
-          </svg>
-          <span v-if="loading">Loading...</span>
-          <span v-else>Refresh</span>
-        </button>
+        <div class="live-indicator">
+          <span class="dot animate-pulse"></span>
+          Live Updates
+        </div>
       </div>
     </header>
 
@@ -89,7 +73,8 @@
             <th>Status</th>
             <th>Entry Time</th>
             <th>Exit Time</th>
-            <th>Slot</th>
+            <th>KeySlot</th>
+            <th>Space</th>
           </tr>
         </thead>
         <tbody>
@@ -124,6 +109,12 @@
               <span v-else class="text-muted">-</span>
             </td>
             <td>
+              <span v-if="txn.key_slot" class="key-badge">
+                 {{ formatKeySlot(txn.key_slot) }}
+              </span>
+              <span v-else class="text-muted text-sm">-</span>
+            </td>
+            <td>
               <span v-if="txn.block_entry_id" class="slot-badge">
                  {{ txn.block_entry_id.split('-').slice(1).join('-') }}
               </span>
@@ -137,7 +128,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, watch, computed } from 'vue';
+import { ref, onMounted, onUnmounted, watch, computed } from 'vue';
 import { useAuthStore } from '../../stores/auth';
 import axios from 'axios';
 
@@ -200,6 +191,11 @@ const getStatusClass = (status) => {
   }
 };
 
+const formatKeySlot = (id) => {
+  if (!id) return '';
+  return id.toString().padStart(3, '0');
+};
+
 const formatTime = (dateString) => {
   if (!dateString) return '';
   const date = new Date(dateString);
@@ -218,8 +214,8 @@ const setFilter = (filter) => {
   }
 };
 
-const fetchHistory = async () => {
-  loading.value = true;
+const fetchHistory = async (showLoading = true) => {
+  if (showLoading && transactions.value.length === 0) loading.value = true;
   error.value = null;
 
   try {
@@ -267,8 +263,13 @@ const fetchHistory = async () => {
   }
 };
 
+let pollInterval;
 onMounted(() => {
   fetchHistory();
+  pollInterval = setInterval(() => fetchHistory(false), 5000);
+});
+onUnmounted(() => {
+  if (pollInterval) clearInterval(pollInterval);
 });
 </script>
 
@@ -292,6 +293,29 @@ onMounted(() => {
   flex-wrap: wrap;
   gap: 16px;
   align-items: center;
+}
+
+.live-indicator {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(34, 197, 94, 0.1);
+  color: #16a34a;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.dot {
+  width: 8px; height: 8px; background: #16a34a; border-radius: 50%;
+}
+.animate-pulse {
+    animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: .5; }
 }
 
 .filter-group {

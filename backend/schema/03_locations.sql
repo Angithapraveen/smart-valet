@@ -11,8 +11,10 @@ CREATE TABLE IF NOT EXISTS LOCATIONS (
     address TEXT,
     valid_from DATE NOT NULL,
     valid_to DATE,
+    total_capacity INTEGER DEFAULT 100,
     status BOOLEAN DEFAULT TRUE,
-    created_at TIMESTAMP DEFAULT NOW()
+    created_at TIMESTAMP DEFAULT NOW(),
+    updated_at TIMESTAMP DEFAULT NOW()
 );
 
 -- Create index on status for filtering active locations

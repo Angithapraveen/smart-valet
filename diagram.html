@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EZValet – Smart Valet Parking Management System ERD</title>
+    <style>
+        :root {
+            --bg-color: #f8fafc;
+            --entity-bg: #e0f2fe;
+            --entity-border: #0ea5e9;
+            --rel-bg: #fce7f3;
+            --rel-border: #ec4899;
+            --attr-bg: #ecfdf5;
+            --attr-border: #10b981;
+            --line-color: #64748b;
+            --text-color: #0f172a;
+            --primary-font: 'Inter', system-ui, -apple-system, sans-serif;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: var(--bg-color);
+            font-family: var(--primary-font);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+
+        header {
+            background: white;
+            padding: 20px 30px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+            z-index: 10;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        h1 {
+            margin: 0;
+            font-size: 24px;
+            color: #0f172a;
+            font-weight: 700;
+        }
+
+        p {
+            margin: 5px 0 0;
+            color: #64748b;
+            font-size: 14px;
+        }
+
+        #canvas-container {
+            flex: 1;
+            position: relative;
+            cursor: grab;
+            overflow: hidden;
+            background: #f8fafc;
+        }
+
+        #canvas-container:active {
+            cursor: grabbing;
+        }
+
+        svg {
+            width: 100%;
+            height: 100%;
+        }
+
+        .line {
+            stroke: var(--line-color);
+            stroke-width: 2.5;
+            fill: none;
+        }
+
+        .cardinality {
+            font-size: 15px;
+            font-weight: 800;
+            fill: #1e293b;
+            font-family: monospace;
+            pointer-events: none;
+        }
+
+        .entity-rect {
+            fill: var(--entity-bg);
+            stroke: var(--entity-border);
+            stroke-width: 2.5;
+            rx: 6;
+        }
+
+        .rel-diamond {
+            fill: var(--rel-bg);
+            stroke: var(--rel-border);
+            stroke-width: 2.5;
+        }
+
+        .attr-oval {
+            fill: var(--attr-bg);
+            stroke: var(--attr-border);
+            stroke-width: 2;
+        }
+
+        .label {
+            font-size: 12.5px;
+            font-weight: 600;
+            fill: var(--text-color);
+            text-anchor: middle;
+            dominant-baseline: middle;
+            pointer-events: none;
+        }
+
+        .entity-label {
+            font-size: 15px;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+        }
+
+        .key-text {
+            text-decoration: underline;
+            font-weight: 800;
+            fill: #000;
+        }
+
+        .drop-shadow {
+            filter: drop-shadow(0px 3px 4px rgba(0, 0, 0, 0.12));
+        }
+    </style>
+</head>
+
+<body>
+
+
+
+    <div id="canvas-container">
+        <svg id="erd-svg">
+            <g id="zoom-group">
+                <g id="lines-layer"></g>
+                <g id="shapes-layer"></g>
+            </g>
+        </svg>
+    </div>
+
+    <script>
+        // MASSIVELY increased distances (800px intervals) to prevent overlapping attributes!
+        const entities = [
+            { id: 'ROLE_MASTER', x: 2300, y: 950, label: 'ROLE_MASTER' },
+            { id: 'USERS', x: 2400, y: 600, label: 'USERS' },
+            { id: 'LOCATION_ACCESS', x: 2600, y: 300, label: 'LOCATION_ACCESS' },
+            { id: 'LOCATIONS', x: 2800, y: 600, label: 'LOCATIONS' },
+            { id: 'BLOCKS', x: 2800, y: 950, label: 'BLOCKS' },
+            { id: 'BLOCK_ENTRIES', x: 2830, y: 1250, label: 'BLOCK_ENTRIES' },
+            { id: 'VALET_TRANSACTIONS', x: 2600, y: 1500, label: 'VALET_TRANSACTIONS' },
+            { id: 'FEEDBACK', x: 2400, y: 1100, label: 'FEEDBACK' }
+        ];
+
+        const relationships = [
+            { id: 'r_role_user', x: 2400, y: 750, label: 'Defines' },
+            { id: 'r_user_acc', x: 2500, y: 450, label: 'Has Access' },
+            { id: 'r_loc_acc', x: 2700, y: 450, label: 'Linked Through' },
+            { id: 'r_loc_blk', x: 2760, y: 750, label: 'Contains' },
+            { id: 'r_blk_ent', x: 2810, y: 1110, label: 'Contains' },
+            { id: 'r_user_val', x: 2600, y: 750, label: 'Handles' },
+            { id: 'r_blk_val', x: 2670, y: 1300, label: 'Assigned To' },
+            { id: 'r_ent_val', x: 2810, y: 1400, label: 'Used In' },
+            { id: 'r_val_fb', x: 2500, y: 1300, label: 'Generates' }
+        ];
+
+        const links = [
+            { s: 'ROLE_MASTER', t: 'r_role_user', card: '1' },
+            { s: 'r_role_user', t: 'USERS', card: 'N' },
+            { s: 'USERS', t: 'r_user_acc', card: '1' },
+            { s: 'r_user_acc', t: 'LOCATION_ACCESS', card: 'N' },
+            { s: 'LOCATIONS', t: 'r_loc_acc', card: '1' },
+            { s: 'r_loc_acc', t: 'LOCATION_ACCESS', card: 'N' },
+            { s: 'LOCATIONS', t: 'r_loc_blk', card: '1' },
+            { s: 'r_loc_blk', t: 'BLOCKS', card: 'N' },
+            { s: 'BLOCKS', t: 'r_blk_ent', card: '1' },
+            { s: 'r_blk_ent', t: 'BLOCK_ENTRIES', card: 'N' },
+            { s: 'USERS', t: 'r_user_val', card: '1' },
+            { s: 'r_user_val', t: 'VALET_TRANSACTIONS', card: 'N' },
+            { s: 'BLOCKS', t: 'r_blk_val', card: '1' },
+            { s: 'r_blk_val', t: 'VALET_TRANSACTIONS', card: 'N' },
+            { s: 'BLOCK_ENTRIES', t: 'r_ent_val', card: '1' },
+            { s: 'r_ent_val', t: 'VALET_TRANSACTIONS', card: 'N' },
+            { s: 'VALET_TRANSACTIONS', t: 'r_val_fb', card: '1' },
+            { s: 'r_val_fb', t: 'FEEDBACK', card: 'N' }
+        ];
+
+        // Explicit staggered distances mapped individually to definitively rule out overlaps!
+        const attributes = [
+            { ent: 'ROLE_MASTER', label: 'role_id (PK)', isKey: true, angle: 230, dist: 200 },
+            { ent: 'ROLE_MASTER', label: 'role_name (UK)', angle: 205, dist: 200 },
+            { ent: 'ROLE_MASTER', label: 'description', angle: 190, dist: 200 },
+            { ent: 'ROLE_MASTER', label: 'status', angle: 150, dist: 200 },
+            { ent: 'ROLE_MASTER', label: 'created_at', angle: 170, dist: 200 },
+
+            { ent: 'USERS', label: 'user_id (PK)', isKey: true, angle: 280, dist: 200 },
+            { ent: 'USERS', label: 'name', angle: 250, dist: 200 },
+            { ent: 'USERS', label: 'email_id (UK)', angle: 225, dist: 200 },
+            { ent: 'USERS', label: 'phone_number (UK)', angle: 190, dist: 200 },
+            { ent: 'USERS', label: 'password', angle: 170, dist: 200 },
+            { ent: 'USERS', label: 'role_id (FK)', angle: 130, dist: 200 },
+            { ent: 'USERS', label: 'status', angle: 205, dist: 250 },
+
+            { ent: 'LOCATION_ACCESS', label: 'access_id (PK)', isKey: true, angle: 180, dist: 190 },
+            { ent: 'LOCATION_ACCESS', label: 'user_id (FK)', angle: 220, dist: 150 },
+            { ent: 'LOCATION_ACCESS', label: 'location_id (FK)', angle: 250, dist: 180 },
+            { ent: 'LOCATION_ACCESS', label: 'valid_from', angle: 282, dist: 140 },
+            { ent: 'LOCATION_ACCESS', label: 'valid_to', angle: 320, dist: 200 },
+            { ent: 'LOCATION_ACCESS', label: 'status', angle: 360, dist: 290 },
+            { ent: 'LOCATION_ACCESS', label: 'created_at', angle: 345, dist: 200 },
+
+            { ent: 'LOCATIONS', label: 'location_id (PK)', isKey: true, angle: 270, dist: 200 },
+            { ent: 'LOCATIONS', label: 'location_name', angle: 295, dist: 250 },
+            { ent: 'LOCATIONS', label: 'address', angle: 310, dist: 200 },
+            { ent: 'LOCATIONS', label: 'short_code', angle: 330, dist: 270 },
+            { ent: 'LOCATIONS', label: 'status', angle: 0, dist: 200 },
+            { ent: 'LOCATIONS', label: 'created_at', angle: 350, dist: 270 },
+
+            { ent: 'BLOCKS', label: 'block_id (PK)', isKey: true, angle: 295, dist: 200 },
+            { ent: 'BLOCKS', label: 'location_id (FK)', angle: 310, dist: 330 },
+            { ent: 'BLOCKS', label: 'block_name', angle: 330, dist: 200 },
+            { ent: 'BLOCKS', label: 'capacity', angle: 345, dist: 360 },
+            { ent: 'BLOCKS', label: 'status', angle: 0, dist: 200 },
+            { ent: 'BLOCKS', label: 'valid_from', angle: 15, dist: 360 },
+            { ent: 'BLOCKS', label: 'valid_to', angle: 26, dist: 200 },
+            { ent: 'BLOCKS', label: 'created_at', angle: 38, dist: 220 },
+
+            { ent: 'BLOCK_ENTRIES', label: 'entry_id (PK)', isKey: true, angle: 0, dist: 200 },
+            { ent: 'BLOCK_ENTRIES', label: 'block_id (FK)', angle: 350, dist: 330 },
+            { ent: 'BLOCK_ENTRIES', label: 'status', angle: 20, dist: 200 },
+            { ent: 'BLOCK_ENTRIES', label: 'created_at', angle: 330, dist: 200 },
+
+            { ent: 'VALET_TRANSACTIONS', label: 'valet_id (PK)', isKey: true, angle: 95, dist: 180 },
+            { ent: 'VALET_TRANSACTIONS', label: 'vehicle_number', angle: 115, dist: 250 },
+            { ent: 'VALET_TRANSACTIONS', label: 'customer_name', angle: 140, dist: 220 },
+            { ent: 'VALET_TRANSACTIONS', label: 'phone_number', angle: 160, dist: 250 },
+            { ent: 'VALET_TRANSACTIONS', label: 'block_id (FK)', angle: 170, dist: 220 },
+            { ent: 'VALET_TRANSACTIONS', label: 'entry_id (FK)', angle: 185, dist: 220 },
+            { ent: 'VALET_TRANSACTIONS', label: 'park_driver (FK)', angle: 0, dist: 220 },
+            { ent: 'VALET_TRANSACTIONS', label: 'ret_driver (FK)', angle: 15, dist: 200 },
+            { ent: 'VALET_TRANSACTIONS', label: 'status', angle: 30, dist: 220 },
+            { ent: 'VALET_TRANSACTIONS', label: 'parked_time', angle: 50, dist: 220 },
+            { ent: 'VALET_TRANSACTIONS', label: 'ready_time', angle: 70, dist: 220 },
+            { ent: 'VALET_TRANSACTIONS', label: 'returned_time', angle: 200, dist: 250 },
+            { ent: 'VALET_TRANSACTIONS', label: 'created_at', angle: 225, dist: 190 },
+
+            { ent: 'FEEDBACK', label: 'feedback_id (PK)', isKey: true, angle: 180, dist: 200 },
+            { ent: 'FEEDBACK', label: 'valet_id (FK)', angle: 160, dist: 330 },
+            { ent: 'FEEDBACK', label: 'rating', angle: 135, dist: 200 },
+            { ent: 'FEEDBACK', label: 'comments', angle: 120, dist: 330 },
+            { ent: 'FEEDBACK', label: 'created_at', angle: 100, dist: 200 }
+        ];
+
+        const elementsMap = {};
+        [...entities, ...relationships].forEach(e => elementsMap[e.id] = e);
+
+        const svgNS = "http://www.w3.org/2000/svg";
+        const linesLayer = document.getElementById('lines-layer');
+        const shapesLayer = document.getElementById('shapes-layer');
+
+        links.forEach(link => {
+            const s = elementsMap[link.s];
+            const t = elementsMap[link.t];
+
+            const line = document.createElementNS(svgNS, 'line');
+            line.setAttribute('x1', s.x);
+            line.setAttribute('y1', s.y);
+            line.setAttribute('x2', t.x);
+            line.setAttribute('y2', t.y);
+            line.setAttribute('class', 'line');
+            linesLayer.appendChild(line);
+
+            if (link.card) {
+                const dx = t.x - s.x;
+                const dy = t.y - s.y;
+                const len = Math.sqrt(dx * dx + dy * dy);
+                const nx = -dy / len;
+                const ny = dx / len;
+
+                const offset = 22;
+                const cx = (s.x + t.x) / 2 + nx * offset;
+                const cy = (s.y + t.y) / 2 + ny * offset;
+
+                const text = document.createElementNS(svgNS, 'text');
+                text.setAttribute('x', cx);
+                text.setAttribute('y', cy);
+                text.setAttribute('class', 'cardinality');
+                text.setAttribute('text-anchor', 'middle');
+                text.setAttribute('dominant-baseline', 'middle');
+                text.textContent = link.card;
+
+                const rect = document.createElementNS(svgNS, 'rect');
+                rect.setAttribute('x', cx - 12);
+                rect.setAttribute('y', cy - 10);
+                rect.setAttribute('width', 24);
+                rect.setAttribute('height', 20);
+                rect.setAttribute('fill', 'rgba(248,250,252,0.9)');
+                rect.setAttribute('rx', 4);
+
+                linesLayer.appendChild(rect);
+                linesLayer.appendChild(text);
+            }
+        });
+
+        attributes.forEach(attr => {
+            const ent = elementsMap[attr.ent];
+            const dist = attr.dist;
+            const rad = attr.angle * (Math.PI / 180);
+            const ax = ent.x + dist * Math.cos(rad);
+            const ay = ent.y + dist * Math.sin(rad);
+
+            const line = document.createElementNS(svgNS, 'line');
+            line.setAttribute('x1', ent.x);
+            line.setAttribute('y1', ent.y);
+            line.setAttribute('x2', ax);
+            line.setAttribute('y2', ay);
+            line.setAttribute('class', 'line');
+            line.style.strokeDasharray = "5,4";
+            line.style.opacity = "0.7";
+            linesLayer.appendChild(line);
+
+            const textWidthEstimate = Math.max(76, attr.label.length * 7 + 24);
+            const rx = textWidthEstimate / 2;
+            const ry = 22;
+
+            const oval = document.createElementNS(svgNS, 'ellipse');
+            oval.setAttribute('cx', ax);
+            oval.setAttribute('cy', ay);
+            oval.setAttribute('rx', rx);
+            oval.setAttribute('ry', ry);
+            oval.setAttribute('class', 'attr-oval drop-shadow');
+            shapesLayer.appendChild(oval);
+
+            const text = document.createElementNS(svgNS, 'text');
+            text.setAttribute('x', ax);
+            text.setAttribute('y', ay + 1);
+            text.setAttribute('class', `label ${attr.isKey ? 'key-text' : ''}`);
+            text.textContent = attr.label;
+            shapesLayer.appendChild(text);
+        });
+
+        const rectWidth = 220;
+        const rectHeight = 75;
+        entities.forEach(ent => {
+            const rect = document.createElementNS(svgNS, 'rect');
+            rect.setAttribute('x', ent.x - rectWidth / 2);
+            rect.setAttribute('y', ent.y - rectHeight / 2);
+            rect.setAttribute('width', rectWidth);
+            rect.setAttribute('height', rectHeight);
+            rect.setAttribute('class', 'entity-rect drop-shadow');
+            shapesLayer.appendChild(rect);
+
+            const text = document.createElementNS(svgNS, 'text');
+            text.setAttribute('x', ent.x);
+            text.setAttribute('y', ent.y + 2);
+            text.setAttribute('class', 'label entity-label');
+            text.textContent = ent.label;
+            shapesLayer.appendChild(text);
+        });
+
+        const diaWidth = 120;
+        const diaHeight = 90;
+        relationships.forEach(rel => {
+            const polygon = document.createElementNS(svgNS, 'polygon');
+            const pts = `
+                ${rel.x},${rel.y - diaHeight / 2} 
+                ${rel.x + diaWidth / 2},${rel.y} 
+                ${rel.x},${rel.y + diaHeight / 2} 
+                ${rel.x - diaWidth / 2},${rel.y}
+            `;
+            polygon.setAttribute('points', pts.trim());
+            polygon.setAttribute('class', 'rel-diamond drop-shadow');
+            shapesLayer.appendChild(polygon);
+
+            const text = document.createElementNS(svgNS, 'text');
+            text.setAttribute('x', rel.x);
+            text.setAttribute('y', rel.y + 1);
+            text.setAttribute('class', 'label');
+            text.textContent = rel.label;
+            shapesLayer.appendChild(text);
+        });
+
+        const zoomGroup = document.getElementById('zoom-group');
+        const container = document.getElementById('canvas-container');
+
+        let scale = Math.min((window.innerWidth) / 4500, 0.4);
+        let diffX = (window.innerWidth / 2) - (2200 * scale);
+        let diffY = (window.innerHeight / 2) - (1500 * scale);
+        let isDragging = false;
+        let startX, startY;
+
+        function updateTransform() {
+            zoomGroup.setAttribute('transform', `translate(${diffX}, ${diffY}) scale(${scale})`);
+        }
+        setTimeout(updateTransform, 50);
+
+        container.addEventListener('mousedown', (e) => {
+            isDragging = true;
+            startX = e.clientX - diffX;
+            startY = e.clientY - diffY;
+            container.style.cursor = 'grabbing';
+            e.preventDefault();
+        });
+
+        window.addEventListener('mouseup', () => {
+            isDragging = false;
+            container.style.cursor = 'grab';
+        });
+
+        window.addEventListener('mousemove', (e) => {
+            if (!isDragging) return;
+            diffX = e.clientX - startX;
+            diffY = e.clientY - startY;
+            updateTransform();
+        });
+
+        container.addEventListener('wheel', (e) => {
+            e.preventDefault();
+            const xs = (e.clientX - diffX) / scale;
+            const ys = (e.clientY - diffY) / scale;
+
+            scale -= e.deltaY * 0.001;
+            scale = Math.min(Math.max(0.05, scale), 3);
+
+            diffX = e.clientX - xs * scale;
+            diffY = e.clientY - ys * scale;
+            updateTransform();
+        });
+    </script>
+</body>
+
+</html>

@@ -6,6 +6,7 @@ const {
     createLocation,
     getLocations,
     updateLocationStatus,
+    updateLocation,
     getLocationOwners
 } = require('../controllers/locationController');
 const { createManager } = require('../controllers/ownerActionsController');
@@ -16,6 +17,7 @@ router.use(requireRole('ADMIN'));
 
 router.post('/', createLocation);
 router.get('/', getLocations);
+router.put('/:id', updateLocation);
 router.put('/:id/status', updateLocationStatus);
 router.get('/:id/owners', getLocationOwners);
 router.post('/:location_id/manager', createManager);

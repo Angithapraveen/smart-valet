@@ -8,25 +8,10 @@
         </p>
       </div>
       <div class="header-actions">
-        <button @click="fetchData" class="btn btn-outline" :disabled="loading">
-          <svg
-            class="refresh-icon"
-            :class="{ spinning: loading }"
-            width="18"
-            height="18"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="2"
-              d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-            />
-          </svg>
-          Refresh
-        </button>
+        <div class="live-indicator">
+          <span class="dot animate-pulse"></span>
+          Live Updates
+        </div>
       </div>
     </header>
 
@@ -87,7 +72,10 @@
 
         <div class="card-body">
           <div class="vehicle-info">
-            <h3>{{ req.car_model || 'Unknown Model' }}</h3>
+            <div class="model-row">
+              <h3>{{ req.car_model || 'Unknown Model' }}</h3>
+              <span v-if="req.car_number" class="car-number-badge">{{ req.car_number }}</span>
+            </div>
             <p class="customer-name">{{ req.customer_name }}</p>
             <div v-if="req.block_entry_id" class="location-badge">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
@@ -134,7 +122,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from 'vue';
+import { ref, onMounted, onUnmounted, computed } from 'vue';
 import { useAuthStore } from '../../stores/auth';
 import axios from 'axios';
 import { useToast } from '../../stores/toast';
@@ -190,8 +178,8 @@ const formatTime = (dateString) => {
   }).format(date);
 };
 
-const fetchData = async () => {
-  loading.value = true;
+const fetchData = async (showLoading = true) => {
+  if (showLoading && transactions.value.length === 0) loading.value = true;
   error.value = null;
 
   try {
@@ -248,8 +236,13 @@ const updateStatus = async (txn, newStatus) => {
 const markAsReady = (txn) => updateStatus(txn, 'READY');
 const markAsReturned = (txn) => updateStatus(txn, 'RETURNED');
 
+let pollInterval;
 onMounted(() => {
   fetchData();
+  pollInterval = setInterval(() => fetchData(false), 5000);
+});
+onUnmounted(() => {
+  if (pollInterval) clearInterval(pollInterval);
 });
 </script>
 
@@ -265,6 +258,29 @@ onMounted(() => {
   color: var(--text-muted);
   font-size: 15px;
   margin-top: 4px;
+}
+
+.live-indicator {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(34, 197, 94, 0.1);
+  color: #16a34a;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.dot {
+  width: 8px; height: 8px; background: #16a34a; border-radius: 50%;
+}
+.animate-pulse {
+    animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: .5; }
 }
 
 .stats-summary {
@@ -347,11 +363,30 @@ onMounted(() => {
   flex: 1;
 }
 
+.vehicle-info .model-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 4px;
+}
+
 .vehicle-info h3 {
   font-size: 18px;
   font-weight: 600;
   color: var(--text-main);
-  margin-bottom: 4px;
+  margin-bottom: 0;
+}
+
+.car-number-badge {
+  background: var(--bg-main);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-main);
+  font-family: 'Outfit', monospace;
+  font-weight: 700;
+  font-size: 12px;
+  padding: 2px 8px;
+  border-radius: 4px;
+  text-transform: uppercase;
 }
 
 .customer-name {

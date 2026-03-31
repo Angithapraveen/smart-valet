@@ -185,8 +185,8 @@ const menuItems = [
   { path: '/manager/vehicles', label: 'Vehicles Transactions', icon: VehiclesIcon },
   { path: '/manager/users', label: 'Users & Roles', icon: UsersIcon },
  // { path: '/whatsapp-logs', label: 'WhatsApp Logs', icon: WhatsAppLogsIcon },
-  { path: '/reports', label: 'Reports', icon: ReportsIcon },
-  { path: '/settings', label: 'Settings', icon: SettingsIcon }
+  { path: '/manager/reports', label: 'Reports', icon: ReportsIcon },
+  { path: '/manager/settings', label: 'Settings', icon: SettingsIcon }
 ]
 </script>
 

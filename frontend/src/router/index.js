@@ -109,6 +109,18 @@ const routes = [
         name: 'VehiclesTransactions',
         component: () => import('../views/manager/VehiclesTransactions.vue'),
         meta: { role: 'MANAGER' }
+      },
+      {
+        path: 'manager/reports',
+        name: 'ManagerReports',
+        component: () => import('../views/manager/Reports.vue'),
+        meta: { role: 'MANAGER' }
+      },
+      {
+        path: 'manager/settings',
+        name: 'ManagerSettings',
+        component: () => import('../views/manager/Settings.vue'),
+        meta: { role: 'MANAGER' }
       }
     ]
   },
@@ -168,8 +180,10 @@ router.beforeEach((to, from, next) => {
       next('/owner/dashboard');
     } else if (role === 'MANAGER') {
       next('/manager/dashboard');
+    } else if (role === 'DRIVER') {
+      next('/driver/dashboard');
     } else {
-      next('/login');
+      next();
     }
     return;
   }
@@ -192,6 +206,8 @@ router.beforeEach((to, from, next) => {
         next('/owner/dashboard');
       } else if (role === 'MANAGER') {
         next('/manager/dashboard');
+      } else if (role === 'DRIVER') {
+        next('/driver/dashboard');
       } else {
         next('/login');
       }

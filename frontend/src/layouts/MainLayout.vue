@@ -48,9 +48,7 @@ const isManager = computed(() => {
 
 .page-container {
   flex: 1;
-  padding: 0 32px 32px 32px;
-  max-width: 1400px;
-  margin: 0 auto;
+  padding: 0 40px 32px 40px;
   width: 100%;
   height: 100%;
   overflow-y: auto; /* Scrollable content area */

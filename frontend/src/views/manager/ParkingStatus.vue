@@ -6,12 +6,10 @@
         <p class="subtitle" v-if="locationName">{{ locationName }}</p>
       </div>
       <div class="header-actions">
-        <button @click="fetchData" class="btn btn-outline" :disabled="loading">
-          <svg class="refresh-icon" :class="{ 'spinning': loading }" width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-          </svg>
-          Refresh Status
-        </button>
+        <div class="live-indicator">
+          <span class="dot animate-pulse"></span>
+          Live Updates
+        </div>
       </div>
     </header>
 
@@ -63,7 +61,11 @@
             :class="entry.status ? entry.status.toLowerCase() : 'unknown'"
           >
             <div class="slot-number">{{ entry.block_entry_id ? entry.block_entry_id.split('-').pop() : '?' }}</div>
-            <div class="slot-status">{{ entry.status || 'UNKNOWN' }}</div>
+            <div class="slot-status" v-if="!entry.vehicle">{{ entry.status || 'UNKNOWN' }}</div>
+            <div class="slot-vehicle" v-if="entry.vehicle">
+              <span class="v-model" :title="entry.vehicle.car_model">{{ entry.vehicle.car_model || 'Unknown' }}</span>
+              <span class="v-plate" v-if="entry.vehicle.car_number">{{ entry.vehicle.car_number }}</span>
+            </div>
           </div>
         </div>
       </div>
@@ -72,7 +74,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from 'vue';
+import { ref, onMounted, onUnmounted, computed } from 'vue';
 import { useAuthStore } from '../../stores/auth';
 import axios from 'axios';
 
@@ -101,8 +103,8 @@ const getOccupancyClass = (block) => {
   return 'normal';
 };
 
-const fetchData = async () => {
-  loading.value = true;
+const fetchData = async (showLoading = true) => {
+  if (showLoading && !blocks.value.length) loading.value = true;
   error.value = null;
 
   try {
@@ -136,8 +138,13 @@ const fetchData = async () => {
   }
 };
 
+let pollInterval;
 onMounted(() => {
   fetchData();
+  pollInterval = setInterval(() => fetchData(false), 5000);
+});
+onUnmounted(() => {
+  if (pollInterval) clearInterval(pollInterval);
 });
 </script>
 
@@ -152,6 +159,29 @@ onMounted(() => {
   color: var(--text-muted);
   font-size: 16px;
   margin-top: 4px;
+}
+
+.live-indicator {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(34, 197, 94, 0.1);
+  color: #16a34a;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.dot {
+  width: 8px; height: 8px; background: #16a34a; border-radius: 50%;
+}
+.animate-pulse {
+    animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: .5; }
 }
 
 .blocks-grid {
@@ -269,6 +299,32 @@ onMounted(() => {
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.1em;
+}
+
+.slot-vehicle {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+}
+
+.v-model {
+  font-size: 11px;
+  font-weight: 700;
+  color: inherit;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  width: 90%;
+}
+
+.v-plate {
+  font-size: 9px;
+  font-weight: 800;
+  background: rgba(0,0,0,0.15);
+  padding: 2px 6px;
+  border-radius: 4px;
+  margin-top: 2px;
 }
 
 .loading-state, .empty-state {

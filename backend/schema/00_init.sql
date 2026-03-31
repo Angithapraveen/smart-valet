@@ -17,7 +17,7 @@
 -- 5. 05_blocks.sql
 -- 6. 06_block_entries.sql
 -- 7. 07_valet_transactions.sql
--- 8. 08_return_requests.sql
+
 -- 9. 09_feedback.sql
 
 -- To initialize the database:

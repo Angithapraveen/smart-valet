@@ -1,12 +1,16 @@
 <template>
 <div class="vehicle-details-page">
     <div class="header">
-        <button class="back-btn" @click="$router.push('/driver/dashboard')">
+        <button class="back-btn" @click="handleBackClick">
             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
         </button>
         <div class="header-title">
             <span class="ticket-id">{{ vehicle.valet_id }}</span>
-            <span class="car-make">{{ vehicle.car_model || 'Unknown Model' }}</span>
+            <div class="car-info-row">
+                <span class="car-make">{{ vehicle.car_model || 'Unknown Model' }}</span>
+                <span v-if="vehicle.car_number" class="car-plate-badge">{{ vehicle.car_number }}</span>
+                <span v-if="vehicle.key_slot" class="car-key-badge">KEYSLOT: {{ formatKeySlot(vehicle.key_slot) }}</span>
+            </div>
         </div>
         <div class="status-badge-top" :class="statusClass">{{ vehicle.status }}</div>
     </div>
@@ -27,8 +31,12 @@
                 <span class="value">{{ formatTime(vehicle.parked_time) }}</span>
             </div>
             <div class="info-item">
-                <span class="label">Make</span>
-                <span class="value">{{ vehicle.car_model || 'Audi' }}</span>
+                <span class="label">Make / Plate</span>
+                <span class="value">{{ vehicle.car_model || 'Audi' }} {{ vehicle.car_number ? '[' + vehicle.car_number + ']' : '' }}</span>
+            </div>
+            <div class="info-item" v-if="vehicle.key_slot">
+                <span class="label">KeySlot</span>
+                <span class="value key-highlight">{{ formatKeySlot(vehicle.key_slot) }}</span>
             </div>
         </div>
 
@@ -121,15 +129,19 @@
                     </div>
                 </div>
 
-                <!-- NEXT ACTION: RETURNED -->
-                <div v-if="isCurrent('READY')" class="next-action-card">
-                    <div class="action-icon returned-glow">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 16 16 12 12 8"></polyline><line x1="8" y1="12" x2="16" y2="12"></line></svg>
+                <!-- NEXT ACTION: RETURNED OR REPARKED -->
+                <div v-if="isCurrent('READY')" class="next-action-card dual-action">
+                   
+                    <div class="button-group">
+                        <button class="action-btn btn-returned" @click="handleReturnedClick" :disabled="updating || isAssignedToOther || !isDriver">
+                            <span class="action-label">SUCCESS</span>
+                            <span class="action-text">{{ updating ? '...' : 'RETURNED' }}</span>
+                        </button>
+                        <button class="action-btn btn-repark" @click="updateStatus('PARKED')" :disabled="updating || isAssignedToOther">
+                            <span class="action-label">LATE</span>
+                            <span class="action-text">{{ updating ? '...' : 'REPARK' }}</span>
+                        </button>
                     </div>
-                    <button class="action-btn btn-returned" @click="updateStatus('RETURNED')" :disabled="updating || isAssignedToOther">
-                        <span class="action-label">NEXT ACTION</span>
-                        <span class="action-text">{{ updating ? 'PROSESSING...' : 'RETURNED' }}</span>
-                    </button>
                     <div class="connector"></div>
                 </div>
 
@@ -156,11 +168,50 @@
             </div>
         </div>
     </div>
+
+    <!-- Missing Data Modal -->
+    <div v-if="showMissingDataModal" class="modal-overlay">
+        <div class="modal-card">
+            <h3>Update Vehicle Details</h3>
+            <p>Please enter the missing details before marking as returned.</p>
+            
+            <div class="form-group">
+                <label>Car Make & Model</label>
+                <input v-model="missingDataForm.car_model" type="text" class="form-input" placeholder="e.g. Audi A6">
+            </div>
+            
+            <div class="form-group">
+                <label>Plate Number</label>
+                <input v-model="missingDataForm.car_number" type="text" class="form-input" placeholder="e.g. TN36AP1234" @input="missingDataForm.car_number = missingDataForm.car_number.toUpperCase()">
+            </div>
+            
+            <div class="form-group">
+                <label>Category</label>
+                <div class="category-grid">
+                    <div 
+                        v-for="cat in ['High', 'Medium', 'Low']" 
+                        :key="cat"
+                        class="cat-btn"
+                        :class="{ active: missingDataForm.car_category === cat }"
+                        @click="missingDataForm.car_category = cat"
+                    >
+                        <span class="radio-circle"></span>
+                        <span class="cat-label">{{ cat }}</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="modal-actions">
+                <button class="cancel-btn" @click="showMissingDataModal = false" :disabled="savingMissingData">Cancel</button>
+                <button class="confirm-btn" @click="saveMissingData" :disabled="savingMissingData">{{ savingMissingData ? 'Saving...' : 'Save & Return' }}</button>
+            </div>
+        </div>
+    </div>
 </div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, reactive } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useAuthStore } from '../../stores/auth';
 import axios from 'axios';
@@ -175,6 +226,77 @@ const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
 const loading = ref(true);
 const updating = ref(false);
 const vehicle = ref({});
+
+const showMissingDataModal = ref(false);
+const missingDataForm = reactive({
+    car_model: '',
+    car_category: '',
+    car_number: ''
+});
+const savingMissingData = ref(false);
+
+const isDriver = computed(() => {
+    return authStore.user?.role_name === 'DRIVER' || authStore.user?.role === 'DRIVER';
+});
+
+const isActivelyWorkingOnIt = computed(() => {
+    return vehicle.value.returned_driver_id === authStore.user?.user_id && ['ON_THE_WAY', 'READY'].includes(vehicle.value.status?.toUpperCase());
+});
+
+const handleBackClick = () => {
+    if (isActivelyWorkingOnIt.value) {
+        toast.error('Complete the current return request first.');
+    } else {
+        router.push('/driver/dashboard');
+    }
+};
+
+const handleReturnedClick = () => {
+    if (!isDriver.value) {
+        toast.error('Only drivers can mark a vehicle as returned.');
+        return;
+    }
+
+    const { car_model, car_category, car_number } = vehicle.value;
+    if (!car_model || car_model === 'Unknown Model' || !car_category || !car_number || car_number === 'N/A') {
+        missingDataForm.car_model = car_model && car_model !== 'Unknown Model' ? car_model : '';
+        missingDataForm.car_category = car_category || '';
+        missingDataForm.car_number = car_number && car_number !== 'N/A' ? car_number : '';
+        showMissingDataModal.value = true;
+    } else {
+        updateStatus('RETURNED');
+    }
+};
+
+const saveMissingData = async () => {
+    if (!missingDataForm.car_model || !missingDataForm.car_category || !missingDataForm.car_number) {
+        toast.error('Please fill in all the details.');
+        return;
+    }
+
+    savingMissingData.value = true;
+    try {
+        const { valetId } = route.params;
+        const response = await axios.put(`${API_URL}/valet/${valetId}`, {
+            car_model: missingDataForm.car_model,
+            car_category: missingDataForm.car_category,
+            car_number: missingDataForm.car_number
+        }, {
+            headers: { Authorization: `Bearer ${authStore.token}` }
+        });
+
+        if (response.data.success) {
+            toast.success('Vehicle info updated');
+            vehicle.value = response.data.data;
+            showMissingDataModal.value = false;
+            updateStatus('RETURNED');
+        }
+    } catch (e) {
+        toast.error('Failed to update vehicle data');
+    } finally {
+        savingMissingData.value = false;
+    }
+};
 
 const statusClass = computed(() => {
     switch (vehicle.value.status) {
@@ -214,6 +336,11 @@ const formatTime = (iso) => {
     return new Date(iso).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 };
 
+const formatKeySlot = (id) => {
+    if (!id) return '';
+    return id.toString().padStart(3, '0');
+};
+
 const fetchDetails = async () => {
     try {
         const { valetId } = route.params;
@@ -244,7 +371,7 @@ const updateStatus = async (newStatus) => {
         if (response.data.success) {
             toast.success(`Status updated to ${newStatus}`);
             vehicle.value = response.data.data;
-            if (newStatus === 'RETURNED') {
+            if (newStatus === 'RETURNED' || newStatus === 'PARKED') {
                 router.push('/driver/dashboard');
             }
         }
@@ -307,10 +434,34 @@ onMounted(() => {
     letter-spacing: 0.5px;
 }
 
+.car-info-row {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+}
+
 .car-make {
     font-size: 13px;
     color: var(--text-muted);
     font-weight: 500;
+}
+
+.car-plate-badge {
+    padding: 1px 6px;
+    border-radius: 4px;
+}
+.car-key-badge {
+    background: #1e293b;
+    color: #38bdf8;
+    font-family: 'Outfit', sans-serif;
+    font-weight: 800;
+    font-size: 10px;
+    padding: 2px 8px;
+    border-radius: 6px;
+    margin-top: 4px;
+    border: 1px solid #334155;
+    letter-spacing: 0.05em;
 }
 
 .status-badge-top {
@@ -339,6 +490,12 @@ onMounted(() => {
     padding: 16px;
     border: 1px solid var(--border-subtle);
     margin-bottom: 24px;
+}
+
+.key-highlight {
+    color: #38bdf8 !important;
+    font-weight: 800 !important;
+    font-family: 'Outfit', sans-serif;
 }
 
 .info-item {
@@ -538,6 +695,20 @@ onMounted(() => {
     color: white;
 }
 
+.button-group {
+    display: flex;
+    gap: 12px;
+    flex: 1;
+}
+
+.btn-repark {
+    background: #64748b !important;
+}
+
+.btn-repark:hover {
+    background: #475569 !important;
+}
+
 .lock-icon {
     margin-left: auto;
     color: #334155;
@@ -570,6 +741,139 @@ onMounted(() => {
     border-top-color: var(--primary);
     border-radius: 50%;
     animation: spin 1s linear infinite;
+}
+
+/* Modal Styles */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.6);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 200;
+    backdrop-filter: blur(8px);
+}
+
+.modal-card {
+    background: var(--bg-card);
+    padding: 24px;
+    border-radius: 20px;
+    width: 90%;
+    max-width: 380px;
+    border: 1px solid var(--border-subtle);
+    box-shadow: var(--shadow-lg);
+}
+
+.modal-card h3 {
+    margin-top: 0;
+    margin-bottom: 8px;
+    color: var(--text-main);
+}
+
+.modal-card p {
+    color: var(--text-muted);
+    font-size: 13px;
+    margin-bottom: 20px;
+}
+
+.form-input {
+    width: 100%;
+    background: var(--bg-main);
+    border: 1px solid var(--border-subtle);
+    padding: 12px;
+    border-radius: 12px;
+    color: var(--text-main);
+    font-size: 14px;
+}
+
+.form-input:focus {
+    outline: none;
+    border-color: var(--primary);
+}
+
+.category-grid {
+    display: flex;
+    gap: 10px;
+}
+
+.cat-btn {
+    flex: 1;
+    padding: 12px 0;
+    border-radius: 12px;
+    border: 1px solid var(--border-subtle);
+    background: var(--bg-main);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.cat-btn .radio-circle {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    border: 2px solid var(--border-subtle);
+    transition: all 0.2s ease;
+}
+
+.cat-btn .cat-label {
+    font-weight: 700;
+    font-size: 13px;
+    color: var(--text-muted);
+    transition: color 0.2s ease;
+}
+
+.cat-btn.active {
+    background: var(--primary-light);
+    border-color: var(--primary);
+}
+
+.cat-btn.active .radio-circle {
+    border-color: var(--primary);
+    background: var(--primary);
+    box-shadow: inset 0 0 0 3px var(--bg-main);
+}
+
+.cat-btn.active .cat-label {
+    color: var(--primary);
+}
+
+.modal-actions {
+    display: flex;
+    gap: 12px;
+    margin-top: 24px;
+}
+
+.cancel-btn, .confirm-btn {
+    flex: 1;
+    padding: 12px;
+    border-radius: 12px;
+    font-weight: 700;
+    font-size: 14px;
+    cursor: pointer;
+    border: none;
+}
+
+.cancel-btn {
+    background: var(--bg-main);
+    color: var(--text-main);
+    border: 1px solid var(--border-subtle);
+}
+
+.confirm-btn {
+    background: var(--primary);
+    color: white;
+}
+
+.confirm-btn:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
 }
 
 @keyframes spin { to { transform: rotate(360deg); } }

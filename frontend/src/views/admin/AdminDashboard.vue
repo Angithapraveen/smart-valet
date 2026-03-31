@@ -121,6 +121,10 @@
 
           <div class="loc-actions">
             <button class="btn btn-outline" @click="viewDetails(loc.location_id)">View Details</button>
+            <button class="btn btn-outline edit-btn" @click="openEditLocationModal(loc)">
+               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+               Edit
+            </button>
             <button 
               class="btn" 
               :class="expandedLocations[loc.location_id] ? 'btn-primary' : 'btn-outline'" 
@@ -177,6 +181,13 @@
       @close="closeAddLocationModal"
       @success="fetchDashboardData"
     />
+
+    <EditLocationModal 
+      :show="showEditLocationModal" 
+      :location="selectedLocation"
+      @close="closeEditLocationModal"
+      @success="fetchDashboardData"
+    />
   </div>
 </template>
 
@@ -186,6 +197,7 @@ import { useRouter } from 'vue-router';
 import { useAuthStore } from '../../stores/auth';
 import axios from 'axios';
 import AddLocationModal from '../../components/admin/AddLocationModal.vue';
+import EditLocationModal from '../../components/admin/EditLocationModal.vue';
 
 const router = useRouter();
 const authStore = useAuthStore();
@@ -260,6 +272,20 @@ const closeAddLocationModal = () => {
     showAddLocationModal.value = false;
 };
 
+// Edit Modal Logic
+const showEditLocationModal = ref(false);
+const selectedLocation = ref(null);
+
+const openEditLocationModal = (location) => {
+    selectedLocation.value = location;
+    showEditLocationModal.value = true;
+};
+
+const closeEditLocationModal = () => {
+    showEditLocationModal.value = false;
+    selectedLocation.value = null;
+};
+
 const toggleMainExpand = (locationId) => {
     if (expandedLocations.value[locationId]) {
         delete expandedLocations.value[locationId];
@@ -330,47 +356,52 @@ onMounted(() => {
 </script>
 
 <style scoped>
+.dashboard-page {
+  padding-top: 16px;
+}
+
 .dashboard-header {
-  margin-bottom: 32px;
+  margin-bottom: 24px;
 }
 
 .dashboard-header h1 {
-  font-size: 36px;
-  font-weight: 700;
+  font-size: 28px;
+  font-weight: 800;
   color: var(--text-main);
-  letter-spacing: -0.03em;
+  letter-spacing: -0.04em;
 }
 
 /* Summary Cards */
 .summary-cards {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-  gap: 24px;
-  margin-bottom: 48px;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+  margin-bottom: 32px;
 }
 
 .summary-card {
-  padding: 24px;
-  border-radius: 20px;
+  padding: 16px 20px;
+  border-radius: 16px;
   background: var(--bg-card);
   border: 1px solid var(--border-subtle);
   display: flex;
   align-items: center;
-  gap: 20px;
+  gap: 16px;
   box-shadow: var(--shadow-sm);
   transition: var(--ts-base);
 }
 
 .summary-card:hover {
-  transform: translateY(-4px);
+  transform: translateY(-2px);
   box-shadow: var(--shadow-md);
-  border-color: var(--primary-border);
+  border-color: var(--primary);
+  background: linear-gradient(to bottom right, var(--bg-card), var(--bg-main));
 }
 
 .card-icon {
-  width: 56px;
-  height: 56px;
-  border-radius: 14px;
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -383,8 +414,8 @@ onMounted(() => {
 .drivers-card .card-icon { background: var(--info-light); color: var(--info); }
 
 .card-content { flex: 1; }
-.card-label { font-size: 13px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 4px; }
-.card-value { font-size: 32px; font-weight: 700; color: var(--text-main); line-height: 1; font-family: 'Outfit', sans-serif; }
+.card-label { font-size: 11px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 2px; }
+.card-value { font-size: 24px; font-weight: 800; color: var(--text-main); line-height: 1; font-family: 'Outfit', sans-serif; }
 
 /* My Locations Section */
 .locations-section {
@@ -399,7 +430,7 @@ onMounted(() => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 24px 32px;
+  padding: 16px 24px;
   border-bottom: 1px solid var(--border-subtle);
   background: var(--bg-main);
 }
@@ -434,14 +465,14 @@ onMounted(() => {
 }
 
 .search-input {
-  padding: 10px 16px 10px 42px;
+  padding: 8px 12px 8px 36px;
   background: var(--bg-main);
   border: 1.5px solid var(--border-subtle);
-  border-radius: 12px;
-  font-size: 14px;
+  border-radius: 10px;
+  font-size: 13px;
   font-weight: 500;
   color: var(--text-main);
-  width: 320px;
+  width: 260px;
   transition: all 0.2s;
 }
 
@@ -449,8 +480,8 @@ onMounted(() => {
   outline: none;
   border-color: var(--primary);
   background: var(--bg-card);
-  box-shadow: 0 0 0 4px var(--primary-light);
-  width: 400px;
+  box-shadow: 0 0 0 3px var(--primary-light);
+  width: 320px;
 }
 
 .search-input::placeholder {
@@ -466,15 +497,16 @@ onMounted(() => {
 
 .locations-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
-  gap: 32px; /* Increased gap for a more airy, premium feel */
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  gap: 20px;
   align-items: start;
+  padding: 24px;
 }
 
 .location-card {
   background: var(--bg-card);
-  border-radius: 24px;
-  padding: 28px;
+  border-radius: 20px;
+  padding: 20px;
   border: 1px solid var(--border-subtle);
   display: flex;
   flex-direction: column;
@@ -483,9 +515,9 @@ onMounted(() => {
 }
 
 .location-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 12px 30px -4px rgba(0, 0, 0, 0.1);
-  border-color: var(--primary-border);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px -4px rgba(0, 0, 0, 0.2);
+  border-color: var(--primary);
 }
 
 .loc-card-header {
@@ -496,12 +528,12 @@ onMounted(() => {
 }
 
 .loc-type-eyebrow {
-  font-size: 10px;
+  font-size: 9.5px;
   font-weight: 800;
   text-transform: uppercase;
   color: var(--primary);
-  letter-spacing: 0.1em;
-  opacity: 0.8;
+  letter-spacing: 0.12em;
+  opacity: 0.7;
 }
 
 .loc-title-row {
@@ -511,8 +543,8 @@ onMounted(() => {
 }
 
 .loc-title-row h3 {
-  font-size: 22px;
-  font-weight: 700;
+  font-size: 18px;
+  font-weight: 750;
   color: var(--text-main);
   letter-spacing: -0.02em;
   margin: 0;
@@ -525,13 +557,15 @@ onMounted(() => {
 .loc-status-badge {
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 4px 10px;
-  border-radius: 20px;
-  font-size: 11px;
-  font-weight: 700;
-  background: var(--bg-main);
+  gap: 5px;
+  padding: 3px 8px;
+  border-radius: 12px;
+  font-size: 10px;
+  font-weight: 800;
+  background: var(--border-subtle);
   color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
 }
 
 .loc-status-badge.active {
@@ -556,9 +590,9 @@ onMounted(() => {
   align-items: center;
   gap: 8px;
   color: var(--text-muted);
-  font-size: 13.5px;
-  margin-bottom: 24px;
-  height: 40px;
+  font-size: 13px;
+  margin-bottom: 20px;
+  height: 36px;
   overflow: hidden;
 }
 
@@ -571,10 +605,10 @@ onMounted(() => {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   background: var(--bg-main);
-  border-radius: 20px;
-  height: 84px;
+  border-radius: 16px;
+  height: 64px;
   border: 1px solid var(--border-subtle);
-  margin-bottom: 24px;
+  margin-bottom: 20px;
 }
 
 .stat-item {
@@ -593,19 +627,19 @@ onMounted(() => {
 
 .stat-val { 
   font-weight: 800; 
-  font-size: 22px; 
+  font-size: 18px; 
   color: var(--text-main); 
   font-family: 'Outfit', sans-serif;
-  line-height: 1.1;
+  line-height: 1;
 }
 
 .stat-lbl { 
-  font-size: 9px; 
+  font-size: 8px; 
   color: var(--text-muted); 
-  font-weight: 800; 
+  font-weight: 700; 
   text-transform: uppercase; 
   letter-spacing: 0.1em;
-  margin-top: 6px;
+  margin-top: 4px;
 }
 
 .text-success { color: var(--success); }
@@ -614,17 +648,30 @@ onMounted(() => {
 
 .loc-actions {
   display: flex;
-  gap: 14px;
+  gap: 10px;
   margin-top: 0;
-  padding-bottom: 16px;
+  padding-bottom: 8px;
 }
 
 .loc-actions .btn {
   flex: 1;
-  font-size: 14px;
-  padding: 12px;
-  font-weight: 600;
-  border-radius: 14px;
+  font-size: 13px;
+  padding: 10px;
+  font-weight: 650;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.edit-btn {
+  color: var(--primary);
+}
+
+.edit-btn:hover {
+  background: var(--primary-light);
+  border-color: var(--primary);
 }
 
 .expanded-staff-section {

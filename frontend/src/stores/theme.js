@@ -2,11 +2,23 @@ import { defineStore } from 'pinia';
 import { ref, onMounted } from 'vue';
 
 export const useThemeStore = defineStore('theme', () => {
-  const isDark = ref(localStorage.getItem('theme') === 'dark');
+  const getStoredTheme = () => {
+    try {
+      return localStorage.getItem('theme') === 'dark';
+    } catch (e) {
+      return false;
+    }
+  };
+
+  const isDark = ref(getStoredTheme());
 
   const toggleTheme = () => {
     isDark.value = !isDark.value;
-    localStorage.setItem('theme', isDark.value ? 'dark' : 'light');
+    try {
+      localStorage.setItem('theme', isDark.value ? 'dark' : 'light');
+    } catch (e) {
+      console.warn('Failed to persist theme:', e);
+    }
     applyTheme();
   };
 

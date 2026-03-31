@@ -57,13 +57,22 @@
         <div v-else class="vehicles-list">
             <div v-for="vehicle in currentVehicles" :key="vehicle.ticket_id" class="vehicle-card" @click="handleVehicleAction(vehicle)">
                 <div class="card-header">
-                    <div class="vehicle-number">
+                    <div class="vehicle-number" v-if="vehicle.key_slot">
+                        <span class="key-label-mini">KEYSLOT :</span>
+                        <span class="ticket-id" style="margin-left: 5px;">{{ formatKeySlot(vehicle.key_slot) }}</span>
+                    </div>
+                    <div v-else class="vehicle-number">
                         <span class="hash">#</span>
                         <span class="ticket-id">{{ vehicle.ticket_id }}</span>
                     </div>
-                    <span class="status-badge" :class="getStatusBadgeClass(vehicle.status)">
-                        {{ vehicle.status.replace('_', ' ') }}
-                    </span>
+                    <div class="badges-row">
+                        <span v-if="vehicle.car_category" class="cat-badge" :class="'cat-' + vehicle.car_category.toLowerCase()">
+                            {{ vehicle.car_category }}
+                        </span>
+                        <span class="status-badge" :class="getStatusBadgeClass(vehicle.status)">
+                            {{ vehicle.status.replace('_', ' ') }}
+                        </span>
+                    </div>
                 </div>
 
                 <div class="vehicle-details">
@@ -72,13 +81,25 @@
                         <span class="value">{{ vehicle.customer_name || 'Guest' }}</span>
                     </div>
                     <div class="detail-row">
+                        <span class="label">Valet ID</span>
+                        <span class="value" style="color: var(--primary); font-family: 'Outfit', monospace;">#{{ vehicle.ticket_id }}</span>
+                    </div>
+                    <div class="detail-row">
                         <span class="label">Parked At</span>
                         <span class="value">{{ formatTime(vehicle.entry_time) }}</span>
                     </div>
-                     <div class="detail-row">
-                        <span class="label">Make</span>
-                        <span class="value">{{ vehicle.car_model || 'Unknown' }}</span>
+                <div class="vehicle-info-footer">
+                    <div class="footer-label">VEHICLE DETAILS</div>
+                    <div class="car-info-row">
+                        <span class="car-make-text">{{ vehicle.car_model || 'Unknown Model' }}</span>
+                        <div v-if="vehicle.car_number" class="license-plate">
+                            {{ vehicle.car_number }}
+                        </div>
                     </div>
+                </div>
+                <div class="key-id-section" v-if="false">
+                    <!-- Moved to Header -->
+                </div>
                 </div>
 
                 <button class="action-btn" :class="getActionBtnClass(vehicle.status)" @click.stop="handleVehicleAction(vehicle)">
@@ -120,6 +141,17 @@
                 Select a block for {{ pendingVehicle.car_model }}
             </p>
             <p class="instruction" style="font-size: 12px; margin-top: -10px;">{{ pendingVehicle?.valet_id }}</p>
+            
+            <div class="form-group" style="margin-top: 20px; text-align: left;">
+                <label>Car Number</label>
+                <input 
+                    v-model="carNumberToAssign" 
+                    type="text" 
+                    class="form-input" 
+                    placeholder="Enter Car Number (e.g. TN36AP1234)"
+                    @input="carNumberToAssign = carNumberToAssign.toUpperCase()"
+                />
+            </div>
             
             <div class="form-group" style="margin-top: 20px; text-align: left;">
                 <label>Select Block</label>
@@ -170,6 +202,7 @@ const selectedBlockId = ref('');
 const activeBlocks = ref([]);
 const isAssigning = ref(false);
 const pendingVehicle = ref(null);
+const carNumberToAssign = ref('');
 
 const userInitial = computed(() => authStore.profileInitial);
 const locationName = computed(() => {
@@ -179,8 +212,15 @@ const locationName = computed(() => {
 const qrCodeUrl = computed(() => {
     const locId = authStore.accessibleLocations?.[0]?.location_id || 'LOC-UNKNOWN';
     const driverId = authStore.user?.user_id || 'DRIVER-UNKNOWN';
-    // Format: Your car is parked at {LOC_ID} by driver {DRIVER_ID}
-    const text = `Your car is parked at ${locId} by driver ${driverId}`;
+    
+    // Format requested:
+    // My car needs to be parked.
+    // 
+    // Parking request
+    // Premises: <ID>
+    // Driver: <ID>
+    
+    const text = `My car needs to be parked.\n\nParking request\nPremises: ${locId}\nDriver: ${driverId}`;
     const encodedText = encodeURIComponent(text);
     const whatsappUrl = `https://wa.me/917200476950?text=${encodedText}`;
     
@@ -188,12 +228,40 @@ const qrCodeUrl = computed(() => {
     return `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(whatsappUrl)}`;
 });
 
-const returningCount = computed(() => vehicles.value.filter(v => ['RETURN_REQUESTED', 'ON_THE_WAY', 'READY'].includes(v.status.toUpperCase())).length);
+const returningCount = computed(() => {
+    return vehicles.value.filter(v => {
+        const s = v.status.toUpperCase();
+        if (!['RETURN_REQUESTED', 'ON_THE_WAY', 'READY'].includes(s)) return false;
+        if (v.returned_driver_id && v.returned_driver_id !== authStore.user?.user_id) return false;
+        return true;
+    }).length;
+});
 const parkedCount = computed(() => vehicles.value.filter(v => v.status.toUpperCase() === 'PARKED').length);
 
 const currentVehicles = computed(() => {
     if (activeTab.value === 'returning') {
-        return vehicles.value.filter(v => ['RETURN_REQUESTED', 'ON_THE_WAY', 'READY'].includes(v.status.toUpperCase()));
+        const list = vehicles.value.filter(v => {
+            const s = v.status.toUpperCase();
+            if (!['RETURN_REQUESTED', 'ON_THE_WAY', 'READY'].includes(s)) return false;
+            if (v.returned_driver_id && v.returned_driver_id !== authStore.user?.user_id) return false;
+            return true;
+        });
+        
+        const catWeight = { 'High': 3, 'Medium': 2, 'Low': 1 };
+        
+        return list.sort((a, b) => {
+            const wA = catWeight[a.car_category] || 0;
+            const wB = catWeight[b.car_category] || 0;
+            
+            if (wA !== wB) return wB - wA;
+            
+            const tA = a.return_requested_time ? new Date(a.return_requested_time).getTime() : 0;
+            const tB = b.return_requested_time ? new Date(b.return_requested_time).getTime() : 0;
+            
+            if (tA === 0 && tB !== 0) return 1;
+            if (tB === 0 && tA !== 0) return -1;
+            return tA - tB;
+        });
     }
     return vehicles.value.filter(v => v.status.toUpperCase() === 'PARKED');
 });
@@ -202,6 +270,11 @@ const formatTime = (isoString) => {
     if (!isoString) return '--:--';
     const date = new Date(isoString);
     return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+};
+
+const formatKeySlot = (id) => {
+    if (!id) return '';
+    return id.toString().padStart(3, '0');
 };
 
 const getStatusBadgeClass = (status) => {
@@ -246,7 +319,12 @@ const fetchVehicles = async () => {
                 phone_number: v.phone_number,
                 entry_time: v.parked_time,
                 car_model: v.car_model,
+                car_category: v.car_category,
+                car_number: v.car_number,
                 status: v.status,
+                key_slot: v.key_slot,
+                return_requested_time: v.return_requested_time,
+                returned_driver_id: v.returned_driver_id,
                 block_entry_id: v.block_entry_id,
                 needsBlockAssignment: (v.status.toUpperCase() === 'PARKED') && !v.block_entry_id
             }));
@@ -288,12 +366,22 @@ const fetchBlocks = async () => {
 
 const handleVehicleAction = (vehicle) => {
     console.log('Clicked vehicle:', vehicle);
+    
+    // Check if the user has an active return request they haven't finished
+    const activeReturn = vehicles.value.find(v => v.returned_driver_id === authStore.user?.user_id && ['ON_THE_WAY', 'READY'].includes(v.status.toUpperCase()));
+    const vId = vehicle.valet_id || vehicle.ticket_id;
+    
+    if (activeReturn && activeReturn.valet_id !== vId) {
+        toast.error('You have an ongoing return request. Please complete it first.');
+        router.push(`/driver/vehicle/${activeReturn.valet_id}`);
+        return;
+    }
+
     if (vehicle.needsBlockAssignment) {
         openBlockAssignment(vehicle);
         return;
     }
 
-    const vId = vehicle.valet_id || vehicle.ticket_id;
     if (!vId) {
         console.error('Missing valet_id', vehicle);
         toast.error('Error: Missing Ticket ID');
@@ -321,6 +409,7 @@ const openQrModal = () => {
 const openBlockAssignment = (vehicle) => {
     pendingVehicle.value = vehicle;
     selectedBlockId.value = '';
+    carNumberToAssign.value = vehicle.car_number || '';
     showBlockModal.value = true;
 };
 
@@ -328,6 +417,7 @@ const closeBlockModal = () => {
     showBlockModal.value = false;
     pendingVehicle.value = null;
     selectedBlockId.value = '';
+    carNumberToAssign.value = '';
 };
 
 const confirmBlockAssignment = async () => {
@@ -336,7 +426,8 @@ const confirmBlockAssignment = async () => {
     isAssigning.value = true;
     try {
         const response = await axios.post(`${API_URL}/valet/${pendingVehicle.value.valet_id}/assign-block`, {
-            block_id: selectedBlockId.value
+            block_id: selectedBlockId.value,
+            car_number: carNumberToAssign.value
         }, {
             headers: { Authorization: `Bearer ${authStore.token}` }
         });
@@ -525,6 +616,23 @@ onMounted(async () => {
     font-weight: 800;
     color: var(--text-main);
     letter-spacing: -0.5px;
+    display: flex;
+    align-items: center;
+}
+
+.key-label-mini {
+    font-size: 11px;
+    font-weight: 800;
+    color: var(--text-muted);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    margin-right: 2px;
+}
+
+.hash {
+    color: var(--primary);
+    opacity: 0.5;
+    margin-right: 4px;
 }
 
 .hash {
@@ -566,6 +674,7 @@ onMounted(async () => {
     gap: 4px;
 }
 
+
 .detail-row .label {
     margin-bottom: 0;
     font-size: 10px;
@@ -575,6 +684,37 @@ onMounted(async () => {
     font-size: 14px;
     font-weight: 600;
     color: var(--text-main);
+}
+
+.key-id-section {
+    margin-top: 12px;
+    display: flex;
+    justify-content: flex-end;
+}
+
+.key-badge {
+    background: #1e293b;
+    color: #f8fafc;
+    padding: 4px 12px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-family: 'Outfit', sans-serif;
+    border: 1px solid #334155;
+}
+
+.key-label {
+    font-size: 10px;
+    font-weight: 800;
+    color: #94a3b8;
+    letter-spacing: 0.1em;
+}
+
+.key-num {
+    font-size: 16px;
+    font-weight: 900;
+    color: #38bdf8;
 }
 
 .action-btn {
@@ -659,6 +799,38 @@ onMounted(async () => {
     animation: spin 1s linear infinite;
 }
 
+.badges-row {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.cat-badge {
+    font-size: 11px;
+    font-weight: 700;
+    padding: 6px 10px;
+    border-radius: 8px;
+    text-transform: uppercase;
+}
+
+.cat-high {
+    background: rgba(239, 68, 68, 0.15);
+    color: #ef4444;
+    border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+.cat-medium {
+    background: rgba(245, 158, 11, 0.15);
+    color: #f59e0b;
+    border: 1px solid rgba(245, 158, 11, 0.3);
+}
+
+.cat-low {
+    background: rgba(59, 130, 246, 0.15);
+    color: #3b82f6;
+    border: 1px solid rgba(59, 130, 246, 0.3);
+}
+
 @keyframes spin {
     to { transform: rotate(360deg); }
 }
@@ -720,5 +892,71 @@ onMounted(async () => {
     border-radius: 12px;
     font-weight: 600;
     cursor: pointer;
+}
+
+.vehicle-info-footer {
+    grid-column: span 2;
+    margin-top: 4px;
+    padding-top: 12px;
+    border-top: 1px dashed var(--border-subtle);
+}
+
+.footer-label {
+    font-size: 10px;
+    color: var(--text-muted);
+    font-weight: 700;
+    margin-bottom: 8px;
+    text-transform: uppercase;
+}
+
+.car-info-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+}
+
+.car-make-text {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--text-main);
+}
+
+.license-plate {
+    background: #FFD700; /* Gold/Yellow License Plate */
+    color: #000;
+    border: 1.5px solid #000;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-weight: 900;
+    font-family: 'Outfit', 'Segoe UI', sans-serif;
+    font-size: 12px;
+    box-shadow: 2px 2px 0px rgba(0,0,0,0.2);
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    white-space: nowrap;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.form-input {
+    width: 100%;
+    padding: 12px;
+    background: var(--bg-main);
+    border: 1px solid var(--border-subtle);
+    border-radius: 12px;
+    color: var(--text-main);
+    font-family: inherit;
+    font-size: 14px;
+}
+
+.form-input:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 2px var(--primary-light);
 }
 </style>

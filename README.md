@@ -115,7 +115,7 @@ See `backend/schema/` directory for complete SQL schema files:
 5. `05_blocks.sql` - Parking blocks
 6. `06_block_entries.sql` - Dynamic parking positions
 7. `07_valet_transactions.sql` - Parking transactions
-8. `08_return_requests.sql` - Return requests
+
 9. `09_feedback.sql` - Customer feedback
 
 ## 🛠️ Setup Instructions
@@ -152,7 +152,7 @@ psql -U postgres -d smart_valet -f schema/04_location_access.sql
 psql -U postgres -d smart_valet -f schema/05_blocks.sql
 psql -U postgres -d smart_valet -f schema/06_block_entries.sql
 psql -U postgres -d smart_valet -f schema/07_valet_transactions.sql
-psql -U postgres -d smart_valet -f schema/08_return_requests.sql
+
 psql -U postgres -d smart_valet -f schema/09_feedback.sql
 ```
 

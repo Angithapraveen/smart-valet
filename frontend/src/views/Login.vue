@@ -23,7 +23,10 @@
                 </div>
               </Transition>
               <Transition name="fade-up" appear :style="{ transitionDelay: '0.1s' }">
-                <h1 class="login-title">Smart Valet Parking</h1>
+                <h1 class="login-title">  EZVALET </h1>
+              </Transition>
+              <Transition name="fade-up" appear :style="{ transitionDelay: '0.2s' }">
+                <p class="login-subtitle">Smart Valet Parking</p>
               </Transition>
               <Transition name="fade-up" appear :style="{ transitionDelay: '0.2s' }">
                 <p class="login-subtitle">Management System</p>

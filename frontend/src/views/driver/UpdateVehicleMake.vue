@@ -48,6 +48,19 @@
                 </div>
 
                 <div class="form-group">
+                    <label>Plate Number</label>
+                    <div class="input-container">
+                        <input 
+                            v-model="form.car_number" 
+                            type="text" 
+                            class="premium-input" 
+                            placeholder="e.g. TN36AP1234"
+                            @input="form.car_number = form.car_number.toUpperCase()"
+                        >
+                    </div>
+                </div>
+
+                <div class="form-group">
                     <label>Category</label>
                     <div class="category-grid">
                         <button 
@@ -91,16 +104,20 @@ const vehicle = ref({});
 
 const form = reactive({
     car_model: '',
-    car_category: ''
+    car_category: '',
+    car_number: ''
 });
 
 const originalForm = reactive({
     car_model: '',
-    car_category: ''
+    car_category: '',
+    car_number: ''
 });
 
 const isDirty = computed(() => {
-    return form.car_model !== originalForm.car_model || form.car_category !== originalForm.car_category;
+    return form.car_model !== originalForm.car_model || 
+           form.car_category !== originalForm.car_category ||
+           form.car_number !== originalForm.car_number;
 });
 
 const fetchDetails = async () => {
@@ -113,9 +130,11 @@ const fetchDetails = async () => {
             vehicle.value = response.data.data;
             form.car_model = vehicle.value.car_model || '';
             form.car_category = vehicle.value.car_category || '';
+            form.car_number = vehicle.value.car_number || '';
             
             originalForm.car_model = form.car_model;
             originalForm.car_category = form.car_category;
+            originalForm.car_number = form.car_number;
         }
     } catch (e) {
         toast.error('Failed to load vehicle details');
@@ -131,7 +150,8 @@ const saveChanges = async () => {
         const { valetId } = route.params;
         const response = await axios.put(`${API_URL}/valet/${valetId}`, {
             car_model: form.car_model,
-            car_category: form.car_category
+            car_category: form.car_category,
+            car_number: form.car_number
         }, {
             headers: { Authorization: `Bearer ${authStore.token}` }
         });

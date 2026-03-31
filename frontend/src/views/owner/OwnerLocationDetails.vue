@@ -229,6 +229,11 @@
                          No active parking records found.
                      </div>
                  </div>
+                 
+                 <!-- REPORTS TAB -->
+                 <div v-if="activeTab === 'reports'">
+                     <LocationReport :locationId="locationId" :locationName="location?.location_name || ''" :showHeader="false" />
+                 </div>
              </div>
         </div>
     </div>
@@ -416,6 +421,7 @@ import { ref, onMounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import axios from 'axios';
 import { useAuthStore } from '../../stores/auth';
+import LocationReport from '../../components/reports/LocationReport.vue';
 
 const route = useRoute();
 const router = useRouter();
@@ -480,7 +486,8 @@ const tabs = [
     { id: 'active_parking', label: 'Active Parking' },
     { id: 'managers', label: 'Managers' },
     { id: 'drivers', label: 'Drivers' },
-    { id: 'owners', label: 'Owners' }
+    { id: 'owners', label: 'Owners' },
+    { id: 'reports', label: 'Reports' }
 ];
 
 // Fetch Location & Stats
@@ -503,6 +510,12 @@ const fetchLocationDetails = async () => {
 // Switch Tab & Load Data
 const switchTab = async (tabId) => {
     activeTab.value = tabId;
+    
+    if (tabId === 'reports') {
+        tabLoading.value = false;
+        return;
+    }
+    
     tabLoading.value = true;
     tabData.value = [];
 
@@ -778,9 +791,7 @@ onMounted(() => {
 
 <style scoped>
 .owner-location-details-page {
-  padding: 32px;
-  max-width: 1400px;
-  margin: 0 auto;
+  padding-top: 16px;
 }
 
 /* Header Section */

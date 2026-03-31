@@ -1,64 +1,6 @@
 const pool = require('../config/database');
-
-/**
- * Generate Valet Ticket ID
- * Format: XXX-YYMMZZZ
- * XXX: Location short code
- * YY: Year, MM: Month
- * ZZZ: Serial number (resets every year)
- */
-const generateValetId = async (locationId) => {
-    try {
-        // 1. Fetch Location Short Code
-        const locationQuery = 'SELECT location_short_code FROM LOCATIONS WHERE location_id = $1';
-        const locResult = await pool.query(locationQuery, [locationId]);
-
-        if (locResult.rows.length === 0) {
-            throw new Error('Location not found');
-        }
-
-        const shortCode = (locResult.rows[0].location_short_code || 'VAL').toUpperCase();
-
-        const today = new Date();
-        const yy = today.getFullYear().toString().slice(-2);
-        const mm = (today.getMonth() + 1).toString().padStart(2, '0');
-
-        // Prefix for searching serial in current year at this location: XXX-YY
-        const yearSearchPrefix = `${shortCode}-${yy}`;
-
-        // Find latest ticket for this location and current year
-        // We use created_at to be sure we are looking at recent ones, 
-        // and filter by the ID prefix to correctly identify this year's serials
-        const query = `
-            SELECT valet_id FROM VALET_TRANSACTIONS 
-            WHERE location_id = $1 AND valet_id LIKE $2
-            ORDER BY created_at DESC, valet_id DESC 
-            LIMIT 1
-        `;
-        const result = await pool.query(query, [locationId, `${yearSearchPrefix}%`]);
-
-        let nextNum = 1;
-        if (result.rows.length > 0) {
-            const lastId = result.rows[0].valet_id;
-            // Format: XXX-YYMMZZZ
-            // Serial is the last 3 digits
-            const lastNumStr = lastId.slice(-3);
-            const lastNum = parseInt(lastNumStr, 10);
-
-            if (!isNaN(lastNum)) {
-                nextNum = lastNum + 1;
-            }
-        }
-
-        const zzz = nextNum.toString().padStart(3, '0');
-
-        // Final format: XXX-YYMMZZZ
-        return `${shortCode}-${yy}${mm}${zzz}`;
-    } catch (error) {
-        console.error('Error generating Valet ID:', error);
-        throw error;
-    }
-};
+const { generateValetId, getNextAvailableKeySlot } = require('../utils/valetUtils');
+const whatsappService = require('../services/whatsappService');
 
 /**
  * Handle WhatsApp Transaction
@@ -67,7 +9,7 @@ const generateValetId = async (locationId) => {
  * (In a real scenario, this would parse a webhook payload)
  */
 const createWhatsAppTransaction = async (req, res) => {
-    const { location_id, driver_id, customer_name, phone_number, car_model } = req.body;
+    const { location_id, driver_id, customer_name, phone_number, car_model, car_number } = req.body;
 
     if (!location_id || !driver_id) {
         return res.status(400).json({
@@ -81,23 +23,32 @@ const createWhatsAppTransaction = async (req, res) => {
     try {
         await client.query('BEGIN');
 
-        // 1. Generate ID and Create Transaction ALWAYS
+        // 1. Generate ID, Key Slot and Create Transaction ALWAYS
         const valetId = await generateValetId(location_id);
+        const keySlot = await getNextAvailableKeySlot(client, location_id);
+
         const insertQuery = `
             INSERT INTO VALET_TRANSACTIONS 
-            (valet_id, location_id, parked_driver_id, customer_name, phone_number, car_model, status, parked_time)
-            VALUES ($1, $2, $3, $4, $5, $6, 'PARKED', NOW())
+            (valet_id, location_id, parked_driver_id, customer_name, phone_number, car_model, car_number, status, parked_time, key_slot)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, 'PARKED', NOW(), $8)
             RETURNING *
         `;
         const values = [
-            valetId,
-            location_id,
-            driver_id,
-            customer_name || 'WhatsApp Guest',
-            phone_number || 'N/A',
-            car_model || 'Unknown'
+            valetId,         // $1
+            location_id,     // $2
+            driver_id,       // $3
+            customer_name || 'WhatsApp Guest', // $4
+            phone_number || 'N/A', // $5
+            car_model || 'Unknown', // $6
+            car_number || 'N/A', // $7
+            keySlot || 1     // $8 (Fallback to 1)
         ];
+        
+        console.log(`[Manual-Transaction] Final Slot to store: ${keySlot || 1} for Valet: ${valetId}`);
         const txnResult = await client.query(insertQuery, values);
+        if (!txnResult.rows[0].key_slot) {
+            console.error('[Manual-Transaction-Error] KEY_SLOT STILL NULL IN DB AFTER INSERT!');
+        }
         let transaction = txnResult.rows[0];
         let blockAssigned = false;
 
@@ -253,16 +204,17 @@ const getValetTransactionDetails = async (req, res) => {
  */
 const updateVehicleDetails = async (req, res) => {
     const { valetId } = req.params;
-    const { car_model, car_category } = req.body;
+    const { car_model, car_category, car_number } = req.body;
 
     try {
         const result = await pool.query(
             `UPDATE VALET_TRANSACTIONS
              SET car_model = $1,
-                 car_category = $2
-             WHERE valet_id = $3
+                 car_category = $2,
+                 car_number = $3
+             WHERE valet_id = $4
              RETURNING *`,
-            [car_model, car_category, valetId]
+            [car_model, car_category, car_number, valetId]
         );
 
         if (result.rows.length === 0) {
@@ -329,7 +281,7 @@ const getValetBlocks = async (req, res) => {
  */
 const assignBlock = async (req, res) => {
     const { valetId } = req.params;
-    const { block_id } = req.body;
+    const { block_id, car_number } = req.body;
 
     if (!block_id) {
         return res.status(400).json({ success: false, message: 'Block ID is required' });
@@ -376,13 +328,28 @@ const assignBlock = async (req, res) => {
         );
 
         // 4. Update Transaction
-        const updateQuery = `
-            UPDATE VALET_TRANSACTIONS 
-            SET block_entry_id = $1
-            WHERE valet_id = $2
-            RETURNING *
-        `;
-        const updateResult = await client.query(updateQuery, [blockEntryId, valetId]);
+        let updateQuery = '';
+        let params = [];
+        
+        if (car_number) {
+            updateQuery = `
+                UPDATE VALET_TRANSACTIONS 
+                SET block_entry_id = $1, car_number = $3
+                WHERE valet_id = $2
+                RETURNING *
+            `;
+            params = [blockEntryId, valetId, car_number];
+        } else {
+            updateQuery = `
+                UPDATE VALET_TRANSACTIONS 
+                SET block_entry_id = $1
+                WHERE valet_id = $2
+                RETURNING *
+            `;
+            params = [blockEntryId, valetId];
+        }
+        
+        const updateResult = await client.query(updateQuery, params);
 
         await client.query('COMMIT');
 
@@ -458,6 +425,12 @@ const requestVehicleReturn = async (req, res) => {
         `;
         const result = await pool.query(updateQuery, [valetId]);
 
+        // WhatsApp Notification
+        const txn = result.rows[0];
+        if (txn.phone_number && txn.phone_number !== 'N/A') {
+            await whatsappService.sendMessage(txn.phone_number, `Valet ID: ${valetId}\nYour car is being prepared. Our driver is on the way.`);
+        }
+
         res.json({
             success: true,
             message: 'Return request received.',
@@ -479,10 +452,10 @@ const updateTransactionStatus = async (req, res) => {
     const { valetId } = req.params;
     const { status } = req.body;
 
-    if (!['ON_THE_WAY', 'READY', 'RETURNED'].includes(status)) {
+    if (!['ON_THE_WAY', 'READY', 'RETURNED', 'PARKED'].includes(status)) {
         return res.status(400).json({
             success: false,
-            message: 'Invalid status. Allowed: ON_THE_WAY, READY, RETURNED'
+            message: 'Invalid status. Allowed: ON_THE_WAY, READY, RETURNED, PARKED'
         });
     }
 
@@ -555,11 +528,42 @@ const updateTransactionStatus = async (req, res) => {
                     RETURNING *
                 `;
                 params = [valetId];
+            } else if (status === 'PARKED') {
+                // Return car to PARKED status (Repark)
+                updateQuery = `
+                    UPDATE VALET_TRANSACTIONS 
+                    SET status = 'PARKED', 
+                        return_requested_time = NULL,
+                        on_the_way_time = NULL,
+                        ready_time = NULL,
+                        returned_driver_id = NULL
+                    WHERE valet_id = $1
+                    RETURNING *
+                `;
+                params = [valetId];
             }
 
             const result = await client.query(updateQuery, params);
 
             await client.query('COMMIT');
+
+            // Send WhatsApp Notification (Non-blocking)
+            const updatedTxn = result.rows[0];
+            if (updatedTxn.phone_number && updatedTxn.phone_number !== 'N/A') {
+                if (status === 'ON_THE_WAY') {
+                    const msg = `🚀 *On the way!* Our driver is bringing your car for ${valetId}.\n\nPlease wait at the pickup area.🏎️💨`;
+                    whatsappService.sendMessage(updatedTxn.phone_number, msg).catch(err => console.error('WS MSG Error:', err));
+                } else if (status === 'READY') {
+                    const msg = `📍 *Your car is Ready!* \nValet ID: ${valetId} is waiting at the exit.\n\n😊Kindly proceed to the pickup area within the next 5 minutes.\nIf you are unable to arrive within this time, your vehicle will be safely reparked for your convenience🚗💨`;
+                    whatsappService.sendMessage(updatedTxn.phone_number, msg).catch(err => console.error('WS MSG Error:', err));
+                } else if (status === 'RETURNED') {
+                    // Trigger interactive feedback buttons instead of plain text
+                    whatsappService.sendFeedbackButtons(updatedTxn.phone_number, valetId).catch(err => console.error('WS MSG Error:', err));
+                } else if (status === 'PARKED') {
+                    const msg = `💤 *Car Reparked:* Since you weren't able to arrive in time, your car (${valetId}) has been safely reparked. \n\nWhenever you are ready, just request your car again! 🚗🔄`;
+                    whatsappService.sendMessage(updatedTxn.phone_number, msg).catch(err => console.error('WS MSG Error:', err));
+                }
+            }
 
             res.json({
                 success: true,
@@ -657,10 +661,12 @@ const getTransactionHistory = async (req, res) => {
         }
 
         const query = `
-            SELECT * FROM VALET_TRANSACTIONS 
-            WHERE location_id = $1 
-            ${dateCondition}
-            ORDER BY created_at DESC
+            SELECT vt.*, u.name as returned_driver_name 
+            FROM VALET_TRANSACTIONS vt
+            LEFT JOIN USERS u ON vt.returned_driver_id = u.user_id
+            WHERE vt.location_id = $1 
+            ${dateCondition.replace(/created_at/g, 'vt.created_at')}
+            ORDER BY vt.created_at DESC
         `;
 
         const result = await pool.query(query, params);
@@ -678,6 +684,7 @@ const getTransactionHistory = async (req, res) => {
 };
 
 module.exports = {
+    generateValetId,
     createWhatsAppTransaction,
     getValetVehicles,
     getValetTransactionDetails,

@@ -149,13 +149,22 @@ const getBlocksWithEntries = async (req, res) => {
                     json_agg(
                         json_build_object(
                             'block_entry_id', be.block_entry_id,
-                            'status', be.status
+                            'status', be.status,
+                            'vehicle', CASE 
+                                WHEN vt.valet_id IS NOT NULL THEN json_build_object(
+                                    'valet_id', vt.valet_id,
+                                    'car_model', vt.car_model,
+                                    'car_number', vt.car_number
+                                )
+                                ELSE NULL
+                            END
                         ) ORDER BY be.block_entry_id
                     ) FILTER (WHERE be.block_entry_id IS NOT NULL),
                     '[]'
                 ) AS entries
             FROM BLOCKS b
             LEFT JOIN BLOCK_ENTRIES be ON b.block_id = be.block_id
+            LEFT JOIN VALET_TRANSACTIONS vt ON be.block_entry_id = vt.block_entry_id AND vt.status IN ('PARKED', 'RETURN_REQUESTED', 'ON_THE_WAY', 'READY')
             WHERE b.location_id = $1
             GROUP BY b.block_id
             ORDER BY b.created_at ASC

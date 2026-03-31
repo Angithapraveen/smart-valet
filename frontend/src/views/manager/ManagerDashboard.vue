@@ -6,6 +6,9 @@
         <p class="subtitle">Overview for {{ dashboardData?.location?.location_name || 'Loading...' }}</p>
       </div>
       <div class="header-actions">
+        <button class="settings-btn" @click="router.push('/manager/settings')" title="Configure Location">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+        </button>
         <div class="live-indicator">
           <span class="dot animate-pulse"></span>
           Live Updates
@@ -103,10 +106,12 @@
                     <svg v-else width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 11 12 14 22 4"></polyline><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path></svg>
                  </div>
                  <div class="activity-details">
-                   <p class="activity-text">
-                     <strong>{{ txn.car_model || 'Vehicle' }}</strong> 
-                     <span class="activity-status">{{ txn.status === 'PARKED' ? 'parked' : 'returned' }}</span>
-                   </p>
+                    <p class="activity-text">
+                      <strong>{{ txn.car_model || 'Vehicle' }}</strong>
+                      <span v-if="txn.car_number" class="activity-plate">[{{ txn.car_number }}]</span>
+                      <span v-if="txn.key_slot" class="activity-key">KeySlot: {{ formatKeySlot(txn.key_slot) }}</span>
+                      <span class="activity-status">{{ txn.status === 'PARKED' ? 'parked' : 'returned' }}</span>
+                    </p>
                    <p class="activity-meta">
                      {{ txn.customer_name }} • {{ formatTime(txn.created_at) }}
                    </p>
@@ -142,7 +147,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, onUnmounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '../../stores/auth';
 import axios from 'axios';
@@ -154,8 +159,9 @@ const dashboardData = ref(null);
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
 
-const fetchDashboardData = async () => {
+const fetchDashboardData = async (showLoading = true) => {
   try {
+    if (showLoading && !dashboardData.value) loading.value = true;
     const response = await axios.get(`${API_BASE_URL}/dashboard/manager`, {
       headers: { Authorization: `Bearer ${authStore.token}` }
     });
@@ -205,12 +211,24 @@ const getInitials = (name) => {
     return name ? name.split(' ').map(n => n[0]).join('').substring(0,2).toUpperCase() : 'DR';
 };
 
+const formatKeySlot = (id) => {
+    if (!id) return '';
+    return id.toString().padStart(3, '0');
+};
+
+let pollInterval;
+
 onMounted(() => {
    if (!authStore.isAuthenticated) {
      router.push('/login');
      return;
    }
    fetchDashboardData();
+   pollInterval = setInterval(() => fetchDashboardData(false), 5000);
+});
+
+onUnmounted(() => {
+  if (pollInterval) clearInterval(pollInterval);
 });
 </script>
 
@@ -223,9 +241,6 @@ onMounted(() => {
 }
 
 
-.page-header {
-  /* Inherits global sticky styles */
-}
 
 
 
@@ -245,6 +260,34 @@ onMounted(() => {
   border-radius: 20px;
   font-size: 12px;
   font-weight: 600;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.settings-btn {
+  background: white;
+  border: 1px solid var(--border-subtle);
+  color: var(--text-muted);
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: var(--shadow-sm);
+}
+
+.settings-btn:hover {
+  background: var(--bg-main);
+  color: var(--primary);
+  border-color: var(--primary-light);
+  transform: rotate(45deg);
 }
 
 .dot {
@@ -347,6 +390,26 @@ onMounted(() => {
 .activity-details { font-size: 14px; line-height: 1.4; }
 .activity-text { color: var(--text-main); }
 .activity-status { font-weight: 400; color: var(--text-muted); }
+.activity-plate {
+    font-family: 'Outfit', monospace;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--primary);
+    margin: 0 4px;
+    background: var(--primary-light);
+    padding: 1px 4px;
+    border-radius: 4px;
+}
+.activity-key {
+    font-size: 11px;
+    font-weight: 700;
+    color: #0c4a6e;
+    background: #e0f2fe;
+    padding: 1px 6px;
+    border-radius: 4px;
+    margin-left: 4px;
+    border: 1px solid #bae6fd;
+}
 .activity-meta { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
 
 /* Drivers */

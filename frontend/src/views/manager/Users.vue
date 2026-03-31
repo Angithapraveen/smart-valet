@@ -6,6 +6,10 @@
         <p class="subtitle" v-if="locationName">{{ locationName }}</p>
       </div>
       <div class="header-actions">
+        <div class="live-indicator">
+          <span class="dot animate-pulse"></span>
+          Live Updates
+        </div>
         <button @click="openAddDriverModal" class="btn btn-primary">
           <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
           Add Driver
@@ -133,7 +137,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from 'vue';
+import { ref, onMounted, onUnmounted, computed } from 'vue';
 import { useAuthStore } from '../../stores/auth';
 import axios from 'axios';
 
@@ -181,8 +185,8 @@ const getCount = (tabId) => {
   return 0;
 };
 
-const fetchData = async () => {
-  loading.value = true;
+const fetchData = async (showLoading = true) => {
+  if (showLoading && !users.value.length) loading.value = true;
   error.value = null;
 
   try {
@@ -291,7 +295,15 @@ const toggleStatus = async (user) => {
   }
 };
 
-onMounted(fetchData);
+let pollInterval;
+onMounted(() => {
+  fetchData();
+  pollInterval = setInterval(() => fetchData(false), 5000);
+});
+
+onUnmounted(() => {
+  if (pollInterval) clearInterval(pollInterval);
+});
 </script>
 
 <style scoped>
@@ -317,6 +329,35 @@ onMounted(fetchData);
   border-radius: 14px;
   width: fit-content;
   border: 1px solid var(--border-subtle);
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.live-indicator {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(34, 197, 94, 0.1);
+  color: #16a34a;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.dot {
+  width: 8px; height: 8px; background: #16a34a; border-radius: 50%;
+}
+.animate-pulse {
+    animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: .5; }
 }
 
 .tab-btn {

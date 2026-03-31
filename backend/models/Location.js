@@ -19,9 +19,9 @@ class Location {
         const query = `
             INSERT INTO LOCATIONS (
                 location_id, location_name, location_short_code, location_type,
-                address, valid_from, valid_to, status
+                address, valid_from, valid_to, total_capacity, status
             )
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
             RETURNING *
         `;
         const result = await pool.query(query, [
@@ -32,6 +32,7 @@ class Location {
             address || null,
             valid_from,
             valid_to || null,
+            locationData.total_capacity || 100,
             status !== false
         ]);
         return result.rows[0];
@@ -59,7 +60,7 @@ class Location {
             SELECT 
                 l.location_id, l.location_name, l.location_short_code, l.location_type, l.address,
                 (l.status AND l.valid_from <= CURRENT_DATE AND (l.valid_to IS NULL OR l.valid_to >= CURRENT_DATE)) as status,
-                l.valid_from, l.valid_to,
+                l.valid_from, l.valid_to, l.total_capacity,
                 COALESCE(b.total_blocks, 0) as total_blocks,
                 COALESCE(be.available_slots, 0) as available_slots,
                 COALESCE(be.occupied_slots, 0) as occupied_slots,
@@ -117,6 +118,45 @@ class Location {
             RETURNING location_id, location_name, location_type, status
         `;
         const result = await pool.query(query, [locationId, !!status]);
+        return result.rows[0] || null;
+    }
+
+    /**
+     * Update all location details
+     */
+    static async update(locationId, locationData) {
+        const {
+            location_name,
+            location_type,
+            address,
+            valid_from,
+            valid_to,
+            status
+        } = locationData;
+
+        const query = `
+            UPDATE LOCATIONS SET 
+                location_name = $2,
+                location_type = $3,
+                address = $4,
+                valid_from = $5,
+                valid_to = $6,
+                total_capacity = $7,
+                status = $8,
+                updated_at = CURRENT_TIMESTAMP
+            WHERE location_id = $1
+            RETURNING *
+        `;
+        const result = await pool.query(query, [
+            locationId,
+            location_name,
+            location_type,
+            address || null,
+            valid_from,
+            valid_to || null,
+            locationData.total_capacity || 100,
+            status !== false
+        ]);
         return result.rows[0] || null;
     }
 

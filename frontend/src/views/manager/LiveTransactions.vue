@@ -8,26 +8,10 @@
         </p>
       </div>
       <div class="header-actions">
-        <button @click="fetchTransactions" class="btn btn-primary" :disabled="loading">
-          <svg
-            class="refresh-icon"
-            :class="{ spinning: loading }"
-            width="18"
-            height="18"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="2"
-              d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-            />
-          </svg>
-          <span v-if="loading">Refreshing...</span>
-          <span v-else>Refresh List</span>
-        </button>
+        <div class="live-indicator">
+          <span class="dot animate-pulse"></span>
+          Live Updates
+        </div>
       </div>
     </header>
 
@@ -75,6 +59,7 @@
           <thead>
             <tr>
               <th>Ticket ID</th>
+              <th>KeySlot</th>
               <th>Customer</th>
               <th>Vehicle</th>
               <th>Status</th>
@@ -91,6 +76,13 @@
               <td class="col-id">
                 <span class="ticket-id">{{ formatTicketId(txn.valet_id) }}</span>
               </td>
+               <td class="col-key">
+                <span v-if="txn.key_slot" class="key-tag">
+                   <span class="key-label">KEYSLOT</span>
+                   <span class="key-num">{{ formatKeySlot(txn.key_slot) }}</span>
+                </span>
+                <span v-else class="text-muted text-xs">--</span>
+              </td>
               <td class="col-customer">
                 <div class="customer-info">
                   <span class="customer-name">{{ txn.customer_name }}</span>
@@ -99,7 +91,10 @@
               </td>
               <td class="col-vehicle">
                 <div class="vehicle-info">
-                  <span class="car-model">{{ txn.car_model || 'Unknown Model' }}</span>
+                  <div class="car-row">
+                    <span class="car-model">{{ txn.car_model || 'Unknown Model' }}</span>
+                    <span v-if="txn.car_number" class="car-plate-tag">{{ txn.car_number }}</span>
+                  </div>
                   <span class="car-category badge badge-outline">{{ txn.car_category || 'N/A' }}</span>
                 </div>
               </td>
@@ -140,7 +135,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from 'vue';
+import { ref, onMounted, onUnmounted, computed } from 'vue';
 import { useAuthStore } from '../../stores/auth';
 import axios from 'axios';
 
@@ -156,6 +151,11 @@ const formatTicketId = (id) => {
   if (!id) return '';
   const parts = id.split('-');
   return parts.length > 2 ? parts.slice(1).join('-') : id;
+};
+
+const formatKeySlot = (id) => {
+    if (!id) return '';
+    return id.toString().padStart(3, '0');
 };
 
 const formatStatus = (status) => {
@@ -183,8 +183,8 @@ const formatTime = (dateString) => {
   }).format(date);
 };
 
-const fetchTransactions = async () => {
-  loading.value = true;
+const fetchTransactions = async (showLoading = true) => {
+  if (showLoading && transactions.value.length === 0) loading.value = true;
   error.value = null;
 
   try {
@@ -217,8 +217,13 @@ const fetchTransactions = async () => {
   }
 };
 
+let pollInterval;
 onMounted(() => {
   fetchTransactions();
+  pollInterval = setInterval(() => fetchTransactions(false), 5000);
+});
+onUnmounted(() => {
+  if (pollInterval) clearInterval(pollInterval);
 });
 </script>
 
@@ -238,6 +243,29 @@ onMounted(() => {
 .header-actions {
   display: flex;
   gap: 12px;
+}
+
+.live-indicator {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(34, 197, 94, 0.1);
+  color: #16a34a;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.dot {
+  width: 8px; height: 8px; background: #16a34a; border-radius: 50%;
+}
+.animate-pulse {
+    animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: .5; }
 }
 
 .error-message {
@@ -347,6 +375,30 @@ onMounted(() => {
   border-radius: 6px;
 }
 
+.key-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #f0f9ff;
+  border: 1px solid #0ea5e9;
+  padding: 4px 10px;
+  border-radius: 8px;
+  font-family: 'Outfit', sans-serif;
+}
+
+.key-label {
+  font-size: 9px;
+  font-weight: 800;
+  color: #0369a1;
+  letter-spacing: 0.05em;
+}
+
+.key-num {
+  font-size: 15px;
+  font-weight: 900;
+  color: #0c4a6e;
+}
+
 .customer-info {
   display: flex;
   flex-direction: column;
@@ -371,9 +423,26 @@ onMounted(() => {
   align-items: flex-start;
 }
 
+.car-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
 .car-model {
   font-weight: 500;
   color: var(--text-main);
+}
+
+.car-plate-tag {
+  background: var(--bg-main);
+  border: 1px solid var(--border-subtle);
+  color: var(--primary);
+  font-family: 'Outfit', monospace;
+  font-weight: 700;
+  font-size: 11px;
+  padding: 1px 6px;
+  border-radius: 4px;
 }
 
 .badge-outline {

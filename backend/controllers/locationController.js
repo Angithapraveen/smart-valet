@@ -14,6 +14,7 @@ async function createLocation(req, res) {
             address,
             valid_from,
             valid_to,
+            total_capacity,
             status
         } = req.body;
 
@@ -46,6 +47,7 @@ async function createLocation(req, res) {
             address: address ? String(address).trim() : null,
             valid_from,
             valid_to: valid_to || null,
+            total_capacity: total_capacity || 100,
             status: status !== false
         });
 
@@ -161,9 +163,66 @@ async function getLocationOwners(req, res) {
     }
 }
 
+/**
+ * PUT /api/admin/locations/:id
+ * Update location details (Admin only)
+ */
+async function updateLocation(req, res) {
+    try {
+        const id = req.params.id || req.params.locationId;
+        const {
+            location_name,
+            location_type,
+            address,
+            valid_from,
+            valid_to,
+            total_capacity,
+            status
+        } = req.body;
+
+        // Validation
+        if (!location_name || !location_type || !valid_from) {
+            return res.status(400).json({
+                success: false,
+                message: 'location_name, location_type and valid_from are required.'
+            });
+        }
+
+        const location = await Location.update(id, {
+            location_name: String(location_name).trim(),
+            location_type: String(location_type).trim(),
+            address: address ? String(address).trim() : null,
+            valid_from,
+            valid_to: valid_to || null,
+            total_capacity: total_capacity || 100,
+            status: status !== false
+        });
+
+        if (!location) {
+            return res.status(404).json({
+                success: false,
+                message: 'Location not found.'
+            });
+        }
+
+        return res.json({
+            success: true,
+            message: 'Location updated successfully.',
+            data: location
+        });
+    } catch (error) {
+        console.error('Update location error:', error);
+        return res.status(500).json({
+            success: false,
+            message: 'Failed to update location.'
+        });
+    }
+}
+
 module.exports = {
     createLocation,
     getLocations,
     updateLocationStatus,
+    updateLocation,
     getLocationOwners
 };

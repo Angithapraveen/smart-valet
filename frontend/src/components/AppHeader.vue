@@ -8,7 +8,7 @@
             <rect x="2" y="2" width="20" height="20" rx="2" ry="2"></rect>
             <path d="M9 17V7h4a3 3 0 0 1 0 6H9"></path>
           </svg>
-          <span class="app-name">Valet Parking</span>
+          <span class="app-name">  EZVALET </span>
         </div>
       </div>
 
@@ -127,11 +127,9 @@ onUnmounted(() => {
 }
 
 .header-inner {
-  max-width: 1400px;
-  margin: 0 auto;
   width: 100%;
   height: 100%;
-  padding: 0 32px;
+  padding: 0 40px;
   display: flex;
   align-items: center;
   justify-content: space-between;

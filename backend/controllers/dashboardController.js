@@ -201,7 +201,7 @@ const getManagerDashboard = async (req, res) => {
 
         // 6. Recent Activity (Last 5 transactions)
         const activityQuery = `
-            SELECT valet_id, car_model, customer_name, status, created_at, returned_time
+            SELECT valet_id, car_model, customer_name, status, created_at, returned_time, key_slot
             FROM VALET_TRANSACTIONS
             WHERE location_id = $1
             ORDER BY created_at DESC
