@@ -17,25 +17,53 @@ class WhatsAppService {
     async initialize() {
         if (this.isInitialized) return;
 
+        console.log('[WhatsApp-Service] Initializing WhatsApp Client...');
+
         this.client.on('qr', (qr) => {
-            console.log('QR RECEIVED', qr);
+            console.log('[WhatsApp-Service] QR Code Received! Scan now:');
             qrcode.generate(qr, { small: true });
         });
 
+        this.client.on('authenticated', () => {
+            console.log('[WhatsApp-Service] Authenticated successfully!');
+        });
+
+        this.client.on('auth_failure', (err) => {
+            console.error('[WhatsApp-Service] Authentication failure:', err);
+        });
+
         this.client.on('ready', () => {
-            console.log('WhatsApp Client is ready!');
+            console.log('[WhatsApp-Service] WhatsApp Client is ready and connected!');
             this.isInitialized = true;
         });
 
+        this.client.on('loading_screen', (percent, message) => {
+            console.log('[WhatsApp-Service] Loading...', percent, '%', message);
+        });
+
+        this.client.on('change_state', (state) => {
+            console.log('[WhatsApp-Service] State changed:', state);
+        });
+
+        this.client.on('disconnected', (reason) => {
+            console.warn('[WhatsApp-Service] Client was disconnected:', reason);
+            this.isInitialized = false;
+        });
+
         this.client.on('message', async (msg) => {
+            console.log(`[WhatsApp-Service] Incoming message from ${msg.from}: ${msg.body}`);
             try {
                 await this.handleIncomingMessage(msg);
             } catch (error) {
-                console.error('Error handling message:', error);
+                console.error('[WhatsApp-Service] Error handling message:', error);
             }
         });
 
-        await this.client.initialize();
+        try {
+            await this.client.initialize();
+        } catch (error) {
+            console.error('[WhatsApp-Service] Critical Initialization Error:', error);
+        }
     }
 
     async handleIncomingMessage(msg) {
@@ -79,7 +107,7 @@ class WhatsAppService {
         const locationId = locationMatch[1].trim();
         const driverId = driverMatch[1].trim();
         const carNumberMatch = body.match(/Vehicle:\s*([A-Z0-9-]+)/i) || body.match(/Car No:\s*([A-Z0-9-]+)/i);
-        const carNumber = carNumberMatch ? carNumberMatch[1] : 'N/A';
+        const carNumber = carNumberMatch ? carNumberMatch[1] : null;
 
 
         try {
@@ -233,21 +261,33 @@ class WhatsAppService {
     }
 
     async sendMessage(to, message) {
+        if (!this.isInitialized) {
+            console.warn(`[WhatsApp-Service] Attempted to send message before initialization. Target: ${to}`);
+            return;
+        }
+
         try {
             // Ensure the address is correctly formatted for WhatsApp
             let chatId = to;
 
             // Only append @c.us if there is NO domain suffix already (@c.us or @lid)
             if (!chatId.includes('@')) {
-                const cleanNumber = chatId.replace(/\D/g, '');
+                // Remove all non-digits
+                let cleanNumber = chatId.replace(/\D/g, '');
+                
+                // If 10 digits, assume India (91)
+                if (cleanNumber.length === 10) {
+                    cleanNumber = '91' + cleanNumber;
+                }
+                
                 chatId = `${cleanNumber}@c.us`;
             }
 
-            console.log(`Attempting to send message to: ${chatId}`);
+            console.log(`[WhatsApp-Service] Attempting to send message to: ${chatId}`);
             await this.client.sendMessage(chatId, message);
-            console.log(`Message sent successfully to: ${chatId}`);
+            console.log(`[WhatsApp-Service] Message sent successfully to: ${chatId}`);
         } catch (error) {
-            console.error(`Failed to send message to ${to}:`, error);
+            console.error(`[WhatsApp-Service] Failed to send message to ${to}:`, error);
         }
     }
 }

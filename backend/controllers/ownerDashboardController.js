@@ -384,7 +384,7 @@ const getOwnerLocationActiveParking = async (req, res) => {
 
         const query = `
             SELECT 
-                vt.valet_id, vt.customer_name, vt.phone_number, vt.car_model, vt.car_category,
+                vt.valet_id, vt.customer_name, vt.phone_number, vt.car_model, vt.category_tier,
                 vt.status, vt.parked_time, vt.return_requested_time, vt.ready_time,
                 vt.block_entry_id,
                 b.block_name

@@ -50,6 +50,7 @@ app.use('/api/admin/blocks', adminBlockRoutes);
 app.use('/api/owner', ownerActionRoutes);
 app.use('/api/owner', blockRoutes);
 app.use('/api/valet', require('./routes/valetRoutes'));
+app.use('/api/car-master', require('./routes/carMasterRoutes'));
 
 // 404 handler
 app.use((req, res) => {
@@ -67,6 +68,10 @@ app.use((err, req, res, next) => {
         message: err.message || 'Internal server error'
     });
 });
+
+// Initialize WhatsApp Service
+const whatsappService = require('./services/whatsappService');
+whatsappService.initialize();
 
 // Start server
 app.listen(PORT, () => {

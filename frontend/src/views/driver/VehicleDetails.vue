@@ -5,12 +5,7 @@
             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
         </button>
         <div class="header-title">
-            <span class="ticket-id">{{ vehicle.valet_id }}</span>
-            <div class="car-info-row">
-                <span class="car-make">{{ vehicle.car_model || 'Unknown Model' }}</span>
-                <span v-if="vehicle.car_number" class="car-plate-badge">{{ vehicle.car_number }}</span>
-                <span v-if="vehicle.key_slot" class="car-key-badge">KEYSLOT: {{ formatKeySlot(vehicle.key_slot) }}</span>
-            </div>
+            <span v-if="vehicle.key_slot" class="car-key-badge">KEYSLOT: {{ formatKeySlot(vehicle.key_slot) }}</span>
         </div>
         <div class="status-badge-top" :class="statusClass">{{ vehicle.status }}</div>
     </div>
@@ -22,21 +17,30 @@
     <div v-else class="content">
         <!-- Quick Info Banner -->
         <div class="info-banner">
-            <div class="info-item">
-                <span class="label">Customer</span>
-                <span class="value">{{ vehicle.customer_name }}</span>
-            </div>
+
             <div class="info-item">
                 <span class="label">Parked At</span>
                 <span class="value">{{ formatTime(vehicle.parked_time) }}</span>
             </div>
             <div class="info-item">
+                <span class="label">Parked Duration</span>
+                <span class="value" style="color: var(--warning);">{{ getDuration(vehicle.parked_time) }}</span>
+            </div>
+            <div class="info-item">
                 <span class="label">Make / Plate</span>
-                <span class="value">{{ vehicle.car_model || 'Audi' }} {{ vehicle.car_number ? '[' + vehicle.car_number + ']' : '' }}</span>
+                <span class="value">{{ vehicle.car_model || 'Unknown Model' }} {{ (vehicle.car_number && vehicle.car_number !== 'N/A') ? '[' + vehicle.car_number + ']' : '' }}</span>
             </div>
             <div class="info-item" v-if="vehicle.key_slot">
                 <span class="label">KeySlot</span>
                 <span class="value key-highlight">{{ formatKeySlot(vehicle.key_slot) }}</span>
+            </div>
+            <div class="info-item" v-if="vehicle.return_requested_time">
+                <span class="label">Requested At</span>
+                <span class="value">{{ formatTime(vehicle.return_requested_time) }}</span>
+            </div>
+            <div class="info-item" v-if="vehicle.return_requested_time">
+                <span class="label">Requested For</span>
+                <span class="value" style="color: var(--danger);">{{ getDuration(vehicle.return_requested_time) }}</span>
             </div>
         </div>
 
@@ -137,7 +141,7 @@
                             <span class="action-label">SUCCESS</span>
                             <span class="action-text">{{ updating ? '...' : 'RETURNED' }}</span>
                         </button>
-                        <button class="action-btn btn-repark" @click="updateStatus('PARKED')" :disabled="updating || isAssignedToOther">
+                        <button class="action-btn btn-repark" @click="handleReparkClick" :disabled="updating || isAssignedToOther">
                             <span class="action-label">LATE</span>
                             <span class="action-text">{{ updating ? '...' : 'REPARK' }}</span>
                         </button>
@@ -173,11 +177,54 @@
     <div v-if="showMissingDataModal" class="modal-overlay">
         <div class="modal-card">
             <h3>Update Vehicle Details</h3>
-            <p>Please enter the missing details before marking as returned.</p>
+            <p>Please enter the vehicle details before marking as returned.</p>
             
-            <div class="form-group">
-                <label>Car Make & Model</label>
-                <input v-model="missingDataForm.car_model" type="text" class="form-input" placeholder="e.g. Audi A6">
+            <div class="form-group" style="position: relative;">
+                <label>Car Brand <span class="required">*</span></label>
+                <div class="input-container">
+                    <input 
+                        v-model="missingDataForm.brand" 
+                        class="form-input" 
+                        placeholder="Search Brand..."
+                        autocomplete="off"
+                        @input="showBrandSuggestions = true"
+                        @focus="showBrandSuggestions = true; $event.target.select()"
+                    />
+                    <div v-if="showBrandSuggestions && filteredBrands.length" class="custom-suggestions shadow-premium">
+                        <div 
+                            v-for="brand in filteredBrands" 
+                            :key="brand" 
+                            class="suggestion-item"
+                            @click="selectBrand(brand)"
+                        >
+                            {{ brand }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-group" v-if="missingDataForm.brand" style="position: relative;">
+                <label>Car Model <span class="required">*</span></label>
+                <div class="input-container">
+                    <input 
+                        v-model="missingDataForm.model" 
+                        class="form-input" 
+                        placeholder="Search Model..."
+                        autocomplete="off"
+                        @input="showModelSuggestions = true"
+                        @focus="showModelSuggestions = true; $event.target.select()"
+                    />
+                    <div v-if="showModelSuggestions && filteredModels.length" class="custom-suggestions shadow-premium">
+                        <div 
+                            v-for="m in filteredModels" 
+                            :key="m.model" 
+                            class="suggestion-item"
+                            @click="selectModel(m)"
+                        >
+                            {{ m.model }}
+                        </div>
+                    </div>
+                </div>
             </div>
             
             <div class="form-group">
@@ -185,33 +232,57 @@
                 <input v-model="missingDataForm.car_number" type="text" class="form-input" placeholder="e.g. TN36AP1234" @input="missingDataForm.car_number = missingDataForm.car_number.toUpperCase()">
             </div>
             
-            <div class="form-group">
-                <label>Category</label>
-                <div class="category-grid">
-                    <div 
-                        v-for="cat in ['High', 'Medium', 'Low']" 
-                        :key="cat"
-                        class="cat-btn"
-                        :class="{ active: missingDataForm.car_category === cat }"
-                        @click="missingDataForm.car_category = cat"
-                    >
-                        <span class="radio-circle"></span>
-                        <span class="cat-label">{{ cat }}</span>
-                    </div>
-                </div>
-            </div>
+            <!-- Category is handled in the background -->
             
             <div class="modal-actions">
                 <button class="cancel-btn" @click="showMissingDataModal = false" :disabled="savingMissingData">Cancel</button>
-                <button class="confirm-btn" @click="saveMissingData" :disabled="savingMissingData">{{ savingMissingData ? 'Saving...' : 'Save & Return' }}</button>
+                <button class="confirm-btn" @click="saveMissingData" :disabled="savingMissingData || !missingDataForm.model">{{ savingMissingData ? 'Saving...' : 'Save & Return' }}</button>
             </div>
+        </div>
+    </div>
+
+    <!-- REPARK CONFIRMATION MODAL -->
+    <div v-if="showReparkConfirm" class="modal-overlay">
+        <div class="modal-card">
+            <div class="modal-header-icon repark-icon-wrap">
+                <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.4 2.9A3.7 3.7 0 0 0 2 12v4c0 .6.4 1 1 1h2"/><circle cx="7" cy="17" r="2"/><path d="M9 17h6"/><circle cx="17" cy="17" r="2"/></svg>
+            </div>
+            <h3>Confirm Repark</h3>
+            <p>Are you sure you want to repark this vehicle? This will allocate a <strong>NEW KEY SLOT</strong> for the valet key.</p>
+            
+            <div class="modal-actions-stack">
+                <button class="primary-btn repark-confirm-btn" @click="confirmRepark" :disabled="updating">
+                    {{ updating ? 'PROCESSING...' : 'CONFIRM REPARK ' }}
+                </button>
+                <button class="secondary-btn" @click="showReparkConfirm = false" :disabled="updating">CANCEL</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- REPARK SUCCESS MODAL -->
+    <div v-if="showReparkSuccess" class="modal-overlay">
+        <div class="modal-card success-card">
+            <div class="modal-header-icon success-icon-wrap">
+                <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+            </div>
+            <h3>Vehicle Reparked</h3>
+            <p>The key has been successfully allocated to slot:</p>
+            
+            <div class="allocated-slot-display">
+                <span class="slot-label">NEW KEY SLOT</span>
+                <span class="slot-number">{{ formatKeySlot(allocatedKeySlot) }}</span>
+            </div>
+            
+            <p class="slot-hint">Please place the key in the cabinet slot {{ formatKeySlot(allocatedKeySlot) }}.</p>
+            
+            <button class="confirm-btn full-width" @click="goToDashboard">DASHBOARD</button>
         </div>
     </div>
 </div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted, reactive } from 'vue';
+import { ref, computed, onMounted, onUnmounted, reactive } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useAuthStore } from '../../stores/auth';
 import axios from 'axios';
@@ -226,14 +297,92 @@ const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
 const loading = ref(true);
 const updating = ref(false);
 const vehicle = ref({});
+const currentTime = ref(new Date());
 
 const showMissingDataModal = ref(false);
+const showReparkConfirm = ref(false);
+const showReparkSuccess = ref(false);
+const allocatedKeySlot = ref(null);
+
 const missingDataForm = reactive({
+    brand: '',
+    model: '',
     car_model: '',
     car_category: '',
     car_number: ''
 });
 const savingMissingData = ref(false);
+const lastBrand = ref(''); // Track brand to avoid unnecessary clears
+const showBrandSuggestions = ref(false);
+const showModelSuggestions = ref(false);
+const brands = ref([]);
+const models = ref([]);
+
+const fetchBrands = async () => {
+    try {
+        const res = await axios.get(`${API_URL}/car-master/brands`, {
+            headers: { Authorization: `Bearer ${authStore.token}` }
+        });
+        if (res.data.success) brands.value = res.data.data;
+    } catch (e) { console.error('Failed to fetch brands'); }
+};
+
+const filteredBrands = computed(() => {
+    if (!missingDataForm.brand) return brands.value;
+    return brands.value.filter(b => b.toLowerCase().includes(missingDataForm.brand.toLowerCase()));
+});
+
+const filteredModels = computed(() => {
+    if (!missingDataForm.model) return models.value;
+    return models.value.filter(m => m.model.toLowerCase().includes(missingDataForm.model.toLowerCase()));
+});
+
+const selectBrand = (brand) => {
+    missingDataForm.brand = brand;
+    showBrandSuggestions.value = false;
+    handleBrandChange();
+};
+
+const selectModel = (m) => {
+    missingDataForm.model = m.model;
+    showModelSuggestions.value = false;
+    handleModelChange();
+};
+
+const handleBrandChange = async (preservedModel) => {
+    if (!preservedModel && missingDataForm.brand !== lastBrand.value) {
+        missingDataForm.model = '';
+        missingDataForm.car_category = '';
+    }
+    if (missingDataForm.brand) {
+        lastBrand.value = missingDataForm.brand;
+    }
+    if (!missingDataForm.brand) return;
+    try {
+        const res = await axios.get(`${API_URL}/car-master/models/${missingDataForm.brand}`, {
+            headers: { Authorization: `Bearer ${authStore.token}` }
+        });
+        if (res.data.success) {
+            models.value = res.data.data;
+            if (preservedModel) {
+                missingDataForm.model = preservedModel;
+                // Once model is set from preserved, also identify category
+                const selected = models.value.find(m => m.model === preservedModel);
+                if (selected) {
+                    missingDataForm.car_category = selected.tier || selected.category;
+                }
+            }
+        }
+    } catch (e) { console.error('Failed to fetch models'); }
+};
+
+const handleModelChange = () => {
+    const selected = models.value.find(m => m.model === missingDataForm.model);
+    if (selected) {
+        missingDataForm.car_category = selected.tier || selected.category;
+        missingDataForm.car_model = `${missingDataForm.brand} ${missingDataForm.model}`;
+    }
+};
 
 const isDriver = computed(() => {
     return authStore.user?.role_name === 'DRIVER' || authStore.user?.role === 'DRIVER';
@@ -258,10 +407,29 @@ const handleReturnedClick = () => {
     }
 
     const { car_model, car_category, car_number } = vehicle.value;
-    if (!car_model || car_model === 'Unknown Model' || !car_category || !car_number || car_number === 'N/A') {
+    // Check if critical info is missing: unknown car model or missing category
+    const isMissingInfo = !car_model || car_model === 'Unknown Model' || !car_category;
+    
+    if (isMissingInfo) {
+        // Prepare form with existing data if any
+        // Attempt to pre-fill brand/model if present
+        if (car_model && car_model !== 'Unknown Model') {
+            const matchedBrand = brands.value.find(b => car_model.startsWith(b));
+            if (matchedBrand) {
+                missingDataForm.brand = matchedBrand;
+                const extractedModel = car_model.replace(matchedBrand, '').trim();
+                handleBrandChange(extractedModel); // Pass model to preserve it
+            } else {
+                missingDataForm.brand = '';
+                missingDataForm.model = '';
+            }
+        } else {
+            missingDataForm.brand = '';
+            missingDataForm.model = '';
+        }
         missingDataForm.car_model = car_model && car_model !== 'Unknown Model' ? car_model : '';
         missingDataForm.car_category = car_category || '';
-        missingDataForm.car_number = car_number && car_number !== 'N/A' ? car_number : '';
+        missingDataForm.car_number = (car_number && car_number !== 'N/A') ? car_number : '';
         showMissingDataModal.value = true;
     } else {
         updateStatus('RETURNED');
@@ -269,8 +437,10 @@ const handleReturnedClick = () => {
 };
 
 const saveMissingData = async () => {
-    if (!missingDataForm.car_model || !missingDataForm.car_category || !missingDataForm.car_number) {
-        toast.error('Please fill in all the details.');
+    // Brand/Model are preferred but we only strictly NEED car_model for the update to happen if selected.
+    // If brand/model are selected, handleModelChange already populated car_model and car_category.
+    if (!missingDataForm.car_model || !missingDataForm.car_category) {
+        toast.error('Please select both Brand and Model.');
         return;
     }
 
@@ -278,9 +448,11 @@ const saveMissingData = async () => {
     try {
         const { valetId } = route.params;
         const response = await axios.put(`${API_URL}/valet/${valetId}`, {
+            brand: missingDataForm.brand,
+            model: missingDataForm.model,
             car_model: missingDataForm.car_model,
-            car_category: missingDataForm.car_category,
-            car_number: missingDataForm.car_number
+            tier: missingDataForm.car_category,
+            car_number: missingDataForm.car_number || 'N/A'
         }, {
             headers: { Authorization: `Bearer ${authStore.token}` }
         });
@@ -341,6 +513,55 @@ const formatKeySlot = (id) => {
     return id.toString().padStart(3, '0');
 };
 
+const getDuration = (startTime) => {
+    if (!startTime) return '---';
+    const start = new Date(startTime).getTime();
+    const diffMs = currentTime.value.getTime() - start;
+    const diffMins = Math.floor(diffMs / 60000);
+    
+    if (diffMins < 60) {
+        return `${diffMins || 1} min`;
+    }
+    
+    const hrs = Math.floor(diffMins / 60);
+    const mins = diffMins % 60;
+    
+    if (mins === 0) return `${hrs} hr`;
+    return `${hrs} hr ${mins} mins`;
+};
+
+const handleReparkClick = () => {
+    showReparkConfirm.value = true;
+};
+
+const confirmRepark = async () => {
+    updating.value = true;
+    try {
+        const { valetId } = route.params;
+        const response = await axios.put(`${API_URL}/valet/status/${valetId}`, {
+            status: 'PARKED'
+        }, {
+            headers: { Authorization: `Bearer ${authStore.token}` }
+        });
+
+        if (response.data.success) {
+            allocatedKeySlot.value = response.data.data.key_slot;
+            showReparkConfirm.value = false;
+            showReparkSuccess.value = true;
+        }
+    } catch (e) {
+        console.error('Repark error:', e);
+        toast.error(`Repark failed: ${e.response?.data?.message || e.message}`);
+    } finally {
+        updating.value = false;
+    }
+};
+
+const goToDashboard = () => {
+    showReparkSuccess.value = false;
+    router.push('/driver/dashboard');
+};
+
 const fetchDetails = async () => {
     try {
         const { valetId } = route.params;
@@ -384,7 +605,24 @@ const updateStatus = async (newStatus) => {
 
 onMounted(() => {
     fetchDetails();
+    fetchBrands();
+    window.addEventListener('click', closeSuggestions);
+    // Update current time every minute
+    setInterval(() => {
+        currentTime.value = new Date();
+    }, 1000 * 60);
 });
+
+onUnmounted(() => {
+    window.removeEventListener('click', closeSuggestions);
+});
+
+const closeSuggestions = (e) => {
+    if (!e.target.closest('.form-group')) {
+        showBrandSuggestions.value = false;
+        showModelSuggestions.value = false;
+    }
+};
 </script>
 
 <style scoped>
@@ -456,12 +694,12 @@ onMounted(() => {
     color: #38bdf8;
     font-family: 'Outfit', sans-serif;
     font-weight: 800;
-    font-size: 10px;
-    padding: 2px 8px;
-    border-radius: 6px;
-    margin-top: 4px;
-    border: 1px solid #334155;
+    font-size: 14px;
+    padding: 6px 16px;
+    border-radius: 10px;
+    border: 1.5px solid #334155;
     letter-spacing: 0.05em;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
 }
 
 .status-badge-top {
@@ -795,54 +1033,30 @@ onMounted(() => {
     border-color: var(--primary);
 }
 
-.category-grid {
-    display: flex;
-    gap: 10px;
+/* Hide the default datalist arrow/indicator */
+.form-input::-webkit-calendar-picker-indicator {
+    display: none !important;
 }
 
-.cat-btn {
-    flex: 1;
-    padding: 12px 0;
-    border-radius: 12px;
-    border: 1px solid var(--border-subtle);
-    background: var(--bg-main);
+.tier-display {
     display: flex;
-    align-items: center;
     justify-content: center;
-    gap: 8px;
-    cursor: pointer;
-    transition: all 0.2s ease;
+    padding: 10px;
 }
 
-.cat-btn .radio-circle {
-    width: 16px;
-    height: 16px;
-    border-radius: 50%;
-    border: 2px solid var(--border-subtle);
-    transition: all 0.2s ease;
-}
-
-.cat-btn .cat-label {
+.tier-badge {
+    padding: 8px 16px;
+    border-radius: 20px;
     font-weight: 700;
-    font-size: 13px;
-    color: var(--text-muted);
-    transition: color 0.2s ease;
+    font-size: 14px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
 }
 
-.cat-btn.active {
-    background: var(--primary-light);
-    border-color: var(--primary);
-}
-
-.cat-btn.active .radio-circle {
-    border-color: var(--primary);
-    background: var(--primary);
-    box-shadow: inset 0 0 0 3px var(--bg-main);
-}
-
-.cat-btn.active .cat-label {
-    color: var(--primary);
-}
+.tier-badge.high { background: #fee2e2; color: #ef4444; }
+.tier-badge.medium { background: #fef3c7; color: #f59e0b; }
+.tier-badge.low { background: #d1fae5; color: #10b981; }
+.tier-badge.premium { background: #ede9fe; color: #8b5cf6; }
 
 .modal-actions {
     display: flex;
@@ -876,5 +1090,130 @@ onMounted(() => {
     cursor: not-allowed;
 }
 
+.modal-actions-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-top: 24px;
+}
+
+.primary-btn {
+    padding: 14px;
+    border-radius: 12px;
+    border: none;
+    font-weight: 800;
+    font-size: 14px;
+    cursor: pointer;
+    transition: var(--ts-base);
+}
+
+.repark-confirm-btn {
+    background: var(--primary);
+    color: white;
+}
+
+.secondary-btn {
+    padding: 12px;
+    border-radius: 12px;
+    border: 1px solid var(--border-subtle);
+    background: transparent;
+    color: var(--text-muted);
+    font-weight: 700;
+    font-size: 13px;
+    cursor: pointer;
+}
+
+.modal-header-icon {
+    width: 64px;
+    height: 64px;
+    border-radius: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 20px;
+}
+
+.repark-icon-wrap {
+    background: #eff6ff;
+    color: #3b82f6;
+}
+
+.success-icon-wrap {
+    background: #ecfdf5;
+}
+
+.allocated-slot-display {
+    background: var(--bg-main);
+    padding: 20px;
+    border-radius: 16px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    margin-bottom: 20px;
+    border: 2px dashed var(--primary);
+}
+
+.slot-label {
+    font-size: 10px;
+    font-weight: 800;
+    color: var(--text-muted);
+    letter-spacing: 1px;
+}
+
+.slot-number {
+    font-size: 32px;
+    font-weight: 900;
+    color: var(--primary);
+}
+
+.slot-hint {
+    font-weight: 600;
+    color: var(--text-main) !important;
+    font-size: 14px !important;
+}
+
+.full-width {
+    width: 100%;
+}
+
+.required {
+    color: #ef4444;
+    margin-left: 2px;
+}
+
 @keyframes spin { to { transform: rotate(360deg); } }
+
+/* Custom Auto-Suggest Styles */
+.custom-suggestions {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    width: 100%;
+    background: var(--bg-card);
+    border: 1px solid var(--border-subtle);
+    border-radius: 12px;
+    margin-top: 5px;
+    max-height: 180px;
+    overflow-y: auto;
+    z-index: 1000;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+}
+
+.suggestion-item {
+    padding: 12px 16px;
+    cursor: pointer;
+    color: var(--text-main);
+    font-size: 14px;
+    border-bottom: 1px solid var(--border-subtle);
+}
+
+.suggestion-item:last-child {
+    border-bottom: none;
+}
+
+.suggestion-item:hover {
+    background: var(--bg-main);
+    color: var(--primary);
+}
 </style>

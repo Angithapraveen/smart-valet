@@ -76,10 +76,7 @@
                 </div>
 
                 <div class="vehicle-details">
-                    <div class="detail-row">
-                        <span class="label">Customer</span>
-                        <span class="value">{{ vehicle.customer_name || 'Guest' }}</span>
-                    </div>
+
                     <div class="detail-row">
                         <span class="label">Valet ID</span>
                         <span class="value" style="color: var(--primary); font-family: 'Outfit', monospace;">#{{ vehicle.ticket_id }}</span>
@@ -88,11 +85,23 @@
                         <span class="label">Parked At</span>
                         <span class="value">{{ formatTime(vehicle.entry_time) }}</span>
                     </div>
+                    <div class="detail-row">
+                        <span class="label">Duration</span>
+                        <span class="value" style="color: var(--warning);">{{ getDuration(vehicle.entry_time) }}</span>
+                    </div>
+                    <div class="detail-row" v-if="vehicle.return_requested_time">
+                        <span class="label">Requested At</span>
+                        <span class="value">{{ formatTime(vehicle.return_requested_time) }}</span>
+                    </div>
+                    <div class="detail-row" v-if="vehicle.return_requested_time">
+                        <span class="label">Request Time</span>
+                        <span class="value" style="color: var(--danger);">{{ getDuration(vehicle.return_requested_time) }}</span>
+                    </div>
                 <div class="vehicle-info-footer">
                     <div class="footer-label">VEHICLE DETAILS</div>
                     <div class="car-info-row">
                         <span class="car-make-text">{{ vehicle.car_model || 'Unknown Model' }}</span>
-                        <div v-if="vehicle.car_number" class="license-plate">
+                        <div v-if="vehicle.car_number && vehicle.car_number !== 'N/A'" class="license-plate">
                             {{ vehicle.car_number }}
                         </div>
                     </div>
@@ -142,16 +151,7 @@
             </p>
             <p class="instruction" style="font-size: 12px; margin-top: -10px;">{{ pendingVehicle?.valet_id }}</p>
             
-            <div class="form-group" style="margin-top: 20px; text-align: left;">
-                <label>Car Number</label>
-                <input 
-                    v-model="carNumberToAssign" 
-                    type="text" 
-                    class="form-input" 
-                    placeholder="Enter Car Number (e.g. TN36AP1234)"
-                    @input="carNumberToAssign = carNumberToAssign.toUpperCase()"
-                />
-            </div>
+
             
             <div class="form-group" style="margin-top: 20px; text-align: left;">
                 <label>Select Block</label>
@@ -192,9 +192,11 @@ const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
 const activeTab = ref('returning');
 const loading = ref(false);
 const vehicles = ref([]);
+const currentTime = ref(new Date());
 
 // QR Modal State
 const showQrModal = ref(false);
+const botNumber = ref('917200476950'); // Default fallback
 
 // Block Assignment State
 const showBlockModal = ref(false);
@@ -202,7 +204,7 @@ const selectedBlockId = ref('');
 const activeBlocks = ref([]);
 const isAssigning = ref(false);
 const pendingVehicle = ref(null);
-const carNumberToAssign = ref('');
+
 
 const userInitial = computed(() => authStore.profileInitial);
 const locationName = computed(() => {
@@ -213,20 +215,24 @@ const qrCodeUrl = computed(() => {
     const locId = authStore.accessibleLocations?.[0]?.location_id || 'LOC-UNKNOWN';
     const driverId = authStore.user?.user_id || 'DRIVER-UNKNOWN';
     
-    // Format requested:
-    // My car needs to be parked.
-    // 
-    // Parking request
-    // Premises: <ID>
-    // Driver: <ID>
-    
     const text = `My car needs to be parked.\n\nParking request\nPremises: ${locId}\nDriver: ${driverId}`;
     const encodedText = encodeURIComponent(text);
-    const whatsappUrl = `https://wa.me/917200476950?text=${encodedText}`;
+    const whatsappUrl = `https://wa.me/${botNumber.value}?text=${encodedText}`;
     
     // Generate QR for the WhatsApp link
     return `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(whatsappUrl)}`;
 });
+
+const fetchBotStatus = async () => {
+    try {
+        const response = await axios.get(`${API_URL}/valet/bot-status`);
+        if (response.data.success && response.data.botNumber && response.data.botNumber !== 'Unknown') {
+            botNumber.value = response.data.botNumber;
+        }
+    } catch (err) {
+        console.error('Failed to fetch bot status:', err);
+    }
+};
 
 const returningCount = computed(() => {
     return vehicles.value.filter(v => {
@@ -275,6 +281,23 @@ const formatTime = (isoString) => {
 const formatKeySlot = (id) => {
     if (!id) return '';
     return id.toString().padStart(3, '0');
+};
+
+const getDuration = (startTime) => {
+    if (!startTime) return '---';
+    const start = new Date(startTime).getTime();
+    const diffMs = currentTime.value.getTime() - start;
+    const diffMins = Math.floor(diffMs / 60000);
+    
+    if (diffMins < 60) {
+        return `${diffMins || 1} min`;
+    }
+    
+    const hrs = Math.floor(diffMins / 60);
+    const mins = diffMins % 60;
+    
+    if (mins === 0) return `${hrs} hr`;
+    return `${hrs} hr ${mins} mins`;
 };
 
 const getStatusBadgeClass = (status) => {
@@ -409,7 +432,6 @@ const openQrModal = () => {
 const openBlockAssignment = (vehicle) => {
     pendingVehicle.value = vehicle;
     selectedBlockId.value = '';
-    carNumberToAssign.value = vehicle.car_number || '';
     showBlockModal.value = true;
 };
 
@@ -417,7 +439,6 @@ const closeBlockModal = () => {
     showBlockModal.value = false;
     pendingVehicle.value = null;
     selectedBlockId.value = '';
-    carNumberToAssign.value = '';
 };
 
 const confirmBlockAssignment = async () => {
@@ -426,8 +447,7 @@ const confirmBlockAssignment = async () => {
     isAssigning.value = true;
     try {
         const response = await axios.post(`${API_URL}/valet/${pendingVehicle.value.valet_id}/assign-block`, {
-            block_id: selectedBlockId.value,
-            car_number: carNumberToAssign.value
+            block_id: selectedBlockId.value
         }, {
             headers: { Authorization: `Bearer ${authStore.token}` }
         });
@@ -448,9 +468,15 @@ const confirmBlockAssignment = async () => {
 onMounted(async () => {
     loading.value = true;
     try {
+        await fetchBotStatus();
         await fetchVehicles();
         // Poll every 10 seconds (faster for testing)
         setInterval(fetchVehicles, 10000);
+        
+        // Update current time every minute
+        setInterval(() => {
+            currentTime.value = new Date();
+        }, 1000 * 60);
     } finally {
         loading.value = false;
     }

@@ -62,10 +62,7 @@
                 <label>Full Name</label>
                 <input v-model="editForm.name" type="text" class="form-input" placeholder="Enter name">
             </div>
-            <div class="form-group">
-                <label>Phone Number</label>
-                <input v-model="editForm.phone_number" type="tel" class="form-input" placeholder="Enter phone number">
-            </div>
+
             <div class="modal-actions">
                 <button class="cancel-btn" @click="closeEditModal">Cancel</button>
                 <button class="save-btn" @click="saveProfile" :disabled="saving">
@@ -99,13 +96,11 @@ const locationName = computed(() => {
 const showEditModal = ref(false);
 const saving = ref(false);
 const editForm = reactive({
-    name: '',
-    phone_number: ''
+    name: ''
 });
 
 const openEditModal = () => {
     editForm.name = user.value.name;
-    editForm.phone_number = user.value.phone_number;
     showEditModal.value = true;
 };
 
@@ -114,16 +109,15 @@ const closeEditModal = () => {
 };
 
 const saveProfile = async () => {
-    if (!editForm.name || !editForm.phone_number) {
-        toast.warning('Please fill in all fields');
+    if (!editForm.name) {
+        toast.warning('Please enter your name');
         return;
     }
 
     saving.value = true;
     try {
         const response = await axios.put(`${API_URL}/auth/update-profile`, {
-            name: editForm.name,
-            phone_number: editForm.phone_number
+            name: editForm.name
         }, {
             headers: { Authorization: `Bearer ${authStore.token}` }
         });

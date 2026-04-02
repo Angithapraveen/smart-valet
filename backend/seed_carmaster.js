@@ -1,0 +1,251 @@
+const pool = require('./config/database');
+
+const cars = [
+    ['Maruti Suzuki', '800', 'Hatchback', 'Low'],
+    ['Maruti Suzuki', 'Alto', 'Hatchback', 'Low'],
+    ['Maruti Suzuki', 'Alto K10', 'Hatchback', 'Low'],
+    ['Maruti Suzuki', 'A-Star', 'Hatchback', 'Low'],
+    ['Maruti Suzuki', 'S-Presso', 'Hatchback', 'Low'],
+    ['Maruti Suzuki', 'WagonR', 'Hatchback', 'Low'],
+    ['Maruti Suzuki', 'Celerio', 'Hatchback', 'Low'],
+    ['Maruti Suzuki', 'Ritz', 'Hatchback', 'Low'],
+    ['Maruti Suzuki', 'Zen', 'Hatchback', 'Low'],
+    ['Maruti Suzuki', 'Zen Estilo', 'Hatchback', 'Low'],
+    ['Maruti Suzuki', 'Swift', 'Hatchback', 'Low'],
+    ['Maruti Suzuki', 'Baleno', 'Hatchback', 'Medium'],
+    ['Maruti Suzuki', 'Ignis', 'Hatchback', 'Medium'],
+    ['Maruti Suzuki', 'Fronx', 'SUV', 'Medium'],
+    ['Maruti Suzuki', 'Dzire', 'Sedan', 'Medium'],
+    ['Maruti Suzuki', 'Ciaz', 'Sedan', 'Medium'],
+    ['Maruti Suzuki', 'Esteem', 'Sedan', 'Medium'],
+    ['Maruti Suzuki', 'Brezza', 'SUV', 'Medium'],
+    ['Maruti Suzuki', 'Jimny', 'SUV', 'High'],
+    ['Maruti Suzuki', 'Ertiga', 'MUV', 'Medium'],
+    ['Maruti Suzuki', 'XL6', 'MUV', 'High'],
+    ['Maruti Suzuki', 'Invicto', 'MUV', 'High'],
+    ['Maruti Suzuki', 'Eeco', 'Van', 'Low'],
+    ['Maruti Suzuki', 'Omni', 'Van', 'Low'],
+    ['Maruti Suzuki', 'Versa', 'Van', 'Low'],
+    ['Hyundai', 'Eon', 'Hatchback', 'Low'],
+    ['Hyundai', 'Getz', 'Hatchback', 'Low'],
+    ['Hyundai', 'i10', 'Hatchback', 'Low'],
+    ['Hyundai', 'Grand i10', 'Hatchback', 'Low'],
+    ['Hyundai', 'Grand i10 Nios', 'Hatchback', 'Low'],
+    ['Hyundai', 'Santro', 'Hatchback', 'Low'],
+    ['Hyundai', 'i20', 'Hatchback', 'Medium'],
+    ['Hyundai', 'i20 N Line', 'Hatchback', 'Medium'],
+    ['Hyundai', 'Elite i20', 'Hatchback', 'Medium'],
+    ['Hyundai', 'Accent', 'Sedan', 'Medium'],
+    ['Hyundai', 'Xcent', 'Sedan', 'Low'],
+    ['Hyundai', 'Aura', 'Sedan', 'Medium'],
+    ['Hyundai', 'Verna', 'Sedan', 'Medium'],
+    ['Hyundai', 'Elantra', 'Sedan', 'High'],
+    ['Hyundai', 'Venue', 'SUV', 'Medium'],
+    ['Hyundai', 'Exter', 'SUV', 'Low'],
+    ['Hyundai', 'Creta', 'SUV', 'Medium'],
+    ['Hyundai', 'Alcazar', 'SUV', 'High'],
+    ['Hyundai', 'Tucson', 'SUV', 'High'],
+    ['Hyundai', 'Kona EV', 'EV', 'High'],
+    ['Tata', 'Indica', 'Hatchback', 'Low'],
+    ['Tata', 'Indica Vista', 'Hatchback', 'Low'],
+    ['Tata', 'Tiago', 'Hatchback', 'Low'],
+    ['Tata', 'Tiago EV', 'EV', 'Low'],
+    ['Tata', 'Altroz', 'Hatchback', 'Medium'],
+    ['Tata', 'Bolt', 'Hatchback', 'Medium'],
+    ['Tata', 'Tigor', 'Sedan', 'Low'],
+    ['Tata', 'Tigor EV', 'EV', 'Low'],
+    ['Tata', 'Zest', 'Sedan', 'Medium'],
+    ['Tata', 'Indigo', 'Sedan', 'Low'],
+    ['Tata', 'Indigo CS', 'Sedan', 'Low'],
+    ['Tata', 'Manza', 'Sedan', 'Medium'],
+    ['Tata', 'Punch', 'SUV', 'Medium'],
+    ['Tata', 'Punch EV', 'EV', 'Medium'],
+    ['Tata', 'Nexon', 'SUV', 'Medium'],
+    ['Tata', 'Nexon EV', 'EV', 'Medium'],
+    ['Tata', 'Harrier', 'SUV', 'High'],
+    ['Tata', 'Safari', 'SUV', 'High'],
+    ['Tata', 'Sumo', 'SUV', 'Medium'],
+    ['Tata', 'Sumo Gold', 'SUV', 'Medium'],
+    ['Mahindra', 'KUV100', 'SUV', 'Low'],
+    ['Mahindra', 'Bolero', 'SUV', 'Low'],
+    ['Mahindra', 'Bolero Neo', 'SUV', 'Medium'],
+    ['Mahindra', 'TUV300', 'SUV', 'Medium'],
+    ['Mahindra', 'Nuvosport', 'SUV', 'Medium'],
+    ['Mahindra', 'XUV300', 'SUV', 'Medium'],
+    ['Mahindra', 'XUV400', 'EV', 'Medium'],
+    ['Mahindra', 'Scorpio Classic', 'SUV', 'High'],
+    ['Mahindra', 'Scorpio N', 'SUV', 'High'],
+    ['Mahindra', 'XUV700', 'SUV', 'High'],
+    ['Mahindra', 'Thar', 'SUV', 'High'],
+    ['Mahindra', 'Marazzo', 'MUV', 'Medium'],
+    ['Mahindra', 'Xylo', 'MUV', 'Medium'],
+    ['Mahindra', 'Quanto', 'SUV', 'Medium'],
+    ['Mahindra', 'Verito', 'Sedan', 'Medium'],
+    ['Mahindra', 'Commander', 'SUV', 'Medium'],
+    ['Mahindra', 'Maxx', 'SUV', 'Medium'],
+    ['Toyota', 'Qualis', 'MUV', 'Medium'],
+    ['Toyota', 'Glanza', 'Hatchback', 'Medium'],
+    ['Toyota', 'Etios', 'Sedan', 'Medium'],
+    ['Toyota', 'Liva', 'Hatchback', 'Low'],
+    ['Toyota', 'Etios Cross', 'Hatchback', 'Medium'],
+    ['Toyota', 'Yaris', 'Sedan', 'Medium'],
+    ['Toyota', 'Corolla', 'Sedan', 'High'],
+    ['Toyota', 'Corolla Altis', 'Sedan', 'High'],
+    ['Toyota', 'Camry', 'Sedan', 'High'],
+    ['Toyota', 'Hyryder', 'SUV', 'Medium'],
+    ['Toyota', 'Taisor', 'SUV', 'Medium'],
+    ['Toyota', 'Innova Crysta', 'MUV', 'High'],
+    ['Toyota', 'Innova Hycross', 'MUV', 'High'],
+    ['Toyota', 'Fortuner', 'SUV', 'High'],
+    ['Toyota', 'Legender', 'SUV', 'High'],
+    ['Toyota', 'Prado', 'SUV', 'Premium'],
+    ['Toyota', 'Vellfire', 'Luxury', 'Premium'],
+    ['Kia', 'Sonet', 'SUV', 'Medium'],
+    ['Kia', 'Seltos', 'SUV', 'Medium'],
+    ['Kia', 'Carens', 'MUV', 'Medium'],
+    ['Kia', 'Carnival', 'MUV', 'High'],
+    ['Kia', 'EV6', 'EV', 'Premium'],
+    ['Honda', 'Brio', 'Hatchback', 'Low'],
+    ['Honda', 'Jazz', 'Hatchback', 'Medium'],
+    ['Honda', 'Amaze', 'Sedan', 'Low'],
+    ['Honda', 'City', 'Sedan', 'Medium'],
+    ['Honda', 'City Hybrid', 'Sedan', 'High'],
+    ['Honda', 'Civic', 'Sedan', 'High'],
+    ['Honda', 'Accord', 'Sedan', 'High'],
+    ['Honda', 'WR-V', 'SUV', 'Medium'],
+    ['Honda', 'BR-V', 'SUV', 'Medium'],
+    ['Honda', 'CR-V', 'SUV', 'High'],
+    ['Honda', 'Elevate', 'SUV', 'Medium'],
+    ['Renault', 'Kwid', 'Hatchback', 'Low'],
+    ['Renault', 'Triber', 'MUV', 'Low'],
+    ['Renault', 'Kiger', 'SUV', 'Medium'],
+    ['Renault', 'Duster', 'SUV', 'Medium'],
+    ['Renault', 'Lodgy', 'MUV', 'Medium'],
+    ['Nissan', 'Magnite', 'SUV', 'Low'],
+    ['Nissan', 'Micra', 'Hatchback', 'Low'],
+    ['Nissan', 'Sunny', 'Sedan', 'Medium'],
+    ['Nissan', 'Teana', 'Sedan', 'High'],
+    ['Nissan', 'Evalia', 'MUV', 'Medium'],
+    ['Volkswagen', 'Polo', 'Hatchback', 'Medium'],
+    ['Volkswagen', 'Vento', 'Sedan', 'Medium'],
+    ['Volkswagen', 'Ameo', 'Sedan', 'Medium'],
+    ['Volkswagen', 'Virtus', 'Sedan', 'Medium'],
+    ['Volkswagen', 'Taigun', 'SUV', 'Medium'],
+    ['Volkswagen', 'Tiguan', 'SUV', 'High'],
+    ['Volkswagen', 'Jetta', 'Sedan', 'High'],
+    ['Volkswagen', 'Passat', 'Sedan', 'High'],
+    ['Skoda', 'Rapid', 'Sedan', 'Medium'],
+    ['Skoda', 'Slavia', 'Sedan', 'Medium'],
+    ['Skoda', 'Octavia', 'Sedan', 'High'],
+    ['Skoda', 'Superb', 'Sedan', 'High'],
+    ['Skoda', 'Kushaq', 'SUV', 'Medium'],
+    ['Skoda', 'Kodiaq', 'SUV', 'High'],
+    ['Skoda', 'Yeti', 'SUV', 'Medium'],
+    ['MG', 'Comet', 'EV', 'Low'],
+    ['MG', 'Astor', 'SUV', 'Medium'],
+    ['MG', 'Hector', 'SUV', 'Medium'],
+    ['MG', 'Hector Plus', 'SUV', 'High'],
+    ['MG', 'Gloster', 'SUV', 'High'],
+    ['MG', 'ZS EV', 'EV', 'Medium'],
+    ['Ford', 'Ikon', 'Sedan', 'Low'],
+    ['Ford', 'Figo', 'Hatchback', 'Low'],
+    ['Ford', 'Aspire', 'Sedan', 'Medium'],
+    ['Ford', 'Freestyle', 'Hatchback', 'Medium'],
+    ['Ford', 'Fiesta', 'Sedan', 'Medium'],
+    ['Ford', 'Classic', 'Sedan', 'Low'],
+    ['Ford', 'EcoSport', 'SUV', 'Medium'],
+    ['Ford', 'Endeavour', 'SUV', 'High'],
+    ['Chevrolet', 'Spark', 'Hatchback', 'Low'],
+    ['Chevrolet', 'Beat', 'Hatchback', 'Low'],
+    ['Chevrolet', 'Aveo', 'Sedan', 'Medium'],
+    ['Chevrolet', 'Optra', 'Sedan', 'Medium'],
+    ['Chevrolet', 'Cruze', 'Sedan', 'High'],
+    ['Chevrolet', 'Enjoy', 'MUV', 'Medium'],
+    ['Chevrolet', 'Tavera', 'MUV', 'Medium'],
+    ['Chevrolet', 'Trailblazer', 'SUV', 'High'],
+    ['Fiat', 'Punto', 'Hatchback', 'Low'],
+    ['Fiat', 'Linea', 'Sedan', 'Medium'],
+    ['Fiat', 'Avventura', 'Hatchback', 'Medium'],
+    ['Datsun', 'Go', 'Hatchback', 'Low'],
+    ['Datsun', 'Go Plus', 'MUV', 'Low'],
+    ['Jeep', 'Compass', 'SUV', 'High'],
+    ['Jeep', 'Meridian', 'SUV', 'High'],
+    ['Jeep', 'Wrangler', 'SUV', 'Premium'],
+    ['Force', 'Gurkha', 'SUV', 'High'],
+    ['Isuzu', 'D-Max', 'Pickup', 'High'],
+    ['Isuzu', 'MU-X', 'SUV', 'High'],
+    ['BMW', '2 Series', 'Luxury', 'Premium'],
+    ['BMW', '3 Series', 'Luxury', 'Premium'],
+    ['BMW', '5 Series', 'Luxury', 'Premium'],
+    ['BMW', '7 Series', 'Luxury', 'Premium'],
+    ['BMW', 'X1', 'Luxury SUV', 'Premium'],
+    ['BMW', 'X3', 'Luxury SUV', 'Premium'],
+    ['BMW', 'X5', 'Luxury SUV', 'Premium'],
+    ['Audi', 'A4', 'Luxury', 'Premium'],
+    ['Audi', 'A6', 'Luxury', 'Premium'],
+    ['Audi', 'A8', 'Luxury', 'Premium'],
+    ['Audi', 'Q3', 'Luxury SUV', 'Premium'],
+    ['Audi', 'Q5', 'Luxury SUV', 'Premium'],
+    ['Audi', 'Q7', 'Luxury SUV', 'Premium'],
+    ['Mercedes-Benz', 'A-Class', 'Luxury', 'Premium'],
+    ['Mercedes-Benz', 'C-Class', 'Luxury', 'Premium'],
+    ['Mercedes-Benz', 'E-Class', 'Luxury', 'Premium'],
+    ['Mercedes-Benz', 'S-Class', 'Luxury', 'Premium'],
+    ['Mercedes-Benz', 'GLA', 'Luxury SUV', 'Premium'],
+    ['Mercedes-Benz', 'GLC', 'Luxury SUV', 'Premium'],
+    ['Mercedes-Benz', 'GLE', 'Luxury SUV', 'Premium'],
+    ['Volvo', 'XC40 Recharge', 'EV', 'Premium'],
+    ['BYD', 'Atto 3', 'EV', 'Premium'],
+    ['BYD', 'e6', 'EV', 'Premium'],
+    ['Citroen', 'C3', 'Hatchback', 'Low'],
+    ['Citroen', 'eC3', 'EV', 'Low'],
+    ['Citroen', 'C3 Aircross', 'SUV', 'Medium']
+];
+
+async function seed() {
+    const client = await pool.connect();
+    try {
+        await client.query('BEGIN');
+        
+        // 1. Create Table CarMaster
+        await client.query(`
+            CREATE TABLE IF NOT EXISTS CarMaster (
+                CarID SERIAL PRIMARY KEY,
+                Brand VARCHAR(50) NOT NULL,
+                Model VARCHAR(50) NOT NULL,
+                Category VARCHAR(30),
+                Tier VARCHAR(20) NOT NULL
+            )
+        `);
+
+        // 2. Rename Column car_category -> category_tier in VALET_TRANSACTIONS
+        // Check if car_category exists first
+        const checkColumn = await client.query(`
+            SELECT column_name 
+            FROM information_schema.columns 
+            WHERE table_name = 'valet_transactions' AND column_name = 'car_category'
+        `);
+        if (checkColumn.rows.length > 0) {
+            await client.query('ALTER TABLE VALET_TRANSACTIONS RENAME COLUMN car_category TO category_tier');
+        }
+
+        // 3. Seed data
+        // Clear old data first if any
+        await client.query('DELETE FROM CarMaster');
+        
+        for (const car of cars) {
+            await client.query('INSERT INTO CarMaster (Brand, Model, Category, Tier) VALUES ($1, $2, $3, $4)', car);
+        }
+
+        await client.query('COMMIT');
+        console.log('Seeding and Schema Update complete!');
+    } catch (e) {
+        await client.query('ROLLBACK');
+        console.error('Error during seeding:', e);
+    } finally {
+        client.release();
+        process.exit();
+    }
+}
+
+seed();

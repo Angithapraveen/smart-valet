@@ -1,4 +1,5 @@
 const pool = require('../config/database');
+const { validateIndianPlate } = require('../utils/plateValidation');
 const { generateValetId, getNextAvailableKeySlot } = require('../utils/valetUtils');
 const whatsappService = require('../services/whatsappService');
 
@@ -40,7 +41,7 @@ const createWhatsAppTransaction = async (req, res) => {
             customer_name || 'WhatsApp Guest', // $4
             phone_number || 'N/A', // $5
             car_model || 'Unknown', // $6
-            car_number || 'N/A', // $7
+            car_number || null, // $7
             keySlot || 1     // $8 (Fallback to 1)
         ];
         
@@ -93,6 +94,21 @@ const createWhatsAppTransaction = async (req, res) => {
         }
 
         await client.query('COMMIT');
+
+        // 3. Send WhatsApp Confirmation (Non-blocking)
+        if (phone_number && phone_number !== 'N/A') {
+            try {
+                const locRes = await pool.query('SELECT location_name FROM LOCATIONS WHERE location_id = $1', [location_id]);
+                const locationName = locRes.rows[0]?.location_name || 'Our Location';
+                
+                // Allow some time for background processes if needed, but here it's fine
+                whatsappService.sendParkingConfirmation(phone_number, valetId, locationName).catch(err => {
+                    console.error('[WhatsApp-Error] Failed to send parking confirmation:', err);
+                });
+            } catch (err) {
+                console.error('[WhatsApp-Error] Error fetching location for confirmation:', err);
+            }
+        }
 
         res.json({
             success: true,
@@ -204,17 +220,46 @@ const getValetTransactionDetails = async (req, res) => {
  */
 const updateVehicleDetails = async (req, res) => {
     const { valetId } = req.params;
-    const { car_model, car_category, car_number } = req.body;
+    const { brand, model, tier, car_number } = req.body;
 
     try {
+        // Validation and Normalization
+        let normalizedPlate = car_number;
+        if (car_number && car_number !== 'N/A') {
+            normalizedPlate = car_number.replace(/\s+/g, '').toUpperCase();
+            
+            const validation = validateIndianPlate(normalizedPlate);
+            if (!validation.isValid) {
+                return res.status(400).json({
+                    success: false,
+                    message: validation.error
+                });
+            }
+        }
+
+        // Fallback Logic
+        const getTier = (b, m, t) => {
+            if (t) return t;
+            const bb = b?.toUpperCase() || '';
+            const mm = m?.toUpperCase() || '';
+            const luxury = ['BMW', 'AUDI', 'MERCEDES-BENZ', 'VOLVO', 'BYD'];
+            if (luxury.some(l => bb.includes(l))) return 'Premium';
+            if (mm.includes('SUV')) return 'High';
+            if (mm.includes('HATCHBACK')) return 'Low';
+            return 'Medium';
+        };
+
+        const finalTier = getTier(brand, model, tier);
+        const finalModel = brand && model ? `${brand} ${model}` : (brand || model || 'Unknown');
+
         const result = await pool.query(
             `UPDATE VALET_TRANSACTIONS
              SET car_model = $1,
-                 car_category = $2,
+                 category_tier = $2,
                  car_number = $3
              WHERE valet_id = $4
              RETURNING *`,
-            [car_model, car_category, car_number, valetId]
+            [finalModel, finalTier, normalizedPlate, valetId]
         );
 
         if (result.rows.length === 0) {
@@ -464,7 +509,7 @@ const updateTransactionStatus = async (req, res) => {
         try {
             await client.query('BEGIN');
 
-            const checkQuery = `SELECT status, block_entry_id, returned_driver_id FROM VALET_TRANSACTIONS WHERE valet_id = $1 FOR UPDATE`;
+            const checkQuery = `SELECT status, location_id, block_entry_id, returned_driver_id FROM VALET_TRANSACTIONS WHERE valet_id = $1 FOR UPDATE`;
             const checkResult = await client.query(checkQuery, [valetId]);
 
             if (checkResult.rows.length === 0) {
@@ -472,9 +517,11 @@ const updateTransactionStatus = async (req, res) => {
                 return res.status(404).json({ success: false, message: 'Transaction not found.' });
             }
 
-            const currentStatus = checkResult.rows[0].status;
-            const blockEntryId = checkResult.rows[0].block_entry_id;
-            const assignedDriverId = checkResult.rows[0].returned_driver_id;
+            const txnData = checkResult.rows[0];
+            const currentStatus = txnData.status;
+            const locationId = txnData.location_id;
+            const blockEntryId = txnData.block_entry_id;
+            const assignedDriverId = txnData.returned_driver_id;
             const currentUserId = req.user.user_id;
 
             // Enforcement: If already assigned, only THAT driver can progress
@@ -530,17 +577,30 @@ const updateTransactionStatus = async (req, res) => {
                 params = [valetId];
             } else if (status === 'PARKED') {
                 // Return car to PARKED status (Repark)
+                // 1. Get a NEW available key slot
+                const newKeySlot = await getNextAvailableKeySlot(client, locationId);
+                
+                // 2. Clear block assignment if any (it might be in a different spot now)
+                if (blockEntryId) {
+                    await client.query(
+                        "UPDATE BLOCK_ENTRIES SET status = 'AVAILABLE' WHERE block_entry_id = $1",
+                        [blockEntryId]
+                    );
+                }
+
                 updateQuery = `
                     UPDATE VALET_TRANSACTIONS 
                     SET status = 'PARKED', 
                         return_requested_time = NULL,
                         on_the_way_time = NULL,
                         ready_time = NULL,
-                        returned_driver_id = NULL
+                        returned_driver_id = NULL,
+                        key_slot = $2,
+                        block_entry_id = NULL
                     WHERE valet_id = $1
                     RETURNING *
                 `;
-                params = [valetId];
+                params = [valetId, newKeySlot];
             }
 
             const result = await client.query(updateQuery, params);

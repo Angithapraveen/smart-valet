@@ -18,6 +18,16 @@ router.get('/:valetId', authenticate, valetController.getValetTransactionDetails
 router.put('/:valetId', authenticate, valetController.updateVehicleDetails);
 
 // Public Routes (No Auth)
+router.get('/bot-status', (req, res) => {
+    const whatsappService = require('../services/whatsappService');
+    res.json({
+        success: true,
+        isInitialized: whatsappService.isInitialized,
+        botNumber: whatsappService.client?.info?.wid?.user || 'Unknown',
+        timestamp: new Date().toISOString()
+    });
+});
+
 router.get('/status/:valetId', valetController.getPublicTransactionStatus);
 router.post('/request-return/:valetId', valetController.requestVehicleReturn);
 
