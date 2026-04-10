@@ -106,22 +106,22 @@
 
           <div class="form-group">
             <label class="form-label">Full Name <span class="required">*</span></label>
-            <input v-model="form.name" type="text" required placeholder="e.g. John Doe" class="form-input" />
+            <input v-model="form.name" type="text" required placeholder="e.g. John Doe" class="form-input" @input="handleNameInput" />
           </div>
 
           <div class="form-group">
             <label class="form-label">Email ID <span class="required">*</span></label>
-            <input v-model="form.email_id" type="email" required placeholder="name@example.com" class="form-input" />
+            <input v-model="form.email_id" type="email" required placeholder="name@example.com" class="form-input" autocomplete="off" />
           </div>
 
           <div class="form-group">
             <label class="form-label">Phone Number <span class="required">*</span></label>
-            <input v-model="form.phone_number" type="tel" required placeholder="e.g. +91 9876543210" class="form-input" />
+            <input v-model="form.phone_number" type="tel" required placeholder="e.g. 9876543210" class="form-input" autocomplete="off" @input="handlePhoneInput" maxlength="10" />
           </div>
 
           <div class="form-group" v-if="!isEditing">
             <label class="form-label">Password <span class="required">*</span></label>
-            <input v-model="form.password" type="password" required minlength="6" placeholder="Min 6 characters" class="form-input" />
+            <input v-model="form.password" type="password" required minlength="6" placeholder="Min 6 characters" class="form-input" autocomplete="new-password" />
           </div>
 
           <div class="modal-footer">
@@ -168,6 +168,14 @@ const form = ref({
   phone_number: '',
   password: ''
 });
+
+const handleNameInput = () => {
+  form.value.name = form.value.name.replace(/[^a-zA-Z\s]/g, '');
+};
+
+const handlePhoneInput = () => {
+  form.value.phone_number = form.value.phone_number.replace(/\D/g, '').slice(0, 10);
+};
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
 

@@ -87,17 +87,66 @@
 
                 <div class="form-group">
                   <label>City</label>
-                  <input v-model="form.city" type="text" placeholder="e.g. Bangalore" />
+                  <div class="input-container suggest-container">
+                    <input 
+                      v-model="form.city" 
+                      type="text" 
+                      placeholder="e.g. Coimbatore" 
+                      @input="handleCitySearch" 
+                      @blur="hideCitySuggestionsDelayed"
+                      required
+                    />
+                    <div v-if="showCitySuggestions" class="suggestions-list scroll-thin">
+                      <div 
+                        v-for="s in citySuggestions" 
+                        :key="s.city_name + s.state_name" 
+                        class="suggestion-item" 
+                        @mousedown="selectCity(s)"
+                      >
+                        <span class="city">{{ s.city_name }}</span>
+                        <span class="state">{{ s.state_name }}</span>
+                      </div>
+                    </div>
+                  </div>
                 </div>
 
                 <div class="form-group">
                   <label>State</label>
-                  <input v-model="form.state" type="text" placeholder="e.g. Karnataka" />
+                  <div class="input-container">
+                    <input 
+                        v-model="form.state" 
+                        type="text" 
+                        placeholder="e.g. Tamil Nadu" 
+                        readonly 
+                        class="bg-readonly"
+                        required
+                    />
+                  </div>
                 </div>
 
                 <div class="form-group full-width">
                   <label>Pincode</label>
-                  <input v-model="form.pincode" type="text" placeholder="e.g. 560001" maxlength="6" />
+                  <div class="input-container suggest-container">
+                    <input 
+                        v-model="form.pincode" 
+                        type="text" 
+                        placeholder="e.g. 641030" 
+                        maxlength="6" 
+                        @input="handlePincodeSearch"
+                        @blur="hidePincodeSuggestionsDelayed"
+                        required
+                    />
+                    <div v-if="showPincodeSuggestions" class="suggestions-list scroll-thin">
+                        <div 
+                        v-for="p in pincodeSuggestions" 
+                        :key="p" 
+                        class="suggestion-item" 
+                        @mousedown="selectPincode(p)"
+                        >
+                        {{ p }}
+                        </div>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -146,9 +195,10 @@
 </template>
 
 <script setup>
-import { reactive, ref, onMounted } from 'vue';
+import { reactive, ref, onMounted, watch } from 'vue';
 import { useAuthStore } from '../../stores/auth';
 import axios from 'axios';
+import { LocationMasterService } from '../../services/LocationMasterService';
 
 const props = defineProps({
   show: Boolean
@@ -174,6 +224,69 @@ const form = reactive({
   valid_to: '',
   status: true
 });
+
+const citySuggestions = ref([]);
+const showCitySuggestions = ref(false);
+const pincodeSuggestions = ref([]);
+const showPincodeSuggestions = ref(false);
+
+const handleCitySearch = async () => {
+    if (form.city.length < 2) {
+        citySuggestions.value = [];
+        showCitySuggestions.value = false;
+        return;
+    }
+    try {
+        const results = await LocationMasterService.searchCities(form.city);
+        citySuggestions.value = results;
+        showCitySuggestions.value = true;
+    } catch (err) {
+        console.error('City search failed', err);
+    }
+};
+
+const selectCity = async (s) => {
+    form.city = s.city_name;
+    form.state = s.state_name;
+    showCitySuggestions.value = false;
+    
+    // Fetch pincodes for this city
+    try {
+        const pincodes = await LocationMasterService.getPincodes(s.city_name, s.state_name);
+        pincodeSuggestions.value = pincodes;
+    } catch (err) {
+        console.error('Pincode fetch failed', err);
+    }
+};
+
+const handlePincodeSearch = async () => {
+    if (form.pincode.length === 6) {
+        try {
+            const res = await LocationMasterService.getByPincode(form.pincode);
+            if (res.success && res.data) {
+                form.city = res.data.city_name;
+                form.state = res.data.state_name;
+            }
+        } catch (err) {
+            console.warn('Pincode lookup failed');
+        }
+    } else if (pincodeSuggestions.value.length > 0) {
+        showPincodeSuggestions.value = true;
+    }
+};
+
+const selectPincode = (p) => {
+    form.pincode = p;
+    showPincodeSuggestions.value = false;
+};
+
+const hideCitySuggestionsDelayed = () => {
+    setTimeout(() => { showCitySuggestions.value = false; }, 200);
+};
+
+const hidePincodeSuggestionsDelayed = () => {
+    setTimeout(() => { showPincodeSuggestions.value = false; }, 200);
+};
 
 const handleSubmit = async () => {
   error.value = '';
@@ -438,6 +551,55 @@ const handleSubmit = async () => {
     letter-spacing: 0.1em;
     font-size: 14px;
     font-weight: 800;
+}
+
+.suggest-container {
+    position: relative;
+}
+
+.suggestions-list {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: white;
+    border: 1px solid var(--border-subtle);
+    border-radius: 12px;
+    margin-top: 5px;
+    z-index: 100;
+    max-height: 200px;
+    overflow-y: auto;
+    box-shadow: 0 10px 25px -10px rgba(0,0,0,0.2);
+}
+
+.suggestion-item {
+    padding: 10px 16px;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    transition: all 0.2s;
+}
+
+.suggestion-item:hover {
+    background: var(--primary-light);
+    color: var(--primary);
+}
+
+.suggestion-item .state {
+    font-size: 11px;
+    color: var(--text-muted);
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.scroll-thin::-webkit-scrollbar { width: 4px; }
+.scroll-thin::-webkit-scrollbar-track { background: transparent; }
+.scroll-thin::-webkit-scrollbar-thumb { background: var(--border-subtle); border-radius: 10px; }
+
+.bg-readonly {
+    background: var(--bg-main) !important;
 }
 
 .hint {

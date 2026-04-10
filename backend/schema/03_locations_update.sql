@@ -7,13 +7,21 @@
 -- Add location_short_code if not exists (for existing databases)
 DO $$
 BEGIN
-  IF NOT EXISTS (
-    SELECT 1 FROM information_schema.columns
-    WHERE table_name = 'locations' AND column_name = 'location_short_code'
-  ) THEN
+  -- Add location_short_code if not exists
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'locations' AND column_name = 'location_short_code') THEN
     ALTER TABLE LOCATIONS ADD COLUMN location_short_code VARCHAR(3);
     UPDATE LOCATIONS SET location_short_code = UPPER(LEFT(location_id, 3)) WHERE location_short_code IS NULL;
     ALTER TABLE LOCATIONS ALTER COLUMN location_short_code SET NOT NULL;
+  END IF;
+
+  -- Add total_capacity if not exists
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'locations' AND column_name = 'total_capacity') THEN
+    ALTER TABLE LOCATIONS ADD COLUMN total_capacity INTEGER DEFAULT 100;
+  END IF;
+
+  -- Add updated_at if not exists
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'locations' AND column_name = 'updated_at') THEN
+    ALTER TABLE LOCATIONS ADD COLUMN updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP;
   END IF;
 END $$;
 

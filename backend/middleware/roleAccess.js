@@ -53,7 +53,7 @@ const attachLocationAccess = async (req, res, next) => {
         if (userRole === 'ADMIN') {
             // ADMIN can access ALL locations
             const result = await pool.query(
-                'SELECT location_id, location_name, location_type, address, status FROM LOCATIONS WHERE status = TRUE'
+                'SELECT location_id, location_name, location_type, address, status FROM LOCATIONS'
             );
             accessibleLocations = result.rows;
         } else if (userRole === 'OWNER' || userRole === 'MANAGER' || userRole === 'DRIVER') {
@@ -62,7 +62,7 @@ const attachLocationAccess = async (req, res, next) => {
                 `SELECT l.location_id, l.location_name, l.location_type, l.address, l.status
                  FROM LOCATION_ACCESS la
                  JOIN LOCATIONS l ON la.location_id = l.location_id
-                 WHERE la.user_id = $1 AND l.status = TRUE`,
+                 WHERE la.user_id = $1`,
                 [req.user.user_id]
             );
             accessibleLocations = result.rows;

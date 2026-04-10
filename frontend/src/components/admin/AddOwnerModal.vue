@@ -8,8 +8,8 @@
               <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
             </div>
             <div>
-              <h3>Onboard Owner</h3>
-              <p>Assign a new administrator</p>
+              <h3>Add New Owner</h3>
+              <p>Onboard a new administrator</p>
             </div>
           </div>
           <button class="close-btn" @click="$emit('close')">
@@ -31,24 +31,38 @@
               </div>
               <div class="form-grid">
                 <div class="form-group full-width">
-                  <label>Legal Name</label>
+                  <label>Full Name *</label>
                   <div class="input-container">
                     <input v-model="form.name" type="text" placeholder="e.g. Robert Smith" required />
-                    <span class="required-dot">•</span>
                   </div>
                 </div>
 
                 <div class="form-group">
-                  <label>Professional Email</label>
+                  <label>Email Address *</label>
                   <div class="input-container">
-                    <input v-model="form.email_id" type="email" placeholder="e.g. robert@example.com" required />
+                    <input 
+                      v-model="form.email_id" 
+                      type="email" 
+                      placeholder="e.g. robert@example.com" 
+                      autocomplete="off"
+                      @input="handleEmailInput"
+                      required 
+                    />
                   </div>
                 </div>
 
                 <div class="form-group">
-                  <label>Contact Number</label>
+                  <label>Phone Number *</label>
                   <div class="input-container">
-                    <input v-model="form.phone_number" type="tel" placeholder="e.g. +91 9876543210" required />
+                    <input 
+                      v-model="form.phone_number" 
+                      type="text" 
+                      placeholder="Enter 10-digit phone number" 
+                      maxlength="10"
+                      @input="handlePhoneInput"
+                      autocomplete="none"
+                      required 
+                    />
                   </div>
                 </div>
               </div>
@@ -61,9 +75,16 @@
               </div>
               <div class="form-grid">
                 <div class="form-group">
-                  <label>Secure Password</label>
+                  <label>Password *</label>
                   <div class="input-container">
-                    <input v-model="form.password" type="password" placeholder="••••••••" minlength="6" required />
+                    <input 
+                      v-model="form.password" 
+                      type="password" 
+                      placeholder="Enter password" 
+                      minlength="6" 
+                      autocomplete="new-password"
+                      required 
+                    />
                   </div>
                   <span class="hint">Minimum 6 characters</span>
                 </div>
@@ -86,8 +107,7 @@
             <div class="modal-footer">
               <button type="button" class="btn btn-ghost" @click="$emit('close')">Cancel</button>
               <button type="submit" class="btn btn-primary btn-premium" :disabled="loading || loadingLocations">
-                <span class="btn-text">{{ loading ? 'Deploying...' : 'Assign Owner' }}</span>
-                <svg v-if="!loading" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+                <span class="btn-text">{{ loading ? 'Deploying...' : 'Create User' }}</span>
               </button>
             </div>
           </form>
@@ -133,6 +153,19 @@ const resetForm = () => {
   error.value = '';
 };
 
+const handleEmailInput = (e) => {
+  // Only allow characters valid in an email address while typing
+  const value = e.target.value.replace(/[^a-zA-Z0-9@._%+-]/g, '');
+  form.email_id = value.toLowerCase();
+};
+
+const handlePhoneInput = (e) => {
+  // Allow only digits
+  const value = e.target.value.replace(/\D/g, '');
+  // Limit to 10 digits
+  form.phone_number = value.slice(0, 10);
+};
+
 const fetchLocations = async () => {
   loadingLocations.value = true;
   try {
@@ -151,8 +184,33 @@ const fetchLocations = async () => {
 
 const handleSubmit = async () => {
   error.value = '';
-  loading.value = true;
 
+  // 1. Check if all fields are filled
+  if (!form.name || !form.email_id || !form.phone_number || !form.password || !form.location_id) {
+    error.value = 'Please fill in all required fields.';
+    return;
+  }
+
+  // 2. Email Validation
+  const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+  if (!emailRegex.test(form.email_id)) {
+    error.value = 'Enter a valid email address';
+    return;
+  }
+
+  // 3. Phone Validation
+  if (form.phone_number.length !== 10) {
+    error.value = 'Phone number must be exactly 10 digits.';
+    return;
+  }
+
+  // 4. Password Check
+  if (form.password.length < 6) {
+    error.value = 'Password must be at least 6 characters.';
+    return;
+  }
+
+  loading.value = true;
   try {
     const payload = {
       name: form.name.trim(),
@@ -181,7 +239,7 @@ const handleSubmit = async () => {
 onMounted(fetchLocations);
 
 watch(() => props.show, (newVal) => {
-  if (newVal) resetForm();
+  resetForm();
 });
 </script>
 

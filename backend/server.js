@@ -13,6 +13,8 @@ const adminUserRoutes = require('./routes/adminUserRoutes');
 const adminBlockRoutes = require('./routes/adminBlockRoutes');
 const ownerActionRoutes = require('./routes/ownerActionRoutes');
 const blockRoutes = require('./routes/blockRoutes');
+const locationMasterRoutes = require('./routes/locationMasterRoutes');
+const valetRoutes = require('./routes/valetRoutes');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -47,6 +49,7 @@ app.use('/api/admin/locations', adminLocationRoutes);
 app.use('/api/admin/owners', adminOwnerRoutes);
 app.use('/api/admin/users', adminUserRoutes);
 app.use('/api/admin/blocks', adminBlockRoutes);
+app.use('/api/location-master', locationMasterRoutes);
 app.use('/api/owner', ownerActionRoutes);
 app.use('/api/owner', blockRoutes);
 app.use('/api/valet', require('./routes/valetRoutes'));
@@ -74,10 +77,24 @@ const whatsappService = require('./services/whatsappService');
 whatsappService.initialize();
 
 // Start server
-app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
-    console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
-    console.log(`Health check: http://localhost:${PORT}/health`);
-});
+const startServer = async () => {
+    try {
+        // Initialize WhatsApp Service
+        const whatsappService = require('./services/whatsappService');
+        await whatsappService.initialize();
+        console.log('WhatsApp Service initialized');
+
+        app.listen(PORT, () => {
+            console.log(`Server running on port ${PORT}`);
+            console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
+            console.log(`Health check: http://localhost:${PORT}/health`);
+        });
+    } catch (error) {
+        console.error('Failed to start server:', error);
+        process.exit(1);
+    }
+};
+
+startServer();
 
 module.exports = app;

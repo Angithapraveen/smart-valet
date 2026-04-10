@@ -52,14 +52,24 @@
       <div class="section-header">
         <div class="header-main-info">
           <h2>My Locations</h2>
-          <div class="search-box">
-            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="search-icon"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-            <input 
-              type="text" 
-              v-model="searchQuery" 
-              placeholder="Search by name or city..." 
-              class="search-input"
-            />
+          <div class="header-filters">
+            <div class="search-box">
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="search-icon"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+              <input 
+                type="text" 
+                v-model="searchQuery" 
+                placeholder="Search by name or city..." 
+                class="search-input"
+              />
+            </div>
+            <div class="filter-box">
+              <select v-model="statusFilter" class="filter-select">
+                <option value="all">All Status</option>
+                <option value="active">Active</option>
+                <option value="inactive">Inactive</option>
+                <option value="expired">Expired</option>
+              </select>
+            </div>
           </div>
         </div>
         <div class="header-actions">
@@ -78,8 +88,12 @@
         <p class="mt-4">Loading locations...</p>
       </div>
       
-      <div v-else-if="locations.length === 0" class="empty-state">
-        <p>No locations found. Create your first location!</p>
+      <div v-else-if="filteredLocations.length === 0" class="empty-state">
+        <p v-if="statusFilter === 'active'">No active locations found.</p>
+        <p v-else-if="statusFilter === 'inactive'">No inactive locations found.</p>
+        <p v-else-if="statusFilter === 'expired'">No expired locations found.</p>
+        <p v-else-if="searchQuery">No locations found matching "{{ searchQuery }}".</p>
+        <p v-else>No locations found. Create your first location!</p>
       </div>
 
       <div v-else class="locations-grid">
@@ -88,9 +102,9 @@
             <div class="loc-type-eyebrow">{{ loc.location_type }}</div>
             <div class="loc-title-row">
               <h3>{{ loc.location_name }}</h3>
-              <div class="loc-status-badge" :class="loc.status ? 'active' : 'inactive'">
+              <div class="loc-status-badge" :class="getLocStatusClass(loc)">
                 <span class="dot"></span>
-                {{ loc.status ? 'Active' : 'Inactive' }}
+                {{ getLocStatusLabel(loc) }}
               </div>
             </div>
           </div>
@@ -213,16 +227,48 @@ const summary = ref({
 const locations = ref([]);
 const loading = ref(true);
 const searchQuery = ref('');
+const statusFilter = ref('all');
 const expandedLocations = ref({});
 
+const isExpired = (loc) => {
+    if (!loc.valid_to) return false;
+    return new Date(loc.valid_to) < new Date();
+};
+
+const getLocStatusLabel = (loc) => {
+    if (isExpired(loc)) return 'Expired';
+    return loc.status ? 'Active' : 'Inactive';
+};
+
+const getLocStatusClass = (loc) => {
+    if (isExpired(loc)) return 'expired';
+    return loc.status ? 'active' : 'inactive';
+};
+
 const filteredLocations = computed(() => {
-    if (!searchQuery.value) return locations.value;
+    let result = locations.value;
+
+    // Status Filter
+    if (statusFilter.value !== 'all') {
+        result = result.filter(loc => {
+            const expired = isExpired(loc);
+            if (statusFilter.value === 'active') return loc.status && !expired;
+            if (statusFilter.value === 'inactive') return !loc.status && !expired;
+            if (statusFilter.value === 'expired') return expired;
+            return true;
+        });
+    }
+
+    // Search Query Filter
+    if (searchQuery.value) {
+        const query = searchQuery.value.toLowerCase().trim();
+        result = result.filter(loc => 
+            loc.location_name.toLowerCase().includes(query) || 
+            (loc.address && loc.address.toLowerCase().includes(query))
+        );
+    }
     
-    const query = searchQuery.value.toLowerCase().trim();
-    return locations.value.filter(loc => 
-        loc.location_name.toLowerCase().includes(query) || 
-        (loc.address && loc.address.toLowerCase().includes(query))
-    );
+    return result;
 });
 
 const fetchSummary = async () => {
@@ -451,6 +497,12 @@ onMounted(() => {
   gap: 24px;
 }
 
+.header-filters {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
 .search-box {
   position: relative;
   display: flex;
@@ -486,6 +538,36 @@ onMounted(() => {
 
 .search-input::placeholder {
   color: var(--text-muted);
+}
+
+.filter-select {
+  padding: 8px 32px 8px 12px;
+  background: var(--bg-main) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E") no-repeat right 10px center;
+  border: 1.5px solid var(--border-subtle);
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-main);
+  appearance: none;
+  cursor: pointer;
+  transition: all 0.2s;
+  min-width: 140px;
+}
+
+.filter-select:focus {
+  outline: none;
+  border-color: var(--primary);
+  background-color: var(--bg-card);
+  box-shadow: 0 0 0 3px var(--primary-light);
+}
+
+.filter-select:hover {
+  border-color: var(--primary-border);
+}
+
+.loc-status-badge.expired {
+  background: #fef2f2;
+  color: #ef4444;
 }
 
 .loading-state, .empty-state {

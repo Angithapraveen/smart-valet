@@ -75,12 +75,80 @@
             <div class="form-section">
               <div class="section-title">
                 <span class="number">02</span>
-                Address Details
+                Regional Details
               </div>
               <div class="form-grid">
                 <div class="form-group full-width">
-                  <label>Full Address <span v-if="isOwner" class="text-xs text-muted">(Read-only)</span></label>
-                  <textarea v-model="form.address" rows="3" placeholder="Full address details..." :disabled="isOwner" :class="{ 'disabled-input': isOwner }"></textarea>
+                  <label>Street Address</label>
+                  <textarea v-model="form.street" rows="1" placeholder="e.g. 123 Business Park" :disabled="isOwner" :class="{ 'disabled-input': isOwner }"></textarea>
+                </div>
+
+                <div class="form-group">
+                  <label>City</label>
+                  <div class="input-container suggest-container">
+                    <input 
+                      v-model="form.city" 
+                      type="text" 
+                      placeholder="e.g. Coimbatore" 
+                      @input="handleCitySearch" 
+                      @blur="hideCitySuggestionsDelayed"
+                      :disabled="isOwner"
+                      :class="{ 'disabled-input': isOwner }"
+                      required
+                    />
+                    <div v-if="showCitySuggestions" class="suggestions-list scroll-thin">
+                      <div 
+                        v-for="s in citySuggestions" 
+                        :key="s.city_name + s.state_name" 
+                        class="suggestion-item" 
+                        @mousedown="selectCity(s)"
+                      >
+                        <span class="city">{{ s.city_name }}</span>
+                        <span class="state">{{ s.state_name }}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="form-group">
+                  <label>State</label>
+                  <div class="input-container">
+                    <input 
+                        v-model="form.state" 
+                        type="text" 
+                        placeholder="e.g. Tamil Nadu" 
+                        readonly 
+                        class="bg-readonly"
+                        required
+                    />
+                  </div>
+                </div>
+
+                <div class="form-group full-width">
+                  <label>Pincode</label>
+                  <div class="input-container suggest-container">
+                    <input 
+                        v-model="form.pincode" 
+                        type="text" 
+                        placeholder="e.g. 641030" 
+                        maxlength="6" 
+                        @input="handlePincodeSearch"
+                        @blur="hidePincodeSuggestionsDelayed"
+                        :disabled="isOwner"
+                        :class="{ 'disabled-input': isOwner }"
+                        required
+                    />
+                    <div v-if="showPincodeSuggestions" class="suggestions-list scroll-thin">
+                        <div 
+                        v-for="p in pincodeSuggestions" 
+                        :key="p" 
+                        class="suggestion-item" 
+                        @mousedown="selectPincode(p)"
+                        >
+                        {{ p }}
+                        </div>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -148,6 +216,7 @@
 import { reactive, ref, onMounted, watch, computed } from 'vue';
 import { useAuthStore } from '../../stores/auth';
 import axios from 'axios';
+import { LocationMasterService } from '../../services/LocationMasterService';
 
 const props = defineProps({
   show: Boolean,
@@ -167,12 +236,78 @@ const form = reactive({
   location_name: '',
   location_type: '',
   location_type_other: '',
-  address: '',
+  street: '',
+  city: '',
+  state: '',
+  pincode: '',
   valid_from: '',
   valid_to: '',
   total_capacity: 100,
   status: true
 });
+
+const citySuggestions = ref([]);
+const showCitySuggestions = ref(false);
+const pincodeSuggestions = ref([]);
+const showPincodeSuggestions = ref(false);
+
+const handleCitySearch = async () => {
+    if (form.city.length < 2) {
+        citySuggestions.value = [];
+        showCitySuggestions.value = false;
+        return;
+    }
+    try {
+        const results = await LocationMasterService.searchCities(form.city);
+        citySuggestions.value = results;
+        showCitySuggestions.value = true;
+    } catch (err) {
+        console.error('City search failed', err);
+    }
+};
+
+const selectCity = async (s) => {
+    form.city = s.city_name;
+    form.state = s.state_name;
+    showCitySuggestions.value = false;
+    
+    // Fetch pincodes for this city
+    try {
+        const pincodes = await LocationMasterService.getPincodes(s.city_name, s.state_name);
+        pincodeSuggestions.value = pincodes;
+    } catch (err) {
+        console.error('Pincode fetch failed', err);
+    }
+};
+
+const handlePincodeSearch = async () => {
+    if (form.pincode.length === 6) {
+        try {
+            const res = await LocationMasterService.getByPincode(form.pincode);
+            if (res.success && res.data) {
+                form.city = res.data.city_name;
+                form.state = res.data.state_name;
+            }
+        } catch (err) {
+            console.warn('Pincode lookup failed');
+        }
+    } else if (pincodeSuggestions.value.length > 0) {
+        showPincodeSuggestions.value = true;
+    }
+};
+
+const selectPincode = (p) => {
+    form.pincode = p;
+    showPincodeSuggestions.value = false;
+};
+
+const hideCitySuggestionsDelayed = () => {
+    setTimeout(() => { showCitySuggestions.value = false; }, 200);
+};
+
+const hidePincodeSuggestionsDelayed = () => {
+    setTimeout(() => { showPincodeSuggestions.value = false; }, 200);
+};
 
 const populateForm = () => {
   if (props.location) {
@@ -187,7 +322,23 @@ const populateForm = () => {
       form.location_type_other = props.location.location_type || '';
     }
     
-    form.address = props.location.address || '';
+    // Parse address: "Street, City, State - Pincode"
+    const fullAddr = props.location.address || '';
+    const parts = fullAddr.split(', ');
+    
+    if (parts.length >= 3) {
+        form.street = parts.slice(0, parts.length - 2).join(', ');
+        form.city = parts[parts.length - 2];
+        const statePincode = parts[parts.length - 1].split(' - ');
+        form.state = statePincode[0];
+        form.pincode = statePincode[1] || '';
+    } else {
+        form.street = fullAddr;
+        form.city = '';
+        form.state = '';
+        form.pincode = '';
+    }
+    
     form.valid_from = props.location.valid_from ? props.location.valid_from.substring(0, 10) : '';
     form.valid_to = props.location.valid_to ? props.location.valid_to.substring(0, 10) : '';
     form.total_capacity = props.location.total_capacity || 100;
@@ -206,10 +357,21 @@ const handleSubmit = async () => {
   loading.value = true;
   
   try {
+    let fullAddress = form.street.trim();
+    if (form.city.trim()) {
+      fullAddress += (fullAddress ? ', ' : '') + form.city.trim();
+    }
+    if (form.state.trim()) {
+      fullAddress += (fullAddress ? ', ' : '') + form.state.trim();
+    }
+    if (form.pincode.trim()) {
+      fullAddress += (fullAddress ? ' - ' : '') + form.pincode.trim();
+    }
+
     const payload = {
       location_name: form.location_name.trim(),
       location_type: form.location_type === 'Other' ? form.location_type_other : form.location_type,
-      address: form.address.trim() || null,
+      address: fullAddress || null,
       valid_from: form.valid_from,
       valid_to: form.valid_to || null,
       total_capacity: form.total_capacity,
@@ -450,6 +612,55 @@ const handleSubmit = async () => {
     background: var(--bg-card);
     box-shadow: 0 0 0 5px var(--primary-light);
     transform: translateY(-1px);
+}
+
+.suggest-container {
+    position: relative;
+}
+
+.suggestions-list {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: white;
+    border: 1px solid var(--border-subtle);
+    border-radius: 12px;
+    margin-top: 5px;
+    z-index: 100;
+    max-height: 200px;
+    overflow-y: auto;
+    box-shadow: 0 10px 25px -10px rgba(0,0,0,0.2);
+}
+
+.suggestion-item {
+    padding: 10px 16px;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    transition: all 0.2s;
+}
+
+.suggestion-item:hover {
+    background: var(--primary-light);
+    color: var(--primary);
+}
+
+.suggestion-item .state {
+    font-size: 11px;
+    color: var(--text-muted);
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.scroll-thin::-webkit-scrollbar { width: 4px; }
+.scroll-thin::-webkit-scrollbar-track { background: transparent; }
+.scroll-thin::-webkit-scrollbar-thumb { background: var(--border-subtle); border-radius: 10px; }
+
+.bg-readonly {
+    background: var(--bg-main) !important;
 }
 
 .uppercase.font-mono {

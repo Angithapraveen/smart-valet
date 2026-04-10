@@ -250,22 +250,22 @@
                 
                 <div class="form-group">
                     <label>Name <span class="required">*</span></label>
-                    <input v-model="managerForm.name" type="text" required placeholder="e.g. John Doe" class="form-input" />
+                    <input v-model="managerForm.name" type="text" required placeholder="e.g. John Doe" class="form-input" @input="handleNameInput('manager')" />
                 </div>
                 
                 <div class="form-group">
                     <label>Email <span class="required">*</span></label>
-                    <input v-model="managerForm.email_id" type="email" required placeholder="e.g. manager@example.com" class="form-input" />
+                    <input v-model="managerForm.email_id" type="email" required placeholder="e.g. manager@example.com" class="form-input" autocomplete="off" />
                 </div>
                 
                 <div class="form-group">
                     <label>Phone Number <span class="required">*</span></label>
-                    <input v-model="managerForm.phone_number" type="tel" required placeholder="e.g. +1234567890" class="form-input" />
+                    <input v-model="managerForm.phone_number" type="tel" required placeholder="e.g. 9876543210" class="form-input" autocomplete="off" @input="handlePhoneInput('manager')" maxlength="10" />
                 </div>
                 
                 <div class="form-group">
                     <label>Password <span class="required">*</span></label>
-                    <input v-model="managerForm.password" type="password" required minlength="6" placeholder="Minimum 6 characters" class="form-input" />
+                    <input v-model="managerForm.password" type="password" required minlength="6" placeholder="Minimum 6 characters" class="form-input" autocomplete="new-password" />
                 </div>
                 
                 <div class="modal-actions">
@@ -290,22 +290,22 @@
                 
                 <div class="form-group">
                     <label>Name <span class="required">*</span></label>
-                    <input v-model="driverForm.name" type="text" required placeholder="e.g. John Doe" class="form-input" />
+                    <input v-model="driverForm.name" type="text" required placeholder="e.g. John Doe" class="form-input" @input="handleNameInput('driver')" />
                 </div>
                 
                 <div class="form-group">
                     <label>Email <span class="required">*</span></label>
-                    <input v-model="driverForm.email_id" type="email" required placeholder="e.g. driver@example.com" class="form-input" />
+                    <input v-model="driverForm.email_id" type="email" required placeholder="e.g. driver@example.com" class="form-input" autocomplete="off" />
                 </div>
                 
                 <div class="form-group">
                     <label>Phone Number <span class="required">*</span></label>
-                    <input v-model="driverForm.phone_number" type="tel" required placeholder="e.g. +1234567890" class="form-input" />
+                    <input v-model="driverForm.phone_number" type="tel" required placeholder="e.g. 9876543210" class="form-input" autocomplete="off" @input="handlePhoneInput('driver')" maxlength="10" />
                 </div>
                 
                 <div class="form-group">
                     <label>Password <span class="required">*</span></label>
-                    <input v-model="driverForm.password" type="password" required minlength="6" placeholder="Minimum 6 characters" class="form-input" />
+                    <input v-model="driverForm.password" type="password" required minlength="6" placeholder="Minimum 6 characters" class="form-input" autocomplete="new-password" />
                 </div>
                 
                 <div class="modal-actions">
@@ -480,6 +480,22 @@ const editBlockForm = ref({
     valid_to: '',
     status: true
 });
+
+const handleNameInput = (field) => {
+    if (field === 'manager') {
+        managerForm.value.name = managerForm.value.name.replace(/[^a-zA-Z\s]/g, '');
+    } else if (field === 'driver') {
+        driverForm.value.name = driverForm.value.name.replace(/[^a-zA-Z\s]/g, '');
+    }
+};
+
+const handlePhoneInput = (field) => {
+    if (field === 'manager') {
+        managerForm.value.phone_number = managerForm.value.phone_number.replace(/\D/g, '').slice(0, 10);
+    } else if (field === 'driver') {
+        driverForm.value.phone_number = driverForm.value.phone_number.replace(/\D/g, '').slice(0, 10);
+    }
+};
 
 const tabs = [
     { id: 'blocks', label: 'Blocks' },

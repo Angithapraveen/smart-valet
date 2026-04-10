@@ -357,29 +357,58 @@
                     </button>
                 </div>
                 <form @submit.prevent="saveUser" class="modal-form">
+                    <div v-if="userModalError" class="modal-error-message">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+                        {{ userModalError }}
+                    </div>
                     <div class="modal-body-grid">
                         <div class="form-group full-width">
                             <label>Full Name <span class="required">*</span></label>
                             <div class="input-wrapper">
-                                <input v-model="userForm.name" type="text" placeholder="e.g. John Doe" required class="form-input-styled">
+                                <input v-model="userForm.name" type="text" placeholder="e.g. John Doe" required class="form-input-styled" @input="handleNameInput">
                             </div>
                         </div>
                         <div class="form-group">
-                            <label>Email Address <span class="required">*</span></label>
+                            <label>Email Address *</label>
                             <div class="input-wrapper">
-                                <input v-model="userForm.email_id" type="email" placeholder="e.g. john@example.com" required class="form-input-styled">
+                                <input 
+                                    v-model="userForm.email_id" 
+                                    type="email" 
+                                    placeholder="e.g. john@example.com" 
+                                    autocomplete="off"
+                                    @input="handleEmailInput"
+                                    required 
+                                    class="form-input-styled"
+                                >
                             </div>
                         </div>
                         <div class="form-group">
-                            <label>Phone Number <span class="required">*</span></label>
+                            <label>Phone Number *</label>
                             <div class="input-wrapper">
-                                <input v-model="userForm.phone_number" type="tel" placeholder="e.g. +91 9876543210" required class="form-input-styled">
+                                <input 
+                                    v-model="userForm.phone_number" 
+                                    type="text" 
+                                    placeholder="Enter 10-digit phone number" 
+                                    maxlength="10"
+                                    @input="handlePhoneInput"
+                                    autocomplete="off"
+                                    required 
+                                    class="form-input-styled"
+                                >
                             </div>
                         </div>
                         <div class="form-group full-width" v-if="!editingUser">
-                            <label>Password <span class="required">*</span></label>
+                            <label>Password *</label>
                             <div class="input-wrapper">
-                                <input v-model="userForm.password" type="password" placeholder="••••••••" required class="form-input-styled" minlength="6">
+                                <input 
+                                    v-model="userForm.password" 
+                                    type="password" 
+                                    placeholder="Enter password" 
+                                    autocomplete="new-password"
+                                    required 
+                                    class="form-input-styled" 
+                                    minlength="6"
+                                >
                             </div>
                             <span class="field-hint">Minimum 6 characters</span>
                         </div>
@@ -524,6 +553,7 @@ const showUserModal = ref(false);
 const userModalRole = ref('');
 const editingUser = ref(null);
 const savingUser = ref(false);
+const userModalError = ref('');
 const userForm = ref({
     name: '',
     email_id: '',
@@ -589,12 +619,31 @@ const openUserModal = (role, user = null) => {
             password: ''
         };
     }
+    userModalError.value = '';
     showUserModal.value = true;
+};
+
+const handleNameInput = () => {
+    userForm.value.name = userForm.value.name.replace(/[^a-zA-Z\s]/g, '');
+};
+
+const handleEmailInput = (e) => {
+    // Only allow characters valid in an email address while typing
+    const value = e.target.value.replace(/[^a-zA-Z0-9@._%+-]/g, '');
+    userForm.value.email_id = value.toLowerCase();
+};
+
+const handlePhoneInput = (e) => {
+    // Allow only digits
+    const value = e.target.value.replace(/\D/g, '');
+    // Limit to 10 digits
+    userForm.value.phone_number = value.slice(0, 10);
 };
 
 const closeUserModal = () => {
     showUserModal.value = false;
     editingUser.value = null;
+    userModalError.value = '';
     userForm.value = {
         name: '',
         email_id: '',
@@ -604,6 +653,32 @@ const closeUserModal = () => {
 };
 
 const saveUser = async () => {
+    userModalError.value = '';
+    // 1. Check if all required fields are filled
+    if (!userForm.value.name || !userForm.value.email_id || !userForm.value.phone_number) {
+        userModalError.value = 'Please fill in all required fields.';
+        return;
+    }
+
+    // 2. Email Validation
+    const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+    if (!emailRegex.test(userForm.value.email_id)) {
+        userModalError.value = 'Enter a valid email address';
+        return;
+    }
+
+    // 3. Phone Validation
+    if (userForm.value.phone_number.length !== 10) {
+        userModalError.value = 'Phone number must be exactly 10 digits.';
+        return;
+    }
+
+    // 4. Password validation (only for new users)
+    if (!editingUser.value && (!userForm.value.password || userForm.value.password.length < 6)) {
+        userModalError.value = 'Password must be at least 6 characters.';
+        return;
+    }
+
     savingUser.value = true;
     try {
         const isEdit = !!editingUser.value;
@@ -1701,6 +1776,19 @@ onMounted(async () => {
     gap: 12px;
     padding-top: 20px;
     border-top: 1px solid #f1f5f9;
+}
+.modal-error-message {
+    background: #fef2f2;
+    color: #ef4444;
+    padding: 12px 16px;
+    border-radius: 12px;
+    font-size: 13px;
+    font-weight: 600;
+    margin-bottom: 24px;
+    border: 1px solid #fee2e2;
+    display: flex;
+    align-items: center;
+    gap: 10px;
 }
 </style>
 
