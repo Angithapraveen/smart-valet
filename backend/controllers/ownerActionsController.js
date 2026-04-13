@@ -118,9 +118,6 @@ const createManager = async (req, res) => {
     }
 };
 
-/**
- * Create Driver (Owner only)
- */
 const createDriver = async (req, res) => {
     try {
         const { name, email_id, phone_number, password } = req.body;
@@ -128,20 +125,89 @@ const createDriver = async (req, res) => {
         const locationIds = req.locationIds || [];
 
         // Validate required fields
-        if (!name || !email_id || !phone_number || !password) {
+        if (!name || !email_id || !phone_number) {
             return res.status(400).json({
                 success: false,
-                message: 'All fields are required.'
+                message: 'Name, email, and phone number are required.'
             });
         }
 
-        // Verify owner has access to this location. ADMIN has access to all.
+        // Verify owner/manager has access to this location. ADMIN has access to all.
         const userRole = req.user?.role_name || req.user?.role;
         if (userRole !== 'ADMIN' && !locationIds.includes(location_id)) {
             return res.status(403).json({
                 success: false,
                 message: 'Access denied to this location.'
             });
+        }
+
+        // Check if email already exists
+        const emailCheck = await pool.query(
+            `SELECT u.user_id, u.name, rm.role_name 
+             FROM USERS u 
+             JOIN ROLE_MASTER rm ON u.role_id = rm.role_id 
+             WHERE u.email_id = $1`, 
+            [email_id.trim().toLowerCase()]
+        );
+
+        if (emailCheck.rows.length > 0) {
+            const existingUser = emailCheck.rows[0];
+            
+            // If they are not a DRIVER, we won't auto-assign
+            if (existingUser.role_name !== 'DRIVER') {
+                return res.status(409).json({
+                    success: false,
+                    message: `A user with this email exists but has the role: ${existingUser.role_name}.`
+                });
+            }
+
+            // Check if they are already assigned to THIS location
+            const assignmentCheck = await pool.query(
+                'SELECT status FROM LOCATION_ACCESS WHERE user_id = $1 AND location_id = $2',
+                [existingUser.user_id, location_id]
+            );
+
+            if (assignmentCheck.rows.length > 0) {
+                return res.status(409).json({
+                    success: false,
+                    message: 'Driver is already assigned to this location.'
+                });
+            }
+
+            // Verify they have no other 'ACTIVE' assignment at any other location
+            const activeRes = await pool.query(
+                "SELECT location_id FROM LOCATION_ACCESS WHERE user_id = $1 AND status = 'ACTIVE'",
+                [existingUser.user_id]
+            );
+
+            if (activeRes.rows.length > 0) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Driver is currently active at another location. They must be deactivated there before assignment.'
+                });
+            }
+
+            // All clear: Assign the existing driver to this location as INACTIVE
+            await pool.query(
+                'INSERT INTO LOCATION_ACCESS (user_id, location_id, status) VALUES ($1, $2, $3)',
+                [existingUser.user_id, location_id, 'INACTIVE']
+            );
+
+            return res.status(200).json({
+                success: true,
+                message: 'Existing driver found and successfully assigned to this location as INACTIVE.',
+                data: {
+                    user_id: existingUser.user_id,
+                    name: existingUser.name,
+                    email_id: email_id
+                }
+            });
+        }
+
+        // --- Original logic for creating a NEW driver if they don't exist ---
+        
+        if (!password) {
+            return res.status(400).json({ success: false, message: 'Password is required for new drivers.' });
         }
 
         // Get location short code
@@ -165,15 +231,6 @@ const createDriver = async (req, res) => {
             });
         }
         const driverRoleId = roleResult.rows[0].role_id;
-
-        // Check if email already exists
-        const emailCheck = await pool.query('SELECT user_id FROM USERS WHERE email_id = $1', [email_id.trim().toLowerCase()]);
-        if (emailCheck.rows.length > 0) {
-            return res.status(409).json({
-                success: false,
-                message: 'Email already exists.'
-            });
-        }
 
         // Check if phone already exists
         const phoneCheck = await pool.query('SELECT user_id FROM USERS WHERE phone_number = $1', [phone_number.trim()]);
@@ -210,8 +267,8 @@ const createDriver = async (req, res) => {
 
         // Insert into LOCATION_ACCESS table
         const accessQuery = `
-            INSERT INTO LOCATION_ACCESS (user_id, location_id)
-            VALUES ($1, $2)
+            INSERT INTO LOCATION_ACCESS (user_id, location_id, status)
+            VALUES ($1, $2, 'INACTIVE')
             RETURNING *
         `;
         await pool.query(accessQuery, [driverId, location_id]);
@@ -220,16 +277,16 @@ const createDriver = async (req, res) => {
 
         res.status(201).json({
             success: true,
-            message: 'Driver created successfully.',
+            message: 'New driver created successfully and assigned as INACTIVE.',
             data: driver
         });
 
     } catch (error) {
-        await pool.query('ROLLBACK');
+        if (pool.query) await pool.query('ROLLBACK');
         console.error('Create driver error:', error);
         res.status(500).json({
             success: false,
-            message: 'Failed to create driver.'
+            message: 'Failed to manage driver assignment.'
         });
     }
 };

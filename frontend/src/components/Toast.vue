@@ -44,21 +44,25 @@ function close() {
 .toast-item {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 14px 18px;
+  gap: 14px;
+  padding: 16px 20px;
   background: var(--bg-card);
-  border-radius: 12px;
-  box-shadow: var(--shadow-lg);
-  border-left: 4px solid var(--border-subtle);
+  backdrop-filter: blur(12px) saturate(180%);
+  -webkit-backdrop-filter: blur(12px) saturate(180%);
+  border-radius: 16px;
+  box-shadow: 0 12px 32px -4px rgba(0, 0, 0, 0.15), 0 4px 12px -2px rgba(0, 0, 0, 0.08);
+  border: 1px solid var(--border-subtle);
+  border-left: 6px solid var(--border-subtle);
   min-width: 320px;
-  max-width: 450px;
+  max-width: 480px;
   cursor: pointer;
   pointer-events: auto;
-  transition: var(--ts-base);
+  transition: all 0.3s var(--ease-out);
 }
 
 .toast-item:hover {
-  transform: translateY(-2px);
+  transform: translateY(-4px) scale(1.02);
+  box-shadow: 0 20px 40px -8px rgba(0, 0, 0, 0.2);
 }
 
 .toast-item.success {

@@ -8,17 +8,49 @@ class WhatsAppService {
             authStrategy: new LocalAuth(),
             puppeteer: {
                 handleSIGINT: false,
-                args: ['--no-sandbox']
+                args: [
+                    '--no-sandbox',
+                    '--disable-setuid-sandbox',
+                    '--disable-dev-shm-usage',
+                    '--disable-extensions'
+                ],
+                // On Windows, sometimes the executable path needs to be specified if not found, 
+                // but usually puppeteer handles it. 
+                // headless: 'new' is the default and best for newer puppeteer versions
             }
         });
         this.isInitialized = false;
+        this.isInitializing = false;
     }
 
-    async initialize() {
-        if (this.isInitialized) return;
+    async initialize(retryCount = 0) {
+        if (this.isInitialized || (this.isInitializing && retryCount === 0)) return;
+        
+        this.isInitializing = true;
+        console.log(`[WhatsApp-Service] Initializing WhatsApp Client (Attempt ${retryCount + 1})...`);
 
-        console.log('[WhatsApp-Service] Initializing WhatsApp Client...');
+        // ... rest of event listeners stay the same but we only attach them ONCE ...
+        if (retryCount === 0) {
+            this.attachEventListeners();
+        }
 
+        try {
+            await this.client.initialize();
+        } catch (error) {
+            this.isInitializing = false;
+            console.error(`[WhatsApp-Service] Initialization Error (Attempt ${retryCount + 1}):`, error.message);
+            
+            if (retryCount < 2) {
+                console.log('[WhatsApp-Service] Retrying initialization in 5 seconds...');
+                await new Promise(resolve => setTimeout(resolve, 5000));
+                return this.initialize(retryCount + 1);
+            } else {
+                console.error('[WhatsApp-Service] Max initialization retries reached. Please check network/session.');
+            }
+        }
+    }
+
+    attachEventListeners() {
         this.client.on('qr', (qr) => {
             console.log('[WhatsApp-Service] QR Code Received! Scan now:');
             qrcode.generate(qr, { small: true });
@@ -35,6 +67,7 @@ class WhatsAppService {
         this.client.on('ready', () => {
             console.log('[WhatsApp-Service] WhatsApp Client is ready and connected!');
             this.isInitialized = true;
+            this.isInitializing = false;
         });
 
         this.client.on('loading_screen', (percent, message) => {
@@ -48,6 +81,7 @@ class WhatsAppService {
         this.client.on('disconnected', (reason) => {
             console.warn('[WhatsApp-Service] Client was disconnected:', reason);
             this.isInitialized = false;
+            this.isInitializing = false;
         });
 
         this.client.on('message', async (msg) => {
@@ -58,11 +92,45 @@ class WhatsAppService {
                 console.error('[WhatsApp-Service] Error handling message:', error);
             }
         });
+    }
 
+    async sendCapacityAlert(locationId, locationName, currentCount, driverId = null) {
         try {
-            await this.client.initialize();
+            // Find managers for this location
+            const managerQuery = `
+                SELECT u.phone_number 
+                FROM USERS u
+                JOIN LOCATION_ACCESS la ON u.user_id = la.user_id
+                JOIN ROLE_MASTER rm ON u.role_id = rm.role_id
+                WHERE la.location_id = $1 AND rm.role_name = 'MANAGER' AND u.status = TRUE
+            `;
+            const managers = await pool.query(managerQuery, [locationId]);
+            
+            const alertMsg = `⚠️ *CAPACITY ALERT*\n\n` +
+                `Location: *${locationName}*\n` +
+                `Maximum Capacity Reached! (Current Key Slot: ${currentCount})\n` +
+                `New vehicles are being parked beyond default capacity.`;
+
+            // Notify Managers
+            for (const mgr of managers.rows) {
+                if (mgr.phone_number) {
+                    await this.sendMessage(mgr.phone_number, alertMsg);
+                }
+            }
+
+            // Notify the specific Driver if provided
+            if (driverId) {
+                const driverRes = await pool.query('SELECT phone_number FROM USERS WHERE user_id = $1 AND status = TRUE', [driverId]);
+                const driverPhone = driverRes.rows[0]?.phone_number;
+                if (driverPhone) {
+                    const driverAlert = `⚠️ *CAPACITY ALERT (Driver Info)*\n\n` +
+                        `Location: *${locationName}*\n` +
+                        `You have parked a car beyond the defined capacity. Key Slot ${currentCount} was allocated.`;
+                    await this.sendMessage(driverPhone, driverAlert);
+                }
+            }
         } catch (error) {
-            console.error('[WhatsApp-Service] Critical Initialization Error:', error);
+            console.error('[WhatsApp-Service] Failed to send capacity alert:', error);
         }
     }
 
@@ -106,19 +174,27 @@ class WhatsAppService {
 
         const locationId = locationMatch[1].trim();
         const driverId = driverMatch[1].trim();
-        const carNumberMatch = body.match(/Vehicle:\s*([A-Z0-9-]+)/i) || body.match(/Car No:\s*([A-Z0-9-]+)/i);
+        
+        // Extract vehicle details
+        const carNumberMatch = body.match(/Car No:\s*([A-Z0-9-]+)/i) || body.match(/Vehicle No:\s*([A-Z0-9-]+)/i);
         const carNumber = carNumberMatch ? carNumberMatch[1] : null;
+        
+        const carModelMatch = body.match(/Vehicle:\s*([^\n\r]+)/i) || body.match(/Model:\s*([^\n\r]+)/i);
+        const carModel = carModelMatch ? carModelMatch[1].trim() : 'Unknown';
 
-
+        const client = await pool.connect();
         try {
+            await client.query('BEGIN');
+
             const validationQuery = `
                 SELECT l.location_name FROM LOCATION_ACCESS la
                 JOIN LOCATIONS l ON la.location_id = l.location_id
                 WHERE la.location_id = $1 AND la.user_id = $2
             `;
-            const validResult = await pool.query(validationQuery, [locationId, driverId]);
+            const validResult = await client.query(validationQuery, [locationId, driverId]);
 
             if (validResult.rows.length === 0) {
+                await client.query('ROLLBACK');
                 await msg.reply('Invalid Location or Driver pairing.');
                 return;
             }
@@ -130,35 +206,85 @@ class WhatsAppService {
 
             // Get Key Slot
             const { getNextAvailableKeySlot } = require('../utils/valetUtils');
-            let keySlot = await getNextAvailableKeySlot(pool, locationId);
-            if (!keySlot) {
-                console.warn('[WhatsApp-Service] Key slot generation returned null, defaulting to 1');
-                keySlot = 1; 
-            }
-
+            const { slot: keySlot, isOverCapacity } = await getNextAvailableKeySlot(client, locationId);
+            
             console.log(`[WhatsApp-Service] Prepared Insert: ValetId=${valetId}, Loc=${locationId}, Driver=${driverId}, Slot=${keySlot}`);
             
-            await pool.query(
+            const insertResult = await client.query(
                 `INSERT INTO VALET_TRANSACTIONS 
-                (valet_id, location_id, parked_driver_id, customer_name, phone_number, car_number, status, parked_time, key_slot)
-                VALUES ($1, $2, $3, $4, $5, $6, 'PARKED', NOW(), $7)`,
-                [valetId, locationId, driverId, userName, senderId, carNumber, keySlot]
+                (valet_id, location_id, parked_driver_id, customer_name, phone_number, car_model, car_number, status, parked_time, key_slot)
+                VALUES ($1, $2, $3, $4, $5, $6, $7, 'PARKED', NOW(), $8)
+                RETURNING *`,
+                [valetId, locationId, driverId, userName, senderId, carModel, carNumber, keySlot]
             );
 
+            let transaction = insertResult.rows[0];
+            let blockAssigned = false;
+
+            // --- Auto-Block Assignment Logic (Matching valetController) ---
+            const blocksResult = await client.query(
+                'SELECT block_id FROM BLOCKS WHERE location_id = $1 AND status = TRUE AND valid_from <= CURRENT_DATE AND (valid_to IS NULL OR valid_to >= CURRENT_DATE)',
+                [locationId]
+            );
+
+            // If exactly one active block exists, auto-assign it
+            if (blocksResult.rows.length === 1) {
+                const targetBlockId = blocksResult.rows[0].block_id;
+
+                const slotQuery = `
+                    SELECT block_entry_id 
+                    FROM BLOCK_ENTRIES 
+                    WHERE block_id = $1 AND status = 'AVAILABLE'
+                    ORDER BY block_entry_id ASC
+                    LIMIT 1
+                    FOR UPDATE SKIP LOCKED
+                `;
+                const slotResult = await client.query(slotQuery, [targetBlockId]);
+
+                if (slotResult.rows.length > 0) {
+                    const blockEntryId = slotResult.rows[0].block_entry_id;
+
+                    await client.query(
+                        "UPDATE BLOCK_ENTRIES SET status = 'OCCUPIED' WHERE block_entry_id = $1",
+                        [blockEntryId]
+                    );
+
+                    const updateTxn = await client.query(
+                        "UPDATE VALET_TRANSACTIONS SET block_entry_id = $1 WHERE valet_id = $2 RETURNING *",
+                        [blockEntryId, valetId]
+                    );
+                    transaction = updateTxn.rows[0];
+                    blockAssigned = true;
+                    console.log(`[WhatsApp-Service] Auto-assigned block entry ${blockEntryId} for Valet ${valetId}`);
+                }
+            }
+
+            await client.query('COMMIT');
+
             // Send confirmation with Location Name and standard text instructions
-            console.log(`[WhatsApp-Service] Success! Valet ${valetId} stored internal slot ${keySlot}`);
+            console.log(`[WhatsApp-Service] Success! Valet ${valetId} stored internal slot ${keySlot}. Block Assigned: ${blockAssigned}`);
             
-            const confirmationMsg = `✅ *Car Parked Successfully*\n\n` +
+            let confirmationMsg = `✅ *Car Parked Successfully*\n\n` +
                 `🎫 *Valet ID:* ${valetId}\n` +
                 `📍 *Location:* ${locationName}\n\n` +
                 `Your car is safely stored. When you're ready to leave, just send the message below:\n\n` +
                 `*Tap to request car:* \nRETURN ${valetId} 🚗💨`;
 
-            await this.client.sendMessage(from, confirmationMsg);
+            if (isOverCapacity) {
+                // Internal alert for staff only
+                this.sendCapacityAlert(locationId, locationName, keySlot, driverId).catch(err => {
+                    console.error('[WhatsApp-Service] Alert notification failed:', err);
+                });
+            }
+
+            await this.sendMessage(from, confirmationMsg);
 
         } catch (error) {
+            if (client) await client.query('ROLLBACK');
             console.error('Parking Request Error:', error);
             await msg.reply('Internal error processing parking request.');
+        } finally {
+            if (client) client.release();
         }
     }
 
@@ -267,27 +393,55 @@ class WhatsAppService {
         }
 
         try {
-            // Ensure the address is correctly formatted for WhatsApp
-            let chatId = to;
-
-            // Only append @c.us if there is NO domain suffix already (@c.us or @lid)
-            if (!chatId.includes('@')) {
-                // Remove all non-digits
-                let cleanNumber = chatId.replace(/\D/g, '');
-                
-                // If 10 digits, assume India (91)
+            let chatId;
+            
+            if (to.includes('@')) {
+                chatId = to;
+            } else {
+                let cleanNumber = to.replace(/\D/g, '');
                 if (cleanNumber.length === 10) {
                     cleanNumber = '91' + cleanNumber;
                 }
-                
-                chatId = `${cleanNumber}@c.us`;
+
+                const numberId = await this.client.getNumberId(cleanNumber);
+                if (numberId) {
+                    chatId = numberId._serialized;
+                    console.log(`[WhatsApp-Service] Resolved ID for ${to}: ${chatId}`);
+                } else {
+                    // Fallback attempt: sometimes formatted number works better for registration check
+                    const isRegistered = await this.client.isRegisteredUser(cleanNumber);
+                    if (isRegistered) {
+                        // Try again now that we checked registration
+                        const retryId = await this.client.getNumberId(cleanNumber);
+                        chatId = retryId ? retryId._serialized : `${cleanNumber}@c.us`;
+                    } else {
+                        chatId = `${cleanNumber}@c.us`;
+                    }
+                    console.warn(`[WhatsApp-Service] Resolution fallback for ${to}: ${chatId}`);
+                }
             }
 
             console.log(`[WhatsApp-Service] Attempting to send message to: ${chatId}`);
+            
+            // Fix for "No LID for user": Get the contact first, then send
+            // This forces WhatsApp Web to resolve the LID internally in Puppeteer
+            await this.client.getContactById(chatId);
             await this.client.sendMessage(chatId, message);
+            
             console.log(`[WhatsApp-Service] Message sent successfully to: ${chatId}`);
         } catch (error) {
             console.error(`[WhatsApp-Service] Failed to send message to ${to}:`, error);
+            
+            // Last ditch effort: direct send if contact method failed
+            if (error.message.includes('No LID')) {
+                console.log(`[WhatsApp-Service] LID Error detected. Attempting direct fallback send...`);
+                try {
+                    // Sometimes a raw send works even if the resolved one fails
+                    await this.client.sendMessage(to.includes('@') ? to : `${to.replace(/\D/g, '')}@c.us`, message);
+                } catch (innerError) {
+                    console.error(`[WhatsApp-Service] Final fallback failed:`, innerError.message);
+                }
+            }
         }
     }
 }

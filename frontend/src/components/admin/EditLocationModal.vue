@@ -174,11 +174,11 @@
             <div class="form-section">
               <div class="section-title">
                 <span class="number">04</span>
-                Capacity Configuration
+                Key Slot Configuration
               </div>
               <div class="form-grid">
                 <div class="form-group">
-                  <label>Key Board Capacity (Total Slots)</label>
+                  <label>Key Slot Capacity (Total Slots)</label>
                   <div class="input-container">
                     <input v-model.number="form.total_capacity" type="number" min="1" max="1000" placeholder="e.g. 100" required />
                     <span class="required-dot">•</span>

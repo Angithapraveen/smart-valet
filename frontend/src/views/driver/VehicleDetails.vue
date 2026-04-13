@@ -268,12 +268,13 @@
             <h3>Vehicle Reparked</h3>
             <p>The key has been successfully allocated to slot:</p>
             
-            <div class="allocated-slot-display">
-                <span class="slot-label">NEW KEY SLOT</span>
+            <div class="allocated-slot-display" :class="{ 'over-capacity': isOverCapacityAllocated }">
+                <span class="slot-label">{{ isOverCapacityAllocated ? 'OVER-CAPACITY SLOT' : 'NEW KEY SLOT' }}</span>
                 <span class="slot-number">{{ formatKeySlot(allocatedKeySlot) }}</span>
             </div>
             
-            <p class="slot-hint">Please place the key in the cabinet slot {{ formatKeySlot(allocatedKeySlot) }}.</p>
+            <p v-if="isOverCapacityAllocated" class="capacity-warning-text">Cabinet capacity exceeded.</p>
+            <p class="slot-hint">Please place the key in the {{ isOverCapacityAllocated ? 'backup' : 'cabinet' }} slot {{ formatKeySlot(allocatedKeySlot) }}.</p>
             
             <button class="confirm-btn full-width" @click="goToDashboard">DASHBOARD</button>
         </div>
@@ -303,6 +304,7 @@ const showMissingDataModal = ref(false);
 const showReparkConfirm = ref(false);
 const showReparkSuccess = ref(false);
 const allocatedKeySlot = ref(null);
+const isOverCapacityAllocated = ref(false);
 
 const missingDataForm = reactive({
     brand: '',
@@ -546,6 +548,7 @@ const confirmRepark = async () => {
 
         if (response.data.success) {
             allocatedKeySlot.value = response.data.data.key_slot;
+            isOverCapacityAllocated.value = response.data.data.isOverCapacity || false;
             showReparkConfirm.value = false;
             showReparkSuccess.value = true;
         }
@@ -1144,14 +1147,30 @@ const closeSuggestions = (e) => {
 
 .allocated-slot-display {
     background: var(--bg-main);
-    padding: 20px;
-    border-radius: 16px;
+    padding: 24px;
+    border-radius: 20px;
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 4px;
+    gap: 8px;
     margin-bottom: 20px;
     border: 2px dashed var(--primary);
+}
+
+.allocated-slot-display.over-capacity {
+    background: rgba(239, 68, 68, 0.1);
+    border: 2px dashed #ef4444;
+}
+
+.allocated-slot-display.over-capacity .slot-number {
+    color: #ef4444;
+}
+
+.capacity-warning-text {
+    color: #ef4444;
+    font-weight: 800;
+    font-size: 12px;
+    margin-bottom: 20px;
 }
 
 .slot-label {
@@ -1162,7 +1181,7 @@ const closeSuggestions = (e) => {
 }
 
 .slot-number {
-    font-size: 32px;
+    font-size: 48px;
     font-weight: 900;
     color: var(--primary);
 }

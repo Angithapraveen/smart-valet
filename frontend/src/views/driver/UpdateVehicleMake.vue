@@ -16,14 +16,10 @@
 
     <div v-else class="content">
         <!-- Ticket ID Card -->
-        <div class="ticket-card">
-            <div class="card-left">
+        <div class="ticket-card justify-center">
+            <div class="card-center">
                 <span class="label">Ticket ID</span>
                 <span class="ticket-id">{{ vehicle.valet_id }}</span>
-            </div>
-            <div class="card-right">
-                <span class="label">Customer</span>
-                <span class="value">{{ vehicle.customer_name }}</span>
             </div>
         </div>
 
@@ -394,6 +390,17 @@ const closeSuggestions = (e) => {
     justify-content: space-between;
     margin-bottom: 24px;
     box-shadow: var(--shadow-md);
+}
+
+.ticket-card.justify-center {
+    justify-content: center;
+    text-align: center;
+}
+
+.card-center {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
 }
 
 .ticket-card .label {

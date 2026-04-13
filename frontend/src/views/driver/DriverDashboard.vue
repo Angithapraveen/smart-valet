@@ -6,115 +6,165 @@
             <span class="label">Current Venue</span>
             <div class="venue-name-row">
                 <h1 class="venue-name">{{ locationName || 'Loading...' }}</h1>
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
+                <span v-if="currentLocationStatus" class="status-indicator" :class="currentLocationStatus.toLowerCase()">
+                    {{ currentLocationStatus }}
+                </span>
             </div>
+            <button class="switch-site-link" @click="showLocationModal = true">
+                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 3h5v5"></path><path d="M8 21H3v-5"></path><path d="M15 3l6 6"></path><path d="M9 21l-6-6"></path><path d="M21 3l-9 9"></path><path d="M3 21l9-9"></path></svg>
+                Switch Site
+            </button>
         </div>
         <button class="profile-btn" @click="$router.push('/driver/profile')">
              <div class="avatar-sm">{{ userInitial }}</div>
         </button>
     </header>
 
-    <!-- QR Option Button -->
-    <button class="qr-option-btn" @click="openQrModal">
-        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="8" x2="16" y2="8"></line><line x1="8" y1="8" x2="8" y2="8"></line><line x1="8" y1="16" x2="8" y2="16"></line><line x1="16" y1="16" x2="16" y2="16"></line></svg>
-        Generate WhatsApp QR
-    </button>
-
-    <!-- Tabs -->
-    <div class="status-tabs">
-        <button 
-            class="tab-btn" 
-            :class="{ active: activeTab === 'returning' }"
-            @click="activeTab = 'returning'"
-        >
-            Returning
-            <span class="badge" v-if="returningCount > 0">{{ returningCount }}</span>
-        </button>
-        <button 
-            class="tab-btn" 
-            :class="{ active: activeTab === 'parked' }"
-            @click="activeTab = 'parked'"
-        >
-            Parked
-            <span class="badge success" v-if="parkedCount > 0">{{ parkedCount }}</span>
-        </button>
+    <!-- Over Capacity Alert Banner -->
+    <div v-if="isOverCapacity" class="capacity-alert-banner">
+        <div class="alert-content">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+            <span>KEY SLOT CAPACITY REACHED!</span>
+        </div>
     </div>
 
     <!-- Content Area -->
-    <div class="content-area">
-        <div v-if="loading" class="loading-state">
-            <div class="spinner"></div>
-            <p>Loading vehicles...</p>
+    <div class="main-content-wrapper" :class="{ 'site-inactive': currentLocationStatus !== 'ACTIVE' }">
+        <!-- QR Option Button -->
+        <button class="qr-option-btn" @click="openQrModal">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="8" x2="16" y2="8"></line><line x1="8" y1="8" x2="8" y2="8"></line><line x1="8" y1="16" x2="8" y2="16"></line><line x1="16" y1="16" x2="16" y2="16"></line></svg>
+            Generate WhatsApp QR
+        </button>
+
+        <!-- Tabs -->
+        <div class="status-tabs">
+            <button 
+                class="tab-btn" 
+                :class="{ active: activeTab === 'returning' }"
+                @click="activeTab = 'returning'"
+            >
+                Returning
+                <span class="badge" v-if="returningCount > 0">{{ returningCount }}</span>
+            </button>
+            <button 
+                class="tab-btn" 
+                :class="{ active: activeTab === 'parked' }"
+                @click="activeTab = 'parked'"
+            >
+                Parked
+                <span class="badge success" v-if="parkedCount > 0">{{ parkedCount }}</span>
+            </button>
         </div>
 
-        <div v-else-if="currentVehicles.length === 0" class="empty-state">
-            <div class="empty-icon">
-                <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="15" height="13"></rect><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"></polygon><circle cx="5.5" cy="18.5" r="2.5"></circle><circle cx="18.5" cy="18.5" r="2.5"></circle></svg>
+        <div class="content-area">
+            <div v-if="loading" class="loading-state">
+                <div class="spinner"></div>
+                <p>Loading vehicles...</p>
             </div>
-            <p>No vehicles found</p>
-        </div>
 
-        <div v-else class="vehicles-list">
-            <div v-for="vehicle in currentVehicles" :key="vehicle.ticket_id" class="vehicle-card" @click="handleVehicleAction(vehicle)">
-                <div class="card-header">
-                    <div class="vehicle-number" v-if="vehicle.key_slot">
-                        <span class="key-label-mini">KEYSLOT :</span>
-                        <span class="ticket-id" style="margin-left: 5px;">{{ formatKeySlot(vehicle.key_slot) }}</span>
-                    </div>
-                    <div v-else class="vehicle-number">
-                        <span class="hash">#</span>
-                        <span class="ticket-id">{{ vehicle.ticket_id }}</span>
-                    </div>
-                    <div class="badges-row">
-                        <span v-if="vehicle.car_category" class="cat-badge" :class="'cat-' + vehicle.car_category.toLowerCase()">
-                            {{ vehicle.car_category }}
-                        </span>
-                        <span class="status-badge" :class="getStatusBadgeClass(vehicle.status)">
-                            {{ vehicle.status.replace('_', ' ') }}
-                        </span>
-                    </div>
+            <div v-else-if="currentVehicles.length === 0" class="empty-state">
+                <div class="empty-icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="15" height="13"></rect><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"></polygon><circle cx="5.5" cy="18.5" r="2.5"></circle><circle cx="18.5" cy="18.5" r="2.5"></circle></svg>
                 </div>
+                <p>No vehicles found</p>
+            </div>
 
-                <div class="vehicle-details">
-
-                    <div class="detail-row">
-                        <span class="label">Valet ID</span>
-                        <span class="value" style="color: var(--primary); font-family: 'Outfit', monospace;">#{{ vehicle.ticket_id }}</span>
-                    </div>
-                    <div class="detail-row">
-                        <span class="label">Parked At</span>
-                        <span class="value">{{ formatTime(vehicle.entry_time) }}</span>
-                    </div>
-                    <div class="detail-row">
-                        <span class="label">Duration</span>
-                        <span class="value" style="color: var(--warning);">{{ getDuration(vehicle.entry_time) }}</span>
-                    </div>
-                    <div class="detail-row" v-if="vehicle.return_requested_time">
-                        <span class="label">Requested At</span>
-                        <span class="value">{{ formatTime(vehicle.return_requested_time) }}</span>
-                    </div>
-                    <div class="detail-row" v-if="vehicle.return_requested_time">
-                        <span class="label">Request Time</span>
-                        <span class="value" style="color: var(--danger);">{{ getDuration(vehicle.return_requested_time) }}</span>
-                    </div>
-                <div class="vehicle-info-footer">
-                    <div class="footer-label">VEHICLE DETAILS</div>
-                    <div class="car-info-row">
-                        <span class="car-make-text">{{ vehicle.car_model || 'Unknown Model' }}</span>
-                        <div v-if="vehicle.car_number && vehicle.car_number !== 'N/A'" class="license-plate">
-                            {{ vehicle.car_number }}
+            <div v-else class="vehicles-list">
+                <div v-for="vehicle in currentVehicles" :key="vehicle.ticket_id" class="vehicle-card" @click="handleVehicleAction(vehicle)">
+                    <div class="card-header">
+                        <div class="header-left">
+                            <div v-if="vehicle.key_slot" 
+                                 class="key-slot-badge" 
+                                 :class="{ 'key-danger': locationCapacity > 0 && vehicle.key_slot > locationCapacity }">
+                                <span class="key-slot-label">KEYSLOT</span>
+                                <span class="key-slot-value">{{ formatKeySlot(vehicle.key_slot) }}</span>
+                            </div>
+                            <div v-else class="vehicle-number">
+                                <span class="hash">#</span>
+                                <span class="ticket-id">{{ vehicle.ticket_id }}</span>
+                            </div>
+                        </div>
+                        <div class="badges-row">
+                            <span v-if="vehicle.car_category" class="cat-badge" :class="'cat-' + vehicle.car_category.toLowerCase()">
+                                {{ vehicle.car_category }}
+                            </span>
+                            <span class="status-badge" :class="getStatusBadgeClass(vehicle.status)">
+                                {{ vehicle.status.replace('_', ' ') }}
+                            </span>
                         </div>
                     </div>
-                </div>
-                <div class="key-id-section" v-if="false">
-                    <!-- Moved to Header -->
-                </div>
-                </div>
 
-                <button class="action-btn" :class="getActionBtnClass(vehicle.status)" @click.stop="handleVehicleAction(vehicle)">
-                    {{ getActionText(vehicle.status) }}
-                </button>
+                    <div class="vehicle-details">
+
+                        <div class="detail-row">
+                            <span class="label">Valet ID</span>
+                            <span class="value" style="color: var(--primary); font-family: 'Outfit', monospace;">#{{ vehicle.ticket_id }}</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="label">Parked At</span>
+                            <span class="value">{{ formatTime(vehicle.entry_time) }}</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="label">Duration</span>
+                            <span class="value" style="color: var(--warning);">{{ getDuration(vehicle.entry_time) }}</span>
+                        </div>
+                        <div class="detail-row" v-if="vehicle.return_requested_time">
+                            <span class="label">Requested At</span>
+                            <span class="value">{{ formatTime(vehicle.return_requested_time) }}</span>
+                        </div>
+                        <div class="detail-row" v-if="vehicle.return_requested_time">
+                            <span class="label">Request Time</span>
+                            <span class="value" style="color: var(--danger);">{{ getDuration(vehicle.return_requested_time) }}</span>
+                        </div>
+                    <div class="vehicle-info-footer">
+                        <div class="footer-label">VEHICLE DETAILS</div>
+                        <div class="car-info-row">
+                            <span class="car-make-text">{{ vehicle.car_model || 'Unknown Model' }}</span>
+                            <div v-if="vehicle.car_number && vehicle.car_number !== 'N/A'" class="license-plate">
+                                {{ vehicle.car_number }}
+                            </div>
+                        </div>
+                    </div>
+                    </div>
+
+                    <button class="action-btn" :class="getActionBtnClass(vehicle.status)" @click.stop="handleVehicleAction(vehicle)">
+                        {{ getActionText(vehicle.status) }}
+                    </button>
+                </div>
             </div>
+        </div>
+
+        <!-- Site Inactive Overlay -->
+        <div v-if="currentLocationStatus !== 'ACTIVE'" class="inactive-overlay">
+            <div class="lock-icon">
+                <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+            </div>
+            <h3>Location Inactive</h3>
+            <p>You must be activated by a manager to perform parking operations at this site.</p>
+            <button class="primary-action-btn" @click="showLocationModal = true">
+                Manage Locations
+            </button>
+        </div>
+    </div>
+
+    <!-- Capacity Alert Pop-up Modal -->
+    <div v-if="showCapacityPopup" class="modal-overlay">
+        <div class="modal-card capacity-warning-card">
+            <div class="modal-header-icon warning-icon-wrap">
+                <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+            </div>
+            <h3>New Key Slot Allocated!</h3>
+            <p class="warning-text">CAPACITY LIMIT REACHED</p>
+            
+            <div class="allocated-slot-display danger-display">
+                <span class="slot-label">OVER-CAPACITY SLOT</span>
+                <span class="slot-number">{{ formatKeySlot(popupKeySlot) }}</span>
+            </div>
+            
+            <p class="slot-hint">Ticket: #{{ popupValetId }}</p>
+            <p class="cabinet-hint">Please place key in backup slot {{ formatKeySlot(popupKeySlot) }}.</p>
+            
+            <button class="confirm-btn full-width" @click="handleAcknowledge">ACKNOWLEDGE</button>
         </div>
     </div>
 
@@ -174,6 +224,57 @@
             </div>
         </div>
     </div>
+    <!-- Location Management Modal -->
+    <div v-if="showLocationModal" class="modal-overlay" @click.self="showLocationModal = false">
+        <div class="qr-modal location-mgmt-modal">
+            <h3 style="margin-bottom: 8px;">My Locations</h3>
+            <p class="instruction">Manage your site access and activation</p>
+            
+            <div class="locations-list">
+                <div v-for="loc in authStore.accessibleLocations" :key="loc.location_id" class="location-item-card" @click.stop>
+                    <div class="loc-main">
+                        <div class="loc-info">
+                            <span class="loc-name">{{ loc.location_name }}</span>
+                            <span class="loc-code">{{ loc.location_id }}</span>
+                        </div>
+                        <span class="status-pill" :class="loc.access_status.toLowerCase()">
+                            {{ loc.access_status }}
+                        </span>
+                    </div>
+                    
+                    <div class="loc-actions">
+                        <button 
+                            v-if="loc.access_status === 'ACTIVE'"
+                            class="deactivate-btn"
+                            @click="handleStatusToggle(loc.location_id, 'INACTIVE')"
+                            :disabled="isToggling"
+                        >
+                            {{ isToggling ? '...' : 'Deactivate' }}
+                        </button>
+                        <button 
+                            v-else
+                            class="activate-btn"
+                            @click="handleStatusToggle(loc.location_id, 'ACTIVE')"
+                            :disabled="true"
+                        >
+                            Locked
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <div v-if="!authStore.accessibleLocations?.length" class="empty-state-mini">
+                No locations assigned.
+            </div>
+
+            <div class="modal-info-box" v-if="currentLocationStatus !== 'ACTIVE'">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+                Contact manager to activate this site.
+            </div>
+
+            <button class="close-btn" style="width: 100%; margin-top: 20px;" @click="showLocationModal = false">Close</button>
+        </div>
+    </div>
 </div>
 </template>
 
@@ -193,6 +294,29 @@ const activeTab = ref('returning');
 const loading = ref(false);
 const vehicles = ref([]);
 const currentTime = ref(new Date());
+const locationCapacity = ref(0);
+const isOverCapacity = ref(false);
+const showCapacityPopup = ref(false);
+
+const handleAcknowledge = () => {
+    if (popupValetId.value) {
+        const ackIds = JSON.parse(localStorage.getItem('acknowledged_capacity_ids') || '[]');
+        if (!ackIds.includes(popupValetId.value)) {
+            ackIds.push(popupValetId.value);
+            // Limit the list to last 50 IDs to avoid bloat
+            if (ackIds.length > 50) ackIds.shift();
+            localStorage.setItem('acknowledged_capacity_ids', JSON.stringify(ackIds));
+        }
+    }
+    showCapacityPopup.value = false;
+};
+const popupKeySlot = ref(null);
+const popupValetId = ref(null);
+const seenValetIds = ref(new Set());
+
+// Location Modal State
+const showLocationModal = ref(false);
+const isToggling = ref(false);
 
 // QR Modal State
 const showQrModal = ref(false);
@@ -209,6 +333,10 @@ const pendingVehicle = ref(null);
 const userInitial = computed(() => authStore.profileInitial);
 const locationName = computed(() => {
     return authStore.accessibleLocations?.[0]?.location_name || 'Assigned Location';
+});
+
+const currentLocationStatus = computed(() => {
+    return authStore.accessibleLocations?.[0]?.access_status || 'INACTIVE';
 });
 
 const qrCodeUrl = computed(() => {
@@ -256,17 +384,20 @@ const currentVehicles = computed(() => {
         const catWeight = { 'High': 3, 'Medium': 2, 'Low': 1 };
         
         return list.sort((a, b) => {
-            const wA = catWeight[a.car_category] || 0;
-            const wB = catWeight[b.car_category] || 0;
-            
-            if (wA !== wB) return wB - wA;
-            
             const tA = a.return_requested_time ? new Date(a.return_requested_time).getTime() : 0;
             const tB = b.return_requested_time ? new Date(b.return_requested_time).getTime() : 0;
             
-            if (tA === 0 && tB !== 0) return 1;
-            if (tB === 0 && tA !== 0) return -1;
-            return tA - tB;
+            // Primary sort: Time (Earliest first)
+            if (tA !== tB) {
+                if (tA === 0) return 1;
+                if (tB === 0) return -1;
+                return tA - tB;
+            }
+            
+            // Secondary sort: Category (High weight first)
+            const wA = catWeight[a.car_category] || 0;
+            const wB = catWeight[b.car_category] || 0;
+            return wB - wA;
         });
     }
     return vehicles.value.filter(v => v.status.toUpperCase() === 'PARKED');
@@ -352,16 +483,59 @@ const fetchVehicles = async () => {
                 needsBlockAssignment: (v.status.toUpperCase() === 'PARKED') && !v.block_entry_id
             }));
             
-            console.log('Vehicles fetched:', vehicles.value);
-            const needing = vehicles.value.filter(v => v.needsBlockAssignment);
-            console.log('Needs assignment:', needing);
+            locationCapacity.value = response.data.location?.total_capacity || 0;
+            const activeCount = vehicles.value.filter(v => v.status === 'PARKED' || ['RETURN_REQUESTED', 'ON_THE_WAY', 'READY'].includes(v.status)).length;
+            
+            if (locationCapacity.value > 0 && activeCount > locationCapacity.value) {
+                isOverCapacity.value = true;
+            } else {
+                isOverCapacity.value = false;
+            }
 
+            // Detect NEW over-capacity vehicles to show pop-up
+            if (locationCapacity.value > 0) {
+                // Get acknowledged IDs from local storage
+                const ackIds = JSON.parse(localStorage.getItem('acknowledged_capacity_ids') || '[]');
+                const ackSet = new Set(ackIds);
+
+                vehicles.value.forEach(v => {
+                    const vId = v.valet_id;
+                    if (v.key_slot > locationCapacity.value && !seenValetIds.value.has(vId) && !ackSet.has(vId)) {
+                        popupKeySlot.value = v.key_slot;
+                        popupValetId.value = v.valet_id;
+                        showCapacityPopup.value = true;
+                    }
+                    seenValetIds.value.add(vId);
+                });
+            }
+
+            console.log(`[Dashboard] Fetched ${vehicles.value.length} vehicles. Checking for block assignments...`);
+            
             // Check for unassigned blocks
             const needsAssignment = vehicles.value.find(v => v.needsBlockAssignment);
-            if (needsAssignment && !showBlockModal.value && !isAssigning.value) {
-                await fetchBlocks();
-                // Force open even if blocks are 0, so we can debug visualized
-                openBlockAssignment(needsAssignment);
+            
+            if (needsAssignment) {
+                console.log('[Dashboard] Found vehicle needing block assignment:', needsAssignment.valet_id);
+                
+                if (!showBlockModal.value && !isAssigning.value && !showCapacityPopup.value) {
+                    try {
+                        await fetchBlocks();
+                        console.log('[Dashboard] Blocks fetched for assignment:', activeBlocks.value?.length);
+                        
+                        // Switch to parked tab so the driver can see the record being assigned
+                        activeTab.value = 'parked';
+                        
+                        openBlockAssignment(needsAssignment);
+                    } catch (err) {
+                        console.error('[Dashboard] Failed to prepare block assignment:', err);
+                    }
+                } else {
+                    console.log('[Dashboard] Assignment pending but modal suppressed:', {
+                        modalOpen: showBlockModal.value,
+                        isAssigning: isAssigning.value,
+                        capacityPopup: showCapacityPopup.value
+                    });
+                }
             }
         }
     } catch (error) {
@@ -465,6 +639,29 @@ const confirmBlockAssignment = async () => {
     }
 };
 
+const handleStatusToggle = async (locationId, status) => {
+    isToggling.value = true;
+    try {
+        const response = await axios.put(`${API_URL}/auth/location-status`, {
+            location_id: locationId,
+            status: status
+        }, {
+            headers: { Authorization: `Bearer ${authStore.token}` }
+        });
+
+        if (response.data.success) {
+            toast.success(response.data.message);
+            // Refresh auth store to get updated location statuses
+            await authStore.fetchCurrentUser();
+        }
+    } catch (error) {
+        console.error('Status toggle error:', error);
+        toast.error(error.response?.data?.message || 'Failed to update status');
+    } finally {
+        isToggling.value = false;
+    }
+};
+
 onMounted(async () => {
     loading.value = true;
     try {
@@ -491,7 +688,7 @@ onMounted(async () => {
     min-height: 100vh;
     color: var(--text-main);
     font-family: 'Inter', sans-serif;
-    padding-bottom: 80px; /* Space for bottom nav */
+    padding-bottom: 80px; 
     transition: var(--ts-base);
 }
 
@@ -501,13 +698,81 @@ onMounted(async () => {
     border-bottom: 1px solid var(--primary-border, var(--border-subtle));
     box-shadow: var(--shadow-sm);
     padding: 20px;
-    padding-top: 40px; /* Safe area */
+    padding-top: 40px;
     border-radius: 0 0 24px 24px;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 20px;
+    margin-bottom: 0px;
 }
+
+.capacity-alert-banner {
+    background: rgba(239, 68, 68, 0.9);
+    backdrop-filter: blur(4px);
+    color: white;
+    padding: 10px;
+    text-align: center;
+    font-weight: 800;
+    font-size: 13px;
+    letter-spacing: 1.5px;
+    display: flex;
+    justify-content: center;
+    margin-bottom: 15px;
+    border-radius: 0 0 16px 16px;
+    box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+}
+.alert-content { display: flex; align-items: center; gap: 8px; }
+
+.capacity-summary-card {
+    background: var(--bg-card);
+    margin: 0 20px 24px;
+    padding: 16px;
+    border-radius: 16px;
+    border: 1px solid var(--border-subtle);
+    box-shadow: var(--shadow-sm);
+}
+.summary-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+.summary-label { font-size: 13px; font-weight: 600; color: var(--text-muted); }
+.text-danger { color: #f87171 !important; }
+
+/* Professional Key Slot Badge on Cards */
+.key-slot-badge {
+    background: #1e293b;
+    border: 1px solid #334155;
+    border-radius: 12px;
+    padding: 4px 10px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+.key-slot-label {
+    font-size: 10px;
+    font-weight: 800;
+    color: #94a3b8;
+    letter-spacing: 0.05em;
+}
+
+.key-slot-value {
+    font-size: 18px;
+    font-weight: 900;
+    color: #38bdf8;
+    font-family: 'Outfit', sans-serif;
+}
+
+.key-slot-badge.key-danger {
+    background: rgba(239, 68, 68, 0.15);
+    border-color: rgba(239, 68, 68, 0.4);
+}
+
+.key-slot-badge.key-danger .key-slot-value {
+    color: #ef4444;
+}
+
+.key-slot-badge.key-danger .key-slot-label {
+    color: rgba(239, 68, 68, 0.7);
+  }
 
 .label {
     font-size: 11px;
@@ -857,6 +1122,128 @@ onMounted(async () => {
     border: 1px solid rgba(59, 130, 246, 0.3);
 }
 
+.capacity-warning-card {
+    background: linear-gradient(145deg, #111827 0%, #1f2937 100%);
+    border: 1px solid rgba(239, 68, 68, 0.4);
+    border-radius: 28px;
+    padding: 32px;
+    width: 90%;
+    max-width: 400px;
+    text-align: center;
+    box-shadow: 0 25px 50px -12px rgba(239, 68, 68, 0.25), 0 0 15px rgba(239, 68, 68, 0.1);
+    position: relative;
+    overflow: hidden;
+}
+
+.capacity-warning-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, #ef4444, #f87171, #ef4444);
+}
+
+.warning-icon-wrap {
+    width: 72px;
+    height: 72px;
+    background: rgba(239, 68, 68, 0.1);
+    border-radius: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 24px;
+    border: 1px solid rgba(239, 68, 68, 0.2);
+    box-shadow: 0 10px 20px rgba(239, 68, 68, 0.1);
+}
+
+.capacity-warning-card h3 {
+    font-size: 20px;
+    font-weight: 800;
+    color: #f8fafc;
+    margin-bottom: 8px;
+}
+
+.warning-text {
+    color: #ef4444;
+    font-weight: 900;
+    font-size: 13px;
+    margin-bottom: 28px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+}
+
+.danger-display {
+    background: rgba(239, 68, 68, 0.05);
+    border: 2px dashed rgba(239, 68, 68, 0.3);
+    border-radius: 24px;
+    padding: 32px 24px;
+    margin-bottom: 28px;
+    transition: all 0.3s ease;
+}
+
+.danger-display:hover {
+    border-color: rgba(239, 68, 68, 0.6);
+    background: rgba(239, 68, 68, 0.08);
+}
+
+.slot-label {
+    font-size: 11px;
+    color: #94a3b8;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    margin-bottom: 12px;
+    display: block;
+}
+
+.slot-number {
+    font-size: 64px;
+    font-weight: 950;
+    color: #ef4444;
+    font-family: 'Outfit', sans-serif;
+    line-height: .9;
+    text-shadow: 0 0 20px rgba(239, 68, 68, 0.3);
+}
+
+.slot-hint {
+    font-size: 15px;
+    font-weight: 700;
+    color: #f1f5f9;
+    margin-bottom: 6px;
+}
+
+.cabinet-hint {
+    font-size: 13px;
+    color: #94a3b8;
+    margin-bottom: 32px;
+    line-height: 1.5;
+}
+
+.capacity-warning-card .confirm-btn {
+    background: linear-gradient(135deg, #ef4444 0%, #b91c1c 100%);
+    color: white;
+    padding: 16px;
+    border-radius: 16px;
+    border: none;
+    font-weight: 800;
+    font-size: 14px;
+    cursor: pointer;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    box-shadow: 0 10px 15px -3px rgba(239, 68, 68, 0.4);
+    transition: all 0.2s ease;
+}
+
+.capacity-warning-card .confirm-btn:active {
+    transform: translateY(2px);
+    box-shadow: 0 4px 6px -1px rgba(239, 68, 68, 0.4);
+}
+
+.full-width {
+    width: 100%;
+}
+
 @keyframes spin {
     to { transform: rotate(360deg); }
 }
@@ -984,5 +1371,198 @@ onMounted(async () => {
     outline: none;
     border-color: var(--primary);
     box-shadow: 0 0 0 2px var(--primary-light);
+}
+
+/* Location Status & Switching Styles */
+.status-indicator {
+    font-size: 10px;
+    font-weight: 800;
+    padding: 2px 8px;
+    border-radius: 6px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.status-indicator.active {
+    background: rgba(16, 185, 129, 0.1);
+    color: #10b981;
+}
+
+.status-indicator.inactive {
+    background: rgba(100, 116, 139, 0.1);
+    color: #64748b;
+}
+
+.switch-site-link {
+    background: none;
+    border: none;
+    color: var(--primary);
+    font-size: 11px;
+    font-weight: 700;
+    margin-top: 4px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 0;
+    cursor: pointer;
+    opacity: 0.8;
+}
+
+.main-content-wrapper {
+    position: relative;
+    min-height: 50vh;
+}
+
+.main-content-wrapper.site-inactive {
+    pointer-events: none;
+}
+
+.site-inactive > *:not(.inactive-overlay) {
+    filter: blur(4px);
+    opacity: 0.5;
+}
+
+.inactive-overlay {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 85%;
+    background: var(--bg-card);
+    padding: 32px 24px;
+    border-radius: 24px;
+    box-shadow: var(--shadow-lg);
+    text-align: center;
+    pointer-events: auto;
+    z-index: 50;
+    border: 1px solid var(--border-subtle);
+}
+
+.lock-icon {
+    margin-bottom: 16px;
+    color: var(--danger);
+    opacity: 0.8;
+}
+
+.primary-action-btn {
+    width: 100%;
+    background: var(--primary);
+    color: white;
+    border: none;
+    padding: 14px;
+    border-radius: 12px;
+    font-weight: 700;
+    margin-top: 16px;
+    cursor: pointer;
+}
+
+/* Location Mgmt Modal */
+.location-mgmt-modal {
+    max-width: 400px;
+}
+
+.locations-list {
+    margin-top: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    text-align: left;
+}
+
+.location-item-card {
+    background: var(--bg-main);
+    border: 1px solid var(--border-subtle);
+    border-radius: 16px;
+    padding: 16px;
+}
+
+.loc-main {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 16px;
+}
+
+.loc-info {
+    display: flex;
+    flex-direction: column;
+}
+
+.loc-name {
+    font-weight: 700;
+    font-size: 15px;
+    color: var(--text-main);
+}
+
+.loc-code {
+    font-size: 11px;
+    color: var(--text-muted);
+}
+
+.status-pill {
+    font-size: 9px;
+    font-weight: 800;
+    padding: 2px 8px;
+    border-radius: 12px;
+    text-transform: uppercase;
+}
+
+.status-pill.active {
+    background: #10b981;
+    color: white;
+}
+
+.status-pill.inactive {
+    background: #64748b;
+    color: white;
+}
+
+.loc-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.deactivate-btn {
+    flex: 1;
+    background: rgba(239, 68, 68, 0.1);
+    color: #ef4444;
+    border: 1px solid rgba(239, 68, 68, 0.2);
+    padding: 10px;
+    border-radius: 10px;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.activate-btn {
+    flex: 1;
+    background: var(--bg-card);
+    color: var(--text-muted);
+    border: 1px dashed var(--border-subtle);
+    padding: 10px;
+    border-radius: 10px;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: not-allowed;
+}
+
+.modal-info-box {
+    margin-top: 20px;
+    background: rgba(245, 158, 11, 0.1);
+    color: #f59e0b;
+    padding: 10px;
+    border-radius: 8px;
+    font-size: 11px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 600;
+}
+
+.empty-state-mini {
+    padding: 20px;
+    color: var(--text-muted);
+    font-style: italic;
+    font-size: 13px;
 }
 </style>

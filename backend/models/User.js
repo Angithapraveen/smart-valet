@@ -22,30 +22,33 @@ class User {
         if (roleName === 'ADMIN') {
             const result = await pool.query(
                 `SELECT location_id, location_name, location_short_code, location_type, address, 
-                        (status AND valid_from <= CURRENT_DATE AND (valid_to IS NULL OR valid_to >= CURRENT_DATE)) as status 
+                        (status AND valid_from <= CURRENT_DATE AND (valid_to IS NULL OR valid_to >= CURRENT_DATE)) as status,
+                        'ACTIVE' as access_status
                  FROM LOCATIONS`
             );
             return result.rows;
         } else if (roleName === 'OWNER') {
             const result = await pool.query(
                 `SELECT l.location_id, l.location_name, l.location_short_code, l.location_type, l.address, 
-                        (l.status AND l.valid_from <= CURRENT_DATE AND (l.valid_to IS NULL OR l.valid_to >= CURRENT_DATE)) as status
+                        (l.status AND l.valid_from <= CURRENT_DATE AND (l.valid_to IS NULL OR l.valid_to >= CURRENT_DATE)) as status,
+                        la.status as access_status
                  FROM LOCATION_ACCESS la
                  JOIN LOCATIONS l ON la.location_id = l.location_id
-                 WHERE la.user_id = $1`,
+                 WHERE la.user_id = $1
+                 ORDER BY CASE la.status WHEN 'ACTIVE' THEN 1 ELSE 2 END, l.location_name ASC`,
                 [userId]
             );
             return result.rows;
         } else {
-            // Managers, Drivers, etc. - only see ACTIVE and VALID locations
+            // Managers, Drivers, etc. - see all assigned but with status
             const result = await pool.query(
-                `SELECT l.location_id, l.location_name, l.location_short_code, l.location_type, l.address, l.status
+                `SELECT l.location_id, l.location_name, l.location_short_code, l.location_type, l.address, 
+                        (l.status AND l.valid_from <= CURRENT_DATE AND (l.valid_to IS NULL OR l.valid_to >= CURRENT_DATE)) as status,
+                        la.status as access_status
                  FROM LOCATION_ACCESS la
                  JOIN LOCATIONS l ON la.location_id = l.location_id
                  WHERE la.user_id = $1 
-                 AND l.status = TRUE
-                 AND l.valid_from <= CURRENT_DATE 
-                 AND (l.valid_to IS NULL OR l.valid_to >= CURRENT_DATE)`,
+                 ORDER BY CASE la.status WHEN 'ACTIVE' THEN 1 ELSE 2 END, l.location_name ASC`,
                 [userId]
             );
             return result.rows;

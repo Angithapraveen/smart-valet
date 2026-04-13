@@ -6,6 +6,10 @@
         <p class="subtitle">Overview for {{ dashboardData?.location?.location_name || 'Loading...' }}</p>
       </div>
       <div class="header-actions">
+        <div v-if="isOverCapacity" class="capacity-alert animate-bounce">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+            Key Slot Limit Reached!
+        </div>
         <button class="settings-btn" @click="router.push('/manager/settings')" title="Configure Location">
             <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
         </button>
@@ -24,13 +28,16 @@
     <div v-else class="dashboard-content">
       <!-- 1. KPI Cards -->
       <div class="stats-grid">
-        <div class="stat-card">
-          <div class="stat-icon parkings">
+        <div class="stat-card" :class="{ 'stat-danger': isOverCapacity }">
+          <div class="stat-icon parkings" :class="{ 'icon-danger': isOverCapacity }">
             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.4 2.9A3.7 3.7 0 0 0 2 12v4c0 .6.4 1 1 1h2"/><circle cx="7" cy="17" r="2"/><circle cx="17" cy="17" r="2"/><path d="M14 17h-5"/></svg>
           </div>
           <div class="stat-info">
             <span class="label">Live Parked</span>
             <span class="value">{{ dashboardData?.activeParkings || 0 }}</span>
+            <span v-if="dashboardData?.location?.total_capacity" class="capacity-hint">
+                of {{ dashboardData.location.total_capacity }}
+            </span>
           </div>
         </div>
 
@@ -109,7 +116,12 @@
                     <p class="activity-text">
                       <strong>{{ txn.car_model || 'Vehicle' }}</strong>
                       <span v-if="txn.car_number" class="activity-plate">[{{ txn.car_number }}]</span>
-                      <span v-if="txn.key_slot" class="activity-key">KeySlot: {{ formatKeySlot(txn.key_slot) }}</span>
+                      <div v-if="txn.key_slot" 
+                            class="activity-key-badge" 
+                            :class="{ 'badge-danger': dashboardData?.location?.total_capacity > 0 && txn.key_slot > dashboardData.location.total_capacity }">
+                        <span class="badge-label">KEYSLOT</span>
+                        <span class="badge-value">{{ formatKeySlot(txn.key_slot) }}</span>
+                      </div>
                       <span class="activity-status">{{ txn.status === 'PARKED' ? 'parked' : 'returned' }}</span>
                     </p>
                    <p class="activity-meta">
@@ -143,6 +155,17 @@
       </div>
 
     </div>
+
+    <!-- Capacity Alert Toast -->
+    <Transition name="slide-up">
+        <div v-if="showToast" class="toast-alert danger">
+            <div class="toast-content">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+                <span><strong>Capacity Limit Reached!</strong> New cars are being parked beyond the limit.</span>
+            </div>
+            <button @click="showToast = false" class="close-toast">&times;</button>
+        </div>
+    </Transition>
   </div>
 </template>
 
@@ -156,6 +179,8 @@ const router = useRouter();
 const authStore = useAuthStore();
 const loading = ref(true);
 const dashboardData = ref(null);
+const isOverCapacity = ref(false);
+const showToast = ref(false);
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
 
@@ -168,6 +193,7 @@ const fetchDashboardData = async (showLoading = true) => {
 
     if (response.data.success) {
       dashboardData.value = response.data.data;
+      checkCapacity(response.data.data);
     }
   } catch (error) {
     console.error('Failed to fetch dashboard data:', error);
@@ -179,6 +205,24 @@ const fetchDashboardData = async (showLoading = true) => {
     loading.value = false;
   }
 };
+
+const checkCapacity = (data) => {
+    const active = data.activeParkings || 0;
+    const capacity = data.location?.total_capacity || 0;
+    
+    if (capacity > 0 && active > capacity) {
+        if (!isOverCapacity.value) {
+            showToast.value = true;
+            // Auto close toast after 10 seconds
+            setTimeout(() => { showToast.value = false; }, 10000);
+        }
+        isOverCapacity.value = true;
+    } else {
+        isOverCapacity.value = false;
+        showToast.value = false;
+    }
+};
+
 
 const getOccupancyPercent = (occupied, capacity) => {
   if (!capacity) return 0;
@@ -235,9 +279,9 @@ onUnmounted(() => {
 <style scoped>
 
 .dashboard-page {
-  padding: 32px;
-  max-width: 1400px;
-  margin: 0 auto;
+  padding: 24px 0;
+  max-width: 100%;
+  margin: 0;
 }
 
 
@@ -428,4 +472,114 @@ onUnmounted(() => {
 .driver-info h4 { font-size: 14px; font-weight: 600; color: var(--text-main); margin-bottom: 2px; }
 .driver-info p { font-size: 12px; color: var(--text-muted); margin-bottom: 4px; }
 .status-indicator { font-size: 11px; font-weight: 600; color: var(--success); }
+.text-danger { color: #ef4444 !important; }
+
+.activity-key-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: #f1f5f9;
+    border: 1px solid #e2e8f0;
+    padding: 2px 8px;
+    border-radius: 6px;
+    margin: 0 4px;
+}
+
+.activity-key-badge .badge-label {
+    font-size: 9px;
+    font-weight: 800;
+    color: #64748b;
+    letter-spacing: 0.05em;
+}
+
+.activity-key-badge .badge-value {
+    font-size: 12px;
+    font-weight: 800;
+    color: #0f172a;
+    font-family: 'Outfit', sans-serif;
+}
+
+.activity-key-badge.badge-danger {
+    background: #fef2f2;
+    border-color: #fecaca;
+}
+
+.activity-key-badge.badge-danger .badge-value {
+    color: #ef4444;
+}
+
+.activity-key-badge.badge-danger .badge-label {
+    color: #b91c1c;
+}
+
+/* Capacity Alert UI */
+.capacity-alert {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(239, 68, 68, 0.1);
+    color: #ef4444;
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 700;
+    border: 1px solid rgba(239, 68, 68, 0.3);
+}
+.animate-bounce {
+    animation: bounce 1s infinite;
+}
+@keyframes bounce {
+    0%, 100% { transform: translateY(-5%); animation-timing-function: cubic-bezier(0.8, 0, 1, 1); }
+    50% { transform: translateY(0); animation-timing-function: cubic-bezier(0, 0, 0.2, 1); }
+}
+
+.stat-danger {
+    border-color: rgba(239, 68, 68, 0.4) !important;
+    background: rgba(239, 68, 68, 0.05) !important;
+}
+.icon-danger {
+    background: rgba(239, 68, 68, 0.15) !important;
+    color: #ef4444 !important;
+}
+.capacity-hint {
+    font-size: 11px;
+    color: var(--text-muted);
+    font-weight: 600;
+    margin-top: -2px;
+}
+
+.toast-alert {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #111827;
+    color: white;
+    padding: 12px 20px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+    z-index: 1000;
+    min-width: 320px;
+    border-left: 4px solid #ef4444;
+}
+.toast-content { display: flex; align-items: center; gap: 12px; font-size: 14px; }
+.toast-content svg { color: #ef4444; }
+.close-toast {
+    background: transparent;
+    border: none;
+    color: #9ca3af;
+    font-size: 20px;
+    cursor: pointer;
+    line-height: 1;
+}
+
+/* Slide Up Transition */
+.slide-up-enter-active, .slide-up-leave-active { transition: all 0.3s ease; }
+.slide-up-enter-from { opacity: 0; transform: translate(-50%, 20px); }
+.slide-up-leave-to { opacity: 0; transform: translate(-50%, 20px); }
+
 </style>
+

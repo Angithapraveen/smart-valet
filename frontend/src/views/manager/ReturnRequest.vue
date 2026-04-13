@@ -65,9 +65,15 @@
       >
         <div class="card-header">
           <span class="ticket-id">{{ formatTicketId(req.valet_id) }}</span>
-          <span :class="['status-badge', getStatusClass(req.status)]">
-            {{ formatStatus(req.status) }}
-          </span>
+          <div class="header-right">
+            <span v-if="req.status !== 'RETURNED'" class="wait-time-pill" :class="{ 'warning': isLongWait(req.return_requested_time) }">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+              {{ calculateWait(req.return_requested_time) }}
+            </span>
+            <span :class="['status-badge', getStatusClass(req.status)]">
+              {{ formatStatus(req.status) }}
+            </span>
+          </div>
         </div>
 
         <div class="card-body">
@@ -91,6 +97,10 @@
             <div v-if="req.ready_time" class="time-item">
               <span class="label">Ready:</span>
               <span class="value">{{ formatTime(req.ready_time) }}</span>
+            </div>
+            <div class="time-item total-duration">
+              <span class="label">Total Stay:</span>
+              <span class="value">{{ calculateStay(req.parked_time, req.return_requested_time) }}</span>
             </div>
           </div>
         </div>
@@ -134,6 +144,39 @@ const loading = ref(false);
 const error = ref(null);
 const locationName = ref('');
 const processingId = ref(null);
+const currentTime = ref(new Date());
+
+const calculateStay = (parkedTime, requestedTime) => {
+  if (!parkedTime) return '---';
+  const start = new Date(parkedTime).getTime();
+  const end = requestedTime ? new Date(requestedTime).getTime() : currentTime.value.getTime();
+  const diffMs = end - start;
+  const diffMins = Math.floor(diffMs / 60000);
+  
+  if (diffMins < 60) return `${diffMins || 1}m`;
+  const hrs = Math.floor(diffMins / 60);
+  const mins = diffMins % 60;
+  return mins === 0 ? `${hrs}h` : `${hrs}h ${mins}m`;
+};
+
+const calculateWait = (requestedTime) => {
+  if (!requestedTime) return '---';
+  const start = new Date(requestedTime).getTime();
+  const diffMs = currentTime.value.getTime() - start;
+  const diffMins = Math.floor(diffMs / 60000);
+  
+  if (diffMins < 60) return `${diffMins} min`;
+  const hrs = Math.floor(diffMins / 60);
+  const mins = diffMins % 60;
+  return mins === 0 ? `${hrs}h` : `${hrs}h ${mins}m`;
+};
+
+const isLongWait = (requestedTime) => {
+  if (!requestedTime) return false;
+  const start = new Date(requestedTime).getTime();
+  const diffMs = currentTime.value.getTime() - start;
+  return diffMs > 900000; // > 15 minutes
+};
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
 
@@ -237,21 +280,26 @@ const markAsReady = (txn) => updateStatus(txn, 'READY');
 const markAsReturned = (txn) => updateStatus(txn, 'RETURNED');
 
 let pollInterval;
+let timeInterval;
 onMounted(() => {
   fetchData();
   pollInterval = setInterval(() => fetchData(false), 5000);
+  timeInterval = setInterval(() => {
+    currentTime.value = new Date();
+  }, 30000);
 });
 onUnmounted(() => {
   if (pollInterval) clearInterval(pollInterval);
+  if (timeInterval) clearInterval(timeInterval);
 });
 </script>
 
 <style scoped>
 /* Reuse and extend styles from dashboard/transactions */
 .return-requests-page {
-  padding: 32px;
-  max-width: 1400px;
-  margin: 0 auto;
+  padding: 24px 0;
+  max-width: 100%;
+  margin: 0;
 }
 
 .subtitle {
@@ -358,6 +406,37 @@ onUnmounted(() => {
 .badge-warning { background: var(--warning-light); color: var(--warning); border: 1px solid var(--warning-border, var(--warning)); }
 .badge-success { background: var(--success-light); color: var(--success); border: 1px solid var(--success-border, var(--success)); }
 
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.wait-time-pill {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--bg-main);
+  padding: 4px 10px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--danger);
+  font-family: 'Outfit', sans-serif;
+  border: 1px solid var(--danger-border);
+}
+
+.wait-time-pill.warning {
+  background: var(--danger-light);
+  animation: shake 2s infinite;
+}
+
+@keyframes shake {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+  100% { transform: scale(1); }
+}
+
 .card-body {
   padding: 20px;
   flex: 1;
@@ -424,6 +503,18 @@ onUnmounted(() => {
 
 .time-item .label { color: var(--text-muted); }
 .time-item .value { font-weight: 600; color: var(--text-main); font-family: 'Outfit', monospace; }
+
+.total-duration {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px dashed var(--border-subtle);
+  color: var(--primary);
+}
+
+.total-duration .value {
+  color: var(--primary);
+  font-weight: 800;
+}
 
 .card-actions {
   padding: 16px 20px;

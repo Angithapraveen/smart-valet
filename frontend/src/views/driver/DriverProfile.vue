@@ -21,14 +21,6 @@
         </div>
 
         <div class="info-group">
-            <label>Assigned Location</label>
-            <div class="info-card location-card">
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
-                <span>{{ locationName }}</span>
-            </div>
-        </div>
-
-        <div class="info-group">
             <label>Contact Info</label>
             <div class="info-card">
                 <div class="info-row">
@@ -44,6 +36,24 @@
                 <div class="info-row">
                     <span class="label">Phone</span>
                     <span class="value">{{ user.phone_number }}</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="info-group">
+            <label>Assigned Locations</label>
+            <div class="locations-list">
+                <div 
+                    v-for="loc in authStore.accessibleLocations" 
+                    :key="loc.location_id" 
+                    class="info-card location-card"
+                    :class="{ 'active-site': loc.access_status === 'ACTIVE' }"
+                >
+                    <div class="loc-content">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
+                        <span>{{ loc.location_name }}</span>
+                    </div>
+                    <span v-if="loc.access_status === 'ACTIVE'" class="active-tag">Active</span>
                 </div>
             </div>
         </div>
@@ -88,9 +98,6 @@ const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
 
 const user = computed(() => authStore.user || {});
 const userInitial = computed(() => (user.value.name ? user.value.name.charAt(0).toUpperCase() : 'U'));
-const locationName = computed(() => {
-    return authStore.accessibleLocations?.[0]?.location_name || 'No Location Assigned';
-});
 
 // Edit State
 const showEditModal = ref(false);
@@ -247,12 +254,44 @@ onMounted(() => {
     padding: 16px;
 }
 
+.locations-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
 .location-card {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: var(--ts-base);
+}
+
+.loc-content {
     display: flex;
     align-items: center;
     gap: 12px;
+}
+
+.active-site {
+    border-color: var(--primary);
+    background: var(--primary-light);
+    box-shadow: 0 4px 12px var(--primary-shadow);
+}
+
+.active-site .loc-content {
     color: var(--primary);
-    font-weight: 600;
+}
+
+.active-tag {
+    font-size: 10px;
+    background: var(--primary);
+    color: white;
+    padding: 2px 8px;
+    border-radius: 8px;
+    text-transform: uppercase;
+    font-weight: 700;
+    letter-spacing: 0.5px;
 }
 
 .info-row {

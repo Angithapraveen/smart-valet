@@ -40,15 +40,15 @@
       <div class="locations-card" v-if="userLocations.length > 0">
           <h3>Assigned Locations</h3>
           <div class="locations-list">
-              <div v-for="loc in userLocations" :key="loc.location_id" class="location-item-card">
+              <div v-for="loc in userLocations" :key="loc.location_id" class="location-item-card" :class="{ 'active-location': loc.access_status === 'ACTIVE' }">
                   <div class="loc-icon">
                       <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
                   </div>
                   <div class="loc-details">
                       <h4>{{ loc.location_name }}</h4>
                       <p>{{ loc.address }}</p>
-                      <span class="status-badge" :class="loc.status ? 'active' : 'inactive'">
-                          {{ loc.status ? 'Active' : 'Inactive' }}
+                      <span class="status-badge" :class="loc.access_status?.toLowerCase()">
+                          {{ loc.access_status }}
                       </span>
                   </div>
               </div>
@@ -296,6 +296,12 @@ h3 {
     font-weight: 600;
 }
 
-.status-badge.active { color: var(--status-active); }
-.status-badge.inactive { color: var(--status-inactive); }
+.status-badge.active, .status-badge.active-status { color: var(--success); }
+.status-badge.inactive, .status-badge.inactive-status { color: var(--text-muted); }
+
+.location-item-card.active-location {
+    border-color: var(--primary);
+    background: var(--primary-light);
+    box-shadow: 0 4px 12px var(--primary-shadow);
+}
 </style>

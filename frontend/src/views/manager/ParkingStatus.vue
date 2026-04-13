@@ -65,6 +65,7 @@
             <div class="slot-vehicle" v-if="entry.vehicle">
               <span class="v-model" :title="entry.vehicle.car_model">{{ entry.vehicle.car_model || 'Unknown' }}</span>
               <span class="v-plate" v-if="entry.vehicle.car_number">{{ entry.vehicle.car_number }}</span>
+              <span class="v-duration" v-if="entry.status === 'OCCUPIED'">{{ getDuration(entry.vehicle.parked_time) }}</span>
             </div>
           </div>
         </div>
@@ -83,6 +84,24 @@ const blocks = ref([]);
 const loading = ref(false);
 const error = ref(null);
 const locationName = ref('');
+const currentTime = ref(new Date());
+
+const getDuration = (startTime) => {
+  if (!startTime) return '---';
+  const start = new Date(startTime).getTime();
+  const diffMs = currentTime.value.getTime() - start;
+  const diffMins = Math.floor(diffMs / 60000);
+  
+  if (diffMins < 60) {
+    return `${diffMins || 1}m`;
+  }
+  
+  const hrs = Math.floor(diffMins / 60);
+  const mins = diffMins % 60;
+  
+  if (mins === 0) return `${hrs}h`;
+  return `${hrs}h ${mins}m`;
+};
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
 
@@ -139,20 +158,25 @@ const fetchData = async (showLoading = true) => {
 };
 
 let pollInterval;
+let timeInterval;
 onMounted(() => {
   fetchData();
   pollInterval = setInterval(() => fetchData(false), 5000);
+  timeInterval = setInterval(() => {
+     currentTime.value = new Date();
+  }, 30000); // Update every 30s
 });
 onUnmounted(() => {
   if (pollInterval) clearInterval(pollInterval);
+  if (timeInterval) clearInterval(timeInterval);
 });
 </script>
 
 <style scoped>
 .parking-status {
-  padding: 32px;
-  max-width: 1400px;
-  margin: 0 auto;
+  padding: 24px 0;
+  max-width: 100%;
+  margin: 0;
 }
 
 .subtitle {
@@ -325,6 +349,16 @@ onUnmounted(() => {
   padding: 2px 6px;
   border-radius: 4px;
   margin-top: 2px;
+}
+
+.v-duration {
+  font-size: 9px;
+  font-weight: 700;
+  color: var(--danger);
+  margin-top: 2px;
+  background: rgba(239, 68, 68, 0.1);
+  padding: 1px 4px;
+  border-radius: 4px;
 }
 
 .loading-state, .empty-state {

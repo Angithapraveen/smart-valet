@@ -1,11 +1,7 @@
-/**
- * Toast Notification Store
- * Manages toast notifications globally
- */
-
+import { defineStore } from 'pinia'
 import { ref } from 'vue'
 
-export function useToastStore() {
+export const useToast = defineStore('toast', () => {
     const toasts = ref([])
 
     function addToast(message, type = 'success', duration = 3000) {
@@ -56,14 +52,4 @@ export function useToastStore() {
         error,
         info
     }
-}
-
-// Global instance
-let toastStoreInstance = null
-
-export function useToast() {
-    if (!toastStoreInstance) {
-        toastStoreInstance = useToastStore()
-    }
-    return toastStoreInstance
-}
+})

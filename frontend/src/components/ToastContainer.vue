@@ -1,31 +1,22 @@
 <template>
-  <Teleport to="body">
-    <div class="toast-container">
-      <TransitionGroup name="toast" tag="div" class="toast-list">
-        <Toast
-          v-for="toast in toasts"
-          :key="toast.id"
-          :message="toast.message"
-          :type="toast.type"
-          @close="removeToast(toast.id)"
-        />
-      </TransitionGroup>
-    </div>
-  </Teleport>
+  <div class="toast-container">
+    <TransitionGroup name="toast" tag="div" class="toast-list">
+      <Toast
+        v-for="toast in toastStore.toasts"
+        :key="toast.id"
+        :message="toast.message"
+        :type="toast.type"
+        @close="toastStore.removeToast(toast.id)"
+      />
+    </TransitionGroup>
+  </div>
 </template>
 
 <script setup>
-import { computed } from 'vue'
 import { useToast } from '../stores/toast'
 import Toast from './Toast.vue'
 
 const toastStore = useToast()
-
-const toasts = computed(() => toastStore.toasts)
-
-function removeToast(id) {
-  toastStore.removeToast(id)
-}
 </script>
 
 <style scoped>

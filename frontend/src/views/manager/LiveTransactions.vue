@@ -64,6 +64,7 @@
               <th>Vehicle</th>
               <th>Status</th>
               <th>Timestamps</th>
+              <th>Duration</th>
               <th>Block / Slot</th>
             </tr>
           </thead>
@@ -117,7 +118,16 @@
                     <span class="time-label">Requested:</span>
                     <span class="time-value">{{ formatTime(txn.return_requested_time) }}</span>
                   </div>
+                  <div class="time-row urgent" v-if="txn.return_requested_time && txn.status !== 'RETURNED'">
+                    <span class="time-label">Wait Time:</span>
+                    <span class="time-value">{{ calculateWait(txn.return_requested_time) }}</span>
+                  </div>
                 </div>
+              </td>
+              <td class="col-duration">
+                <span class="duration-badge" :class="{ 'warning': isLongStay(txn.parked_time) }">
+                  {{ calculateDuration(txn.parked_time, txn.return_requested_time) }}
+                </span>
               </td>
               <td class="col-location">
                 <div v-if="txn.block_entry_id" class="slot-badge">
@@ -144,6 +154,39 @@ const transactions = ref([]);
 const loading = ref(false);
 const error = ref(null);
 const locationName = ref('');
+const currentTime = ref(new Date());
+
+const calculateDuration = (parkedTime, requestedTime) => {
+  if (!parkedTime) return '---';
+  const start = new Date(parkedTime).getTime();
+  const end = requestedTime ? new Date(requestedTime).getTime() : currentTime.value.getTime();
+  const diffMs = end - start;
+  const diffMins = Math.floor(diffMs / 60000);
+  
+  if (diffMins < 60) return `${diffMins || 1}m`;
+  const hrs = Math.floor(diffMins / 60);
+  const mins = diffMins % 60;
+  return mins === 0 ? `${hrs}h` : `${hrs}h ${mins}m`;
+};
+
+const calculateWait = (requestedTime) => {
+  if (!requestedTime) return '---';
+  const start = new Date(requestedTime).getTime();
+  const diffMs = currentTime.value.getTime() - start;
+  const diffMins = Math.floor(diffMs / 60000);
+  
+  if (diffMins < 60) return `${diffMins} min`;
+  const hrs = Math.floor(diffMins / 60);
+  const mins = diffMins % 60;
+  return mins === 0 ? `${hrs}h` : `${hrs}h ${mins}m`;
+};
+
+const isLongStay = (parkedTime) => {
+  if (!parkedTime) return false;
+  const start = new Date(parkedTime).getTime();
+  const diffMs = currentTime.value.getTime() - start;
+  return diffMs > 10800000; // > 3 hours
+};
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
 
@@ -218,20 +261,25 @@ const fetchTransactions = async (showLoading = true) => {
 };
 
 let pollInterval;
+let timeInterval;
 onMounted(() => {
   fetchTransactions();
   pollInterval = setInterval(() => fetchTransactions(false), 5000);
+  timeInterval = setInterval(() => {
+    currentTime.value = new Date();
+  }, 30000);
 });
 onUnmounted(() => {
   if (pollInterval) clearInterval(pollInterval);
+  if (timeInterval) clearInterval(timeInterval);
 });
 </script>
 
 <style scoped>
 .transactions-page {
-  padding: 32px;
-  max-width: 1400px;
-  margin: 0 auto;
+  padding: 24px 0;
+  max-width: 100%;
+  margin: 0;
 }
 
 .subtitle {
@@ -548,6 +596,30 @@ onUnmounted(() => {
 .time-row.highlight .time-value {
   color: #ea580c;
   font-weight: 700;
+}
+
+.time-row.urgent .time-value {
+  color: var(--danger);
+  font-weight: 900;
+  text-decoration: underline;
+}
+
+/* Duration badge */
+.duration-badge {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-main);
+  background: var(--bg-main);
+  padding: 4px 10px;
+  border-radius: 8px;
+  font-family: 'Outfit', monospace;
+  border: 1px solid var(--border-subtle);
+}
+
+.duration-badge.warning {
+  color: #ea580c;
+  background: #fff7ed;
+  border-color: #fdba74;
 }
 
 /* Slot Badge */

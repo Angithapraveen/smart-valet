@@ -88,6 +88,7 @@
 <script>
 import { ref, onMounted } from 'vue';
 import { useAuthStore } from '../../stores/auth';
+import { useToast } from '../../stores/toast';
 import axios from 'axios';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
@@ -96,6 +97,7 @@ export default {
   name: 'LocationAccess',
   setup() {
     const authStore = useAuthStore();
+    const toast = useToast();
     const owners = ref([]);
     const allLocations = ref([]);
     const loading = ref(true);
@@ -165,11 +167,12 @@ export default {
         );
         
         if (response.data.success) {
+          toast.success('Location access updated successfully');
           await fetchData(); // Refresh data
           closeModal();
         }
       } catch (err) {
-        alert(err.response?.data?.message || 'Failed to save access.');
+        toast.error(err.response?.data?.message || 'Failed to save access.');
       } finally {
         saving.value = false;
       }

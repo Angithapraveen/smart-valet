@@ -122,17 +122,23 @@
       <table class="driver-table">
         <thead>
           <tr>
+            <th>Driver ID</th>
             <th>Driver Name</th>
-            <th style="width: 200px">Cars Returned</th>
-            <th style="width: 200px">Avg. Turnaround Time</th>
+            <th style="width: 150px">Cars Parked</th>
+            <th style="width: 150px">Cars Returned</th>
+            <th style="width: 200px">Avg. Turnaround</th>
           </tr>
         </thead>
         <tbody>
           <tr v-for="driver in driverAnalytics" :key="driver.id">
+            <td class="driver-id-cell">
+               <span class="id-tag">{{ driver.id }}</span>
+            </td>
             <td class="driver-name-cell">
-              <div class="avatar-sm">{{ driver.name.charAt(0).toUpperCase() }}</div>
+              <div class="avatar-sm">{{ (driver.name || 'U').charAt(0).toUpperCase() }}</div>
               <span>{{ driver.name }}</span>
             </td>
+            <td><span class="highlight-val">{{ driver.totalParked }}</span></td>
             <td><span class="highlight-val">{{ driver.totalReturned }}</span></td>
             <td>
               <span class="highlight-val">{{ driver.avgWaitMins }}</span> min
@@ -236,15 +242,49 @@ const metrics = computed(() => {
   };
 });
 
+// Driver performance analytics
+const assignedDrivers = ref([]);
 const driverAnalytics = computed(() => {
-  const drivers = {};
+  const driversMap = {};
+  
+  // 1. Pre-initialize with all assigned drivers (to show 0-activity ones)
+  assignedDrivers.value.forEach(d => {
+    driversMap[d.user_id] = {
+      id: d.user_id,
+      name: d.name,
+      totalParked: 0,
+      totalReturned: 0,
+      totalWaitMs: 0,
+      validWaits: 0
+    };
+  });
+  
+  // 2. Process all transactions
   transactions.value.forEach(t => {
+    // Process Parking Activity
+    if (t.parked_driver_id) {
+      const pId = t.parked_driver_id;
+      if (!driversMap[pId]) {
+        driversMap[pId] = {
+          id: pId,
+          name: t.parked_driver_name || 'Unknown Driver',
+          totalParked: 0,
+          totalReturned: 0,
+          totalWaitMs: 0,
+          validWaits: 0
+        };
+      }
+      driversMap[pId].totalParked++;
+    }
+    
+    // Process Return Activity
     if (t.returned_driver_id) {
-      const dId = t.returned_driver_id;
-      if (!drivers[dId]) {
-        drivers[dId] = {
-          id: dId,
+      const rId = t.returned_driver_id;
+      if (!driversMap[rId]) {
+        driversMap[rId] = {
+          id: rId,
           name: t.returned_driver_name || 'Unknown Driver',
+          totalParked: 0,
           totalReturned: 0,
           totalWaitMs: 0,
           validWaits: 0
@@ -252,22 +292,22 @@ const driverAnalytics = computed(() => {
       }
       
       if (t.status === 'RETURNED') {
-        drivers[dId].totalReturned++;
+        driversMap[rId].totalReturned++;
         if (t.return_requested_time && t.returned_time) {
           const wait = new Date(t.returned_time) - new Date(t.return_requested_time);
           if (wait > 0) {
-            drivers[dId].totalWaitMs += wait;
-            drivers[dId].validWaits++;
+            driversMap[rId].totalWaitMs += wait;
+            driversMap[rId].validWaits++;
           }
         }
       }
     }
   });
   
-  return Object.values(drivers).map(d => ({
+  return Object.values(driversMap).map(d => ({
     ...d,
     avgWaitMins: d.validWaits > 0 ? Math.round((d.totalWaitMs / d.validWaits) / 60000) : 0
-  })).sort((a, b) => b.totalReturned - a.totalReturned);
+  })).sort((a, b) => (b.totalParked + b.totalReturned) - (a.totalParked + a.totalReturned));
 });
 
 const setFilter = (filter) => {
@@ -300,6 +340,9 @@ const fetchData = async (showLoading = true) => {
 
     if (response.data.success) {
       transactions.value = response.data.data;
+      if (response.data.drivers) {
+        assignedDrivers.value = response.data.drivers;
+      }
     } else {
       error.value = response.data.message;
     }
@@ -328,9 +371,9 @@ onUnmounted(() => {
 
 <style scoped>
 .reports-page {
-  padding: 32px;
-  max-width: 1400px;
-  margin: 0 auto;
+  padding: 24px 0;
+  max-width: 100%;
+  margin: 0;
 }
 
 .reports-tab-content {
@@ -597,13 +640,30 @@ onUnmounted(() => {
 /* Driver Table */
 .mt-8 { margin-top: 32px; }
 .section-title { font-size: 18px; font-weight: 700; margin-bottom: 16px; color: var(--text-main); }
-.driver-table { width: 100%; border-collapse: collapse; background: var(--bg-card); border-radius: 12px; overflow: hidden; border: 1px solid var(--border-subtle); display: table; }
+.table-container { 
+  overflow-x: auto; 
+  background: var(--bg-card); 
+  border-radius: 16px;
+  border: 1px solid var(--border-subtle);
+  box-shadow: var(--shadow-sm);
+}
+.driver-table { width: 100%; border-collapse: collapse; display: table; }
 .driver-table th { text-align: left; padding: 16px 24px; background: var(--bg-main); color: var(--text-muted); font-size: 12px; font-weight: 700; text-transform: uppercase; border-bottom: 1px solid var(--border-subtle); }
-.driver-table td { padding: 16px 24px; border-bottom: 1px solid var(--border-subtle); vertical-align: middle; color: var(--text-main); }
-.driver-table tr:hover { background-color: var(--bg-main); }
-.driver-table tr:last-child td { border-bottom: none; }
+.driver-id-cell { width: 180px; padding: 16px 24px; border-bottom: 1px solid var(--border-subtle); }
+.id-tag { 
+  font-family: 'Outfit', monospace; 
+  font-size: 11px; 
+  font-weight: 700; 
+  color: var(--primary); 
+  background: var(--primary-light); 
+  padding: 6px 10px; 
+  border-radius: 8px; 
+  display: inline-block;
+  white-space: nowrap;
+}
 .driver-name-cell { display: flex; align-items: center; gap: 12px; font-weight: 600; color: var(--text-main); }
-.avatar-sm { width: 32px; height: 32px; border-radius: 50%; background: var(--primary-light); color: var(--primary); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 14px; }
+.avatar-sm { width: 32px; height: 32px; border-radius: 50%; background: var(--primary-light); color: var(--primary); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 14px; flex-shrink: 0; }
+.driver-table td { padding: 16px 24px; border-bottom: 1px solid var(--border-subtle); vertical-align: middle; color: var(--text-main); }
 .highlight-val { font-family: 'Outfit', sans-serif; font-weight: 800; font-size: 15px; }
 
 .empty-state-sm {

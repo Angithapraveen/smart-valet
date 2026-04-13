@@ -174,8 +174,108 @@ const updateProfile = async (req, res) => {
         });
     }
 };
+
+/**
+ * Toggle Location Access Status
+ * PUT /api/auth/location-status
+ * Body: { user_id, location_id, status }
+ */
+const toggleLocationStatus = async (req, res) => {
+    try {
+        const currentUser = req.user;
+        const targetUserId = req.body.user_id || currentUser.user_id;
+        const { location_id, status } = req.body;
+
+        if (!location_id || !['ACTIVE', 'INACTIVE'].includes(status)) {
+            return res.status(400).json({ success: false, message: 'Invalid request parameters.' });
+        }
+
+        const pool = require('../config/database');
+        const client = await pool.connect();
+
+        try {
+            await client.query('BEGIN');
+
+            // 1. Check if record exists
+            const checkRes = await client.query(
+                'SELECT status FROM LOCATION_ACCESS WHERE user_id = $1 AND location_id = $2',
+                [targetUserId, location_id]
+            );
+
+            if (checkRes.rows.length === 0) {
+                await client.query('ROLLBACK');
+                return res.status(404).json({ success: false, message: 'Assignment not found.' });
+            }
+
+            const currentStatus = checkRes.rows[0].status;
+
+            // 2. Permission Check
+            const isManagerOrAdmin = ['ADMIN', 'MANAGER', 'OWNER'].includes(currentUser.role_name);
+            const isSelf = currentUser.user_id === targetUserId;
+
+            if (status === 'ACTIVE') {
+                 // ONLY Admin/Manager/Owner can activate
+                if (!isManagerOrAdmin) {
+                    await client.query('ROLLBACK');
+                    return res.status(403).json({ success: false, message: 'Only managers or admins can activate a location.' });
+                }
+
+                // Check for other ACTIVE locations
+                const activeRes = await client.query(
+                    `SELECT la.location_id, l.location_name 
+                     FROM LOCATION_ACCESS la 
+                     JOIN LOCATIONS l ON la.location_id = l.location_id
+                     WHERE la.user_id = $1 AND la.status = 'ACTIVE' AND la.location_id != $2`,
+                    [targetUserId, location_id]
+                );
+
+                if (activeRes.rows.length > 0) {
+                    await client.query('ROLLBACK');
+                    return res.status(400).json({ 
+                        success: false, 
+                        message: `Driver is already active at another location: ${activeRes.rows[0].location_name}.` 
+                    });
+                }
+            } else {
+                // INACTIVE: Allowed if self (driver) or isManager
+                if (!isSelf && !isManagerOrAdmin) {
+                    await client.query('ROLLBACK');
+                    return res.status(403).json({ success: false, message: 'Unauthorized status change.' });
+                }
+            }
+
+            // 3. Perform Update
+            await client.query(
+                `UPDATE LOCATION_ACCESS 
+                 SET status = $1, last_modified_by = $2, last_modified_at = NOW() 
+                 WHERE user_id = $3 AND location_id = $4`,
+                [status, currentUser.user_id, targetUserId, location_id]
+            );
+
+            await client.query('COMMIT');
+
+            res.json({
+                success: true,
+                message: `Location set to ${status} successfully.`,
+                data: { user_id: targetUserId, location_id, status }
+            });
+
+        } catch (err) {
+            await client.query('ROLLBACK');
+            throw err;
+        } finally {
+            client.release();
+        }
+
+    } catch (error) {
+        console.error('Toggle location status error:', error);
+        res.status(500).json({ success: false, message: 'Failed to update location status.' });
+    }
+};
+
 module.exports = {
     login,
     getCurrentUser,
-    updateProfile
+    updateProfile,
+    toggleLocationStatus
 };

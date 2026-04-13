@@ -26,7 +26,7 @@ const createWhatsAppTransaction = async (req, res) => {
 
         // 1. Generate ID, Key Slot and Create Transaction ALWAYS
         const valetId = await generateValetId(location_id);
-        const keySlot = await getNextAvailableKeySlot(client, location_id);
+        const { slot: keySlot, isOverCapacity } = await getNextAvailableKeySlot(client, location_id);
 
         const insertQuery = `
             INSERT INTO VALET_TRANSACTIONS 
@@ -105,6 +105,12 @@ const createWhatsAppTransaction = async (req, res) => {
                 whatsappService.sendParkingConfirmation(phone_number, valetId, locationName).catch(err => {
                     console.error('[WhatsApp-Error] Failed to send parking confirmation:', err);
                 });
+
+                if (isOverCapacity) {
+                    whatsappService.sendCapacityAlert(location_id, locationName, keySlot, driver_id).catch(err => {
+                        console.error('[WhatsApp-Alert-Error] Failed to send capacity alert:', err);
+                    });
+                }
             } catch (err) {
                 console.error('[WhatsApp-Error] Error fetching location for confirmation:', err);
             }
@@ -162,11 +168,15 @@ const getValetVehicles = async (req, res) => {
                 created_at DESC
         `;
 
-        const result = await pool.query(query, [location_id]);
+        const [txnResult, locResult] = await Promise.all([
+            pool.query(query, [location_id]),
+            pool.query('SELECT total_capacity, location_name FROM LOCATIONS WHERE location_id = $1', [location_id])
+        ]);
 
         res.json({
             success: true,
-            data: result.rows
+            data: txnResult.rows,
+            location: locResult.rows[0] || null
         });
     } catch (error) {
         console.error('Get Valet Vehicles Error:', error);
@@ -536,6 +546,16 @@ const updateTransactionStatus = async (req, res) => {
             // Logic for status updates
             let updateQuery = '';
             let params = [];
+            let isOverCapacity = false;
+            let newKeySlotValue = null;
+
+            // If we're moving OUT of parked (bringing car back), free the slot
+            if (['ON_THE_WAY', 'READY', 'RETURNED'].includes(status) && blockEntryId) {
+                await client.query(
+                    "UPDATE BLOCK_ENTRIES SET status = 'AVAILABLE' WHERE block_entry_id = $1",
+                    [blockEntryId]
+                );
+            }
 
             if (status === 'ON_THE_WAY') {
                 if (currentStatus !== 'RETURN_REQUESTED') {
@@ -560,14 +580,6 @@ const updateTransactionStatus = async (req, res) => {
                 `;
                 params = [valetId];
             } else if (status === 'RETURNED') {
-                // If returning, free up the slot if assigned
-                if (blockEntryId) {
-                    await client.query(
-                        "UPDATE BLOCK_ENTRIES SET status = 'AVAILABLE' WHERE block_entry_id = $1",
-                        [blockEntryId]
-                    );
-                }
-
                 updateQuery = `
                     UPDATE VALET_TRANSACTIONS 
                     SET status = 'RETURNED', returned_time = NOW()
@@ -578,7 +590,9 @@ const updateTransactionStatus = async (req, res) => {
             } else if (status === 'PARKED') {
                 // Return car to PARKED status (Repark)
                 // 1. Get a NEW available key slot
-                const newKeySlot = await getNextAvailableKeySlot(client, locationId);
+                const res = await getNextAvailableKeySlot(client, locationId);
+                newKeySlotValue = res.slot;
+                isOverCapacity = res.isOverCapacity;
                 
                 // 2. Clear block assignment if any (it might be in a different spot now)
                 if (blockEntryId) {
@@ -600,7 +614,7 @@ const updateTransactionStatus = async (req, res) => {
                     WHERE valet_id = $1
                     RETURNING *
                 `;
-                params = [valetId, newKeySlot];
+                params = [valetId, newKeySlotValue];
             }
 
             const result = await client.query(updateQuery, params);
@@ -610,6 +624,9 @@ const updateTransactionStatus = async (req, res) => {
             // Send WhatsApp Notification (Non-blocking)
             const updatedTxn = result.rows[0];
             if (updatedTxn.phone_number && updatedTxn.phone_number !== 'N/A') {
+                const locRes = await pool.query('SELECT location_name FROM LOCATIONS WHERE location_id = $1', [locationId]);
+                const locationName = locRes.rows[0]?.location_name || 'Our Location';
+
                 if (status === 'ON_THE_WAY') {
                     const msg = `🚀 *On the way!* Our driver is bringing your car for ${valetId}.\n\nPlease wait at the pickup area.🏎️💨`;
                     whatsappService.sendMessage(updatedTxn.phone_number, msg).catch(err => console.error('WS MSG Error:', err));
@@ -621,6 +638,11 @@ const updateTransactionStatus = async (req, res) => {
                     whatsappService.sendFeedbackButtons(updatedTxn.phone_number, valetId).catch(err => console.error('WS MSG Error:', err));
                 } else if (status === 'PARKED') {
                     const msg = `💤 *Car Reparked:* Since you weren't able to arrive in time, your car (${valetId}) has been safely reparked. \n\nWhenever you are ready, just request your car again! 🚗🔄`;
+                    
+                    if (isOverCapacity) {
+                        whatsappService.sendCapacityAlert(locationId, locationName, newKeySlotValue, currentUserId).catch(err => console.error('WS Alert Error:', err));
+                    }
+                    
                     whatsappService.sendMessage(updatedTxn.phone_number, msg).catch(err => console.error('WS MSG Error:', err));
                 }
             }
@@ -628,7 +650,11 @@ const updateTransactionStatus = async (req, res) => {
             res.json({
                 success: true,
                 message: `Status updated to ${status}`,
-                data: result.rows[0]
+                data: {
+                    ...result.rows[0],
+                    isOverCapacity,
+                    newKeySlot: newKeySlotValue
+                }
             });
 
         } catch (error) {
@@ -721,9 +747,12 @@ const getTransactionHistory = async (req, res) => {
         }
 
         const query = `
-            SELECT vt.*, u.name as returned_driver_name 
+            SELECT vt.*, 
+                   up.name as parked_driver_name,
+                   ur.name as returned_driver_name 
             FROM VALET_TRANSACTIONS vt
-            LEFT JOIN USERS u ON vt.returned_driver_id = u.user_id
+            LEFT JOIN USERS up ON vt.parked_driver_id = up.user_id
+            LEFT JOIN USERS ur ON vt.returned_driver_id = ur.user_id
             WHERE vt.location_id = $1 
             ${dateCondition.replace(/created_at/g, 'vt.created_at')}
             ORDER BY vt.created_at DESC
@@ -731,9 +760,20 @@ const getTransactionHistory = async (req, res) => {
 
         const result = await pool.query(query, params);
 
+        // Fetch all drivers associated with this location to ensure they show in performance report
+        const driversQuery = `
+            SELECT u.user_id, u.name, u.phone_number, u.status
+            FROM USERS u
+            JOIN LOCATION_ACCESS la ON u.user_id = la.user_id
+            JOIN ROLE_MASTER rm ON u.role_id = rm.role_id
+            WHERE la.location_id = $1 AND rm.role_name = 'DRIVER' AND u.status = TRUE
+        `;
+        const driversResult = await pool.query(driversQuery, [location_id]);
+
         res.json({
             success: true,
             data: result.rows,
+            drivers: driversResult.rows,
             count: result.rowCount
         });
 

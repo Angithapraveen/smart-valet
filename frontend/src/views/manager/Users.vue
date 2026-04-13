@@ -56,8 +56,11 @@
           <div class="user-main-info">
             <h3>{{ user.name }}</h3>
             <span class="user-role-tag">{{ user.role_name }}</span>
+            <span v-if="user.role_name === 'DRIVER'" class="access-pill" :class="user.access_status.toLowerCase()">
+              {{ user.access_status }}
+            </span>
           </div>
-          <div :class="['status-dot', user.status ? 'active' : 'inactive']" :title="user.status ? 'Active' : 'Inactive'"></div>
+          <div :class="['status-dot', user.status ? 'active' : 'inactive']" :title="user.status ? 'Account Active' : 'Account Inactive'"></div>
         </div>
 
         <div class="user-details">
@@ -77,12 +80,25 @@
 
         <div class="user-card-actions" v-if="authStore.user.role !== 'MANAGER' || user.role_name !== 'MANAGER'">
           <button @click="openEditModal(user)" class="btn-action-outline">Edit</button>
+          
+          <!-- Site Access Toggle for Drivers -->
           <button 
+            v-if="user.role_name === 'DRIVER'"
+            @click="toggleAccessStatus(user)" 
+            :class="['btn-status', user.access_status === 'ACTIVE' ? 'btn-deactivate' : 'btn-activate']"
+            :disabled="togglingId === user.user_id"
+          >
+            {{ togglingId === user.user_id ? '...' : (user.access_status === 'ACTIVE' ? 'Deactivate Site' : 'Activate Site') }}
+          </button>
+
+          <!-- Global Status Toggle for others -->
+          <button 
+            v-else
             @click="toggleStatus(user)" 
             :class="['btn-status', user.status ? 'btn-deactivate' : 'btn-activate']"
             :disabled="togglingId === user.user_id"
           >
-            {{ togglingId === user.user_id ? '...' : (user.status ? 'Deactivate' : 'Activate') }}
+            {{ togglingId === user.user_id ? '...' : (user.status ? 'Deactivate Acc' : 'Activate Acc') }}
           </button>
         </div>
         <div class="user-card-actions view-only" v-else>
@@ -140,8 +156,10 @@
 import { ref, onMounted, onUnmounted, computed } from 'vue';
 import { useAuthStore } from '../../stores/auth';
 import axios from 'axios';
+import { useToast } from '../../stores/toast';
 
 const authStore = useAuthStore();
+const toast = useToast();
 const users = ref([]);
 const loading = ref(false);
 const submitting = ref(false);
@@ -272,9 +290,11 @@ const handleSubmit = async () => {
 
     if (response.data.success) {
       await fetchData();
+      toast.success(response.data.message || 'User saved successfully.');
       closeModal();
     } else {
       modalError.value = response.data.message || 'Action failed.';
+      toast.error(modalError.value);
     }
   } catch (err) {
     modalError.value = err.response?.data?.message || err.message || 'An error occurred.';
@@ -295,9 +315,36 @@ const toggleStatus = async (user) => {
 
     if (response.data.success) {
       user.status = !user.status;
+      toast.success(response.data.message);
     }
   } catch (err) {
-    alert(err.response?.data?.message || 'Failed to update status.');
+    toast.error(err.response?.data?.message || 'Failed to update account status.');
+  } finally {
+    togglingId.value = null;
+  }
+};
+
+const toggleAccessStatus = async (user) => {
+  if (togglingId.value) return;
+  togglingId.value = user.user_id;
+
+  const newStatus = user.access_status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE';
+  
+  try {
+    const response = await axios.put(`${API_URL}/auth/location-status`, {
+      user_id: user.user_id, // Mgr sending userID
+      location_id: locationId.value,
+      status: newStatus
+    }, {
+      headers: { Authorization: `Bearer ${authStore.token}` }
+    });
+
+    if (response.data.success) {
+      user.access_status = newStatus;
+      toast.success(response.data.message);
+    }
+  } catch (err) {
+    toast.error(err.response?.data?.message || 'Failed to toggle site access.');
   } finally {
     togglingId.value = null;
   }
@@ -616,4 +663,25 @@ onUnmounted(() => {
 .empty-state h3 { color: var(--text-main); font-size: 20px; margin-bottom: 8px; }
 
 .error-message, .modal-error-message { padding: 12px 20px; background: var(--danger-light); border: 1px solid var(--danger); color: var(--danger); border-radius: 12px; margin-bottom: 24px; font-size: 14px; font-weight: 600; }
+
+/* Access Status Pill */
+.access-pill {
+  font-size: 9px;
+  font-weight: 800;
+  padding: 2px 8px;
+  border-radius: 12px;
+  text-transform: uppercase;
+  margin-top: 4px;
+  display: inline-block;
+}
+
+.access-pill.active {
+  background: var(--success);
+  color: white;
+}
+
+.access-pill.inactive {
+  background: var(--text-muted);
+  color: white;
+}
 </style>

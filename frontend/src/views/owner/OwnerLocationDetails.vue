@@ -421,11 +421,13 @@ import { ref, onMounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import axios from 'axios';
 import { useAuthStore } from '../../stores/auth';
+import { useToast } from '../../stores/toast';
 import LocationReport from '../../components/reports/LocationReport.vue';
 
 const route = useRoute();
 const router = useRouter();
 const authStore = useAuthStore();
+const toast = useToast();
 const locationId = route.params.id;
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
 
@@ -570,9 +572,10 @@ const toggleUserStatus = async (user) => {
 
         if (response.data.success) {
             user.status = !user.status;
+            toast.success(response.data.message || 'Status updated successfully.');
         }
     } catch (e) {
-        alert(e.response?.data?.message || 'Failed to update user status');
+        toast.error(e.response?.data?.message || 'Failed to update user status');
     } finally {
         togglingUser.value = null;
     }
@@ -604,7 +607,7 @@ const submitManager = async () => {
             if (stats.value) {
                 stats.value.total_managers += 1;
             }
-            alert('Manager created successfully!');
+            toast.success('Manager created successfully!');
         }
     } catch (error) {
         console.error('Manager creation error:', error);
@@ -640,7 +643,7 @@ const submitDriver = async () => {
             if (stats.value) {
                 stats.value.total_drivers += 1;
             }
-            alert('Driver created successfully!');
+            toast.success('Driver created successfully!');
         }
     } catch (error) {
         console.error('Driver creation error:', error);
@@ -695,7 +698,7 @@ const submitBlock = async () => {
             if (stats.value) {
                 stats.value.total_blocks += 1;
             }
-            alert(`Block created successfully! ${response.data.data.entries_created} parking slots generated.`);
+            toast.success(`Block created successfully! ${response.data.data.entries_created} parking slots generated.`);
         }
     } catch (error) {
         console.error('Block creation error:', error);
@@ -773,7 +776,7 @@ const submitEditBlock = async () => {
             closeEditBlockModal();
             // Refresh blocks list
             await switchTab('blocks');
-            alert('Block updated successfully!');
+            toast.success('Block updated successfully!');
         }
     } catch (error) {
         console.error('Block update error:', error);

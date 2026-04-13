@@ -106,7 +106,7 @@
             
             <form @submit.prevent="handleSubmit" class="config-form">
                 <div class="form-group-ui">
-                   <label>Total Key Capacity</label>
+                   <label>Total Key Slot Capacity</label>
                    <div class="input-wrapper-ui">
                       <input 
                         v-model.number="form.total_capacity" 
@@ -173,7 +173,11 @@ const fetchLocationData = async () => {
         }
     } catch (err) {
         console.error('Fetch location error:', err);
-        error.value = 'Failed to load location data.';
+        if (err.response?.data?.message) {
+            error.value = err.response.data.message;
+        } else {
+            error.value = 'Failed to load location data.';
+        }
     } finally {
         loading.value = false;
     }

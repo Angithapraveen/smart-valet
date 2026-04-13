@@ -298,6 +298,7 @@ onMounted(fetchData);
 
 <style scoped>
 .block-management {
+  padding: 24px 0;
   width: 100%;
 }
 

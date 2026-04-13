@@ -277,7 +277,7 @@ const getOwnerLocationUsers = async (req, res) => {
         const query = `
             SELECT 
                 u.user_id, u.name, u.email_id, u.phone_number, u.status,
-                rm.role_name
+                rm.role_name, la.status as access_status
             FROM USERS u
             JOIN LOCATION_ACCESS la ON u.user_id = la.user_id
             JOIN ROLE_MASTER rm ON u.role_id = rm.role_id
