@@ -13,7 +13,6 @@ const adminUserRoutes = require('./routes/adminUserRoutes');
 const adminBlockRoutes = require('./routes/adminBlockRoutes');
 const ownerActionRoutes = require('./routes/ownerActionRoutes');
 const blockRoutes = require('./routes/blockRoutes');
-const locationMasterRoutes = require('./routes/locationMasterRoutes');
 const valetRoutes = require('./routes/valetRoutes');
 
 const app = express();
@@ -49,7 +48,6 @@ app.use('/api/admin/locations', adminLocationRoutes);
 app.use('/api/admin/owners', adminOwnerRoutes);
 app.use('/api/admin/users', adminUserRoutes);
 app.use('/api/admin/blocks', adminBlockRoutes);
-app.use('/api/location-master', locationMasterRoutes);
 app.use('/api/owner', ownerActionRoutes);
 app.use('/api/owner', blockRoutes);
 app.use('/api/valet', require('./routes/valetRoutes'));
@@ -72,9 +70,6 @@ app.use((err, req, res, next) => {
     });
 });
 
-// Initialize WhatsApp Service
-const whatsappService = require('./services/whatsappService');
-whatsappService.initialize();
 
 // Start server
 const startServer = async () => {
