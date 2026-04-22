@@ -12,16 +12,6 @@
           <h1>Locations List</h1>
           <p class="subtitle">Manage and monitor all parking locations</p>
       </div>
-      <button class="btn btn-primary" @click="showAddLocationModal = true">
-          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-          Add New Location
-      </button>
-
-      <AddLocationModal 
-        :show="showAddLocationModal" 
-        @close="showAddLocationModal = false"
-        @success="fetchLocations"
-      />
     </header>
 
     <div v-if="loading" class="loading-state">
@@ -88,22 +78,17 @@
 import { ref, onMounted } from 'vue';
 import { useAuthStore } from '../../stores/auth';
 import axios from 'axios';
-import AddLocationModal from '../../components/admin/AddLocationModal.vue';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
 
 export default {
   name: 'LocationList',
-  components: {
-    AddLocationModal
-  },
   setup() {
     const authStore = useAuthStore();
     const locations = ref([]);
     const loading = ref(true);
     const errorMessage = ref('');
     const togglingId = ref(null);
-    const showAddLocationModal = ref(false);
 
     const fetchLocations = async () => {
       loading.value = true;
@@ -160,8 +145,7 @@ export default {
       togglingId,
       formatDate,
       isExpired,
-      toggleStatus,
-      showAddLocationModal
+      toggleStatus
     };
   }
 };

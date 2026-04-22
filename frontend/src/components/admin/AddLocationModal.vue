@@ -230,7 +230,15 @@ const showCitySuggestions = ref(false);
 const pincodeSuggestions = ref([]);
 const showPincodeSuggestions = ref(false);
 
-const handleCitySearch = async () => {
+const handleCitySearch = async (e) => {
+    // Restrict input to only letters and spaces
+    if (e && e.target) {
+        const sanitized = e.target.value.replace(/[^a-zA-Z\s]/g, '');
+        if (form.city !== sanitized) {
+            form.city = sanitized;
+        }
+    }
+
     if (form.city.length < 2) {
         citySuggestions.value = [];
         showCitySuggestions.value = false;
@@ -259,7 +267,15 @@ const selectCity = async (s) => {
     }
 };
 
-const handlePincodeSearch = async () => {
+const handlePincodeSearch = async (e) => {
+    // Restrict input to only numbers, max 6 digits
+    if (e && e.target) {
+        const sanitized = e.target.value.replace(/\D/g, '').slice(0, 6);
+        if (form.pincode !== sanitized) {
+            form.pincode = sanitized;
+        }
+    }
+
     if (form.pincode.length === 6) {
         try {
             const res = await LocationMasterService.getByPincode(form.pincode);
@@ -324,8 +340,8 @@ const handleSubmit = async () => {
     });
 
     if (response.data.success) {
-      emit('success');
-      emit('close');
+      emit('success', response.data.data.location_id);
+      // Wait for parent to handle the event before closing
     }
   } catch (err) {
     error.value = err.response?.data?.message || 'Failed to create location.';
@@ -562,29 +578,30 @@ const handleSubmit = async () => {
     top: 100%;
     left: 0;
     right: 0;
-    background: white;
+    background: var(--bg-card);
     border: 1px solid var(--border-subtle);
     border-radius: 12px;
     margin-top: 5px;
     z-index: 100;
     max-height: 200px;
     overflow-y: auto;
-    box-shadow: 0 10px 25px -10px rgba(0,0,0,0.2);
+    box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.5);
 }
 
 .suggestion-item {
-    padding: 10px 16px;
+    padding: 12px 16px;
     font-size: 13px;
     font-weight: 500;
     cursor: pointer;
     display: flex;
     justify-content: space-between;
     transition: all 0.2s;
+    color: var(--text-main);
 }
 
 .suggestion-item:hover {
-    background: var(--primary-light);
-    color: var(--primary);
+    background: var(--primary);
+    color: #ffffff;
 }
 
 .suggestion-item .state {

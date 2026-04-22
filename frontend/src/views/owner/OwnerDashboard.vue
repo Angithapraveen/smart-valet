@@ -490,8 +490,115 @@ onMounted(() => {
 
 /* Dynamic grid layouts based on card count */
 .locations-grid.grid-single { 
-  grid-template-columns: minmax(auto, 520px); /* Controlled professional width for 1 card */
+  grid-template-columns: 1fr;
+  max-width: 1000px;
+  margin: 0; /* Aligned left like a proper section */
+  padding: 32px;
 }
+
+.grid-single .location-card {
+  display: flex;
+  flex-direction: column;
+  padding: 32px;
+  max-width: 880px; /* Tighter, more compact width */
+  width: 100%;
+}
+
+.grid-single .loc-card-header {
+  width: 100%;
+  margin-bottom: 24px;
+  display: flex;
+  flex-direction: column;
+}
+
+.grid-single .loc-title-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  width: 100%;
+}
+
+.grid-single .loc-type-eyebrow {
+  margin-bottom: 12px;
+  font-size: 11px;
+  letter-spacing: 0.15em;
+  font-weight: 800;
+}
+
+.grid-single .loc-name {
+  font-size: 28px;
+  font-weight: 800;
+  color: #ffffff;
+  min-height: auto;
+  max-width: unset;
+}
+
+.grid-single .loc-status-badge {
+  position: static;
+  margin-top: 0;
+  padding: 6px 14px;
+  font-size: 11px;
+  border-radius: 20px;
+  background: rgba(34, 197, 94, 0.1);
+  color: #22c55e;
+  border-color: rgba(34, 197, 94, 0.2);
+  align-self: center; /* Vertical center alignment with the title */
+}
+
+.grid-single .loc-address {
+  margin-top: 0;
+  margin-bottom: 24px; /* Reduced gap */
+  font-size: 14px;
+  color: #94a3b8;
+}
+
+.grid-single .loc-stats {
+  margin-top: 0;
+  margin-bottom: 16px; /* Reduced gap */
+  padding: 16px 0; /* Tighter padding */
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255,255,255,0.08);
+}
+
+.grid-single .loc-actions {
+  margin-top: 0;
+  padding-top: 0;
+  border-top: none;
+  gap: 12px;
+}
+
+.grid-single .loc-actions .btn {
+  padding: 14px;
+  font-size: 14px;
+  background: transparent;
+  border: 1px solid #334155;
+  color: #ffffff;
+}
+
+.grid-single .expanded-staff-section {
+  grid-column: 1 / span 2;
+}
+
+/* Fallback for single location on tablets/phones to maintain original look */
+@media (max-width: 900px) {
+  .grid-single .location-card {
+    display: flex;
+    flex-direction: column;
+    padding: 24px;
+    gap: 0;
+  }
+  .grid-single .loc-stats {
+    grid-template-columns: repeat(4, 1fr);
+    margin-top: 20px;
+    padding: 10px 2px;
+  }
+  .grid-single .loc-actions {
+    margin-top: 10px;
+    border-top: none;
+    padding-top: 0;
+  }
+}
+
 .locations-grid.grid-double { grid-template-columns: repeat(2, 1fr); }
 .locations-grid.grid-standard { grid-template-columns: repeat(3, 1fr); }
 
@@ -622,12 +729,12 @@ onMounted(() => {
 .loc-stats {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  background: var(--bg-main);
-  border-radius: 14px;
-  padding: 10px 2px;
+  background: transparent; /* Clean, transparent background */
+  border-radius: 16px;
+  padding: 14px 0;
   border: 1px solid var(--border-subtle);
-  margin-bottom: 0; /* Removed spacing here to connect with buttons */
-  gap: 2px;
+  margin-bottom: 0;
+  gap: 0;
 }
 
 .stat-item { 
@@ -636,25 +743,36 @@ onMounted(() => {
   align-items: center; 
   justify-content: center; 
   text-align: center; 
-  border-right: 1px solid var(--border-subtle);
+  position: relative;
 }
-.stat-item:last-child { border-right: none; }
+
+/* Elegant, non-touching separators */
+.stat-item:not(:last-child)::after {
+  content: '';
+  position: absolute;
+  right: 0;
+  top: 25%;
+  height: 50%;
+  width: 1px;
+  background: var(--border-subtle);
+  opacity: 0.5;
+}
 
 .stat-val { 
   font-size: 20px; 
   color: var(--text-main); 
   font-family: 'Outfit', sans-serif; 
-  line-height: 1.2; 
+  line-height: 1.1; 
   font-weight: 800;
   letter-spacing: -0.02em;
 }
 .stat-lbl { 
-  font-size: 10px; 
+  font-size: 9px; 
   color: var(--text-muted); 
-  font-weight: 700; 
+  font-weight: 800; 
   text-transform: uppercase; 
-  letter-spacing: 0.12em; 
-  margin-top: 6px; 
+  letter-spacing: 0.1em; 
+  margin-top: 4px; 
   opacity: 0.8;
 }
 

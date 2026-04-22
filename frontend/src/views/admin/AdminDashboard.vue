@@ -193,13 +193,20 @@
     <AddLocationModal 
       :show="showAddLocationModal" 
       @close="closeAddLocationModal"
-      @success="fetchDashboardData"
+      @success="handleLocationCreated"
     />
 
     <EditLocationModal 
       :show="showEditLocationModal" 
       :location="selectedLocation"
       @close="closeEditLocationModal"
+      @success="fetchDashboardData"
+    />
+
+    <AddOwnerModal 
+      :show="showAddOwnerModal"
+      :preSelectedLocationId="newLocationId"
+      @close="closeAddOwnerModal"
       @success="fetchDashboardData"
     />
   </div>
@@ -212,6 +219,7 @@ import { useAuthStore } from '../../stores/auth';
 import axios from 'axios';
 import AddLocationModal from '../../components/admin/AddLocationModal.vue';
 import EditLocationModal from '../../components/admin/EditLocationModal.vue';
+import AddOwnerModal from '../../components/admin/AddOwnerModal.vue';
 
 const router = useRouter();
 const authStore = useAuthStore();
@@ -309,6 +317,8 @@ const fetchDashboardData = async () => {
 
 // Modal Logic
 const showAddLocationModal = ref(false);
+const showAddOwnerModal = ref(false);
+const newLocationId = ref(null);
 
 const openAddLocationModal = () => {
     showAddLocationModal.value = true;
@@ -316,6 +326,25 @@ const openAddLocationModal = () => {
 
 const closeAddLocationModal = () => {
     showAddLocationModal.value = false;
+};
+
+const closeAddOwnerModal = () => {
+    showAddOwnerModal.value = false;
+    newLocationId.value = null;
+};
+
+const handleLocationCreated = async (locationId) => {
+    // 1. Refresh data to show new location
+    await fetchDashboardData();
+    
+    // 2. Automatically move to Step 2: Owner Assignment
+    newLocationId.value = locationId;
+    showAddLocationModal.value = false;
+    
+    // Slight delay to ensure smooth transition
+    setTimeout(() => {
+        showAddOwnerModal.value = true;
+    }, 300);
 };
 
 // Edit Modal Logic

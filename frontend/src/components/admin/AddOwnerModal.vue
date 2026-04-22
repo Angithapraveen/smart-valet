@@ -24,90 +24,151 @@
               {{ error }}
             </div>
 
-            <div class="form-section">
-              <div class="section-title">
-                <span class="number">01</span>
-                User Identity
-              </div>
-              <div class="form-grid">
-                <div class="form-group full-width">
-                  <label>Full Name *</label>
-                  <div class="input-container">
-                    <input v-model="form.name" type="text" placeholder="e.g. Robert Smith" required />
-                  </div>
-                </div>
-
-                <div class="form-group">
-                  <label>Email Address *</label>
-                  <div class="input-container">
-                    <input 
-                      v-model="form.email_id" 
-                      type="email" 
-                      placeholder="e.g. robert@example.com" 
-                      autocomplete="off"
-                      @input="handleEmailInput"
-                      required 
-                    />
-                  </div>
-                </div>
-
-                <div class="form-group">
-                  <label>Phone Number *</label>
-                  <div class="input-container">
-                    <input 
-                      v-model="form.phone_number" 
-                      type="text" 
-                      placeholder="Enter 10-digit phone number" 
-                      maxlength="10"
-                      @input="handlePhoneInput"
-                      autocomplete="none"
-                      required 
-                    />
-                  </div>
-                </div>
-              </div>
+            <div class="mode-tabs">
+              <button 
+                type="button" 
+                class="mode-tab" 
+                :class="{ active: assignMode === 'new' }" 
+                @click="assignMode = 'new'"
+              >
+                Create New Owner
+              </button>
+              <button 
+                type="button" 
+                class="mode-tab" 
+                :class="{ active: assignMode === 'existing' }" 
+                @click="assignMode = 'existing'"
+              >
+                Assign Existing Owner
+              </button>
             </div>
 
-            <div class="form-section">
-              <div class="section-title">
-                <span class="number">02</span>
-                Security & Assignment
-              </div>
-              <div class="form-grid">
-                <div class="form-group">
-                  <label>Password *</label>
-                  <div class="input-container">
-                    <input 
-                      v-model="form.password" 
-                      type="password" 
-                      placeholder="Enter password" 
-                      minlength="6" 
-                      autocomplete="new-password"
-                      required 
-                    />
-                  </div>
-                  <span class="hint">Minimum 6 characters</span>
+            <!-- Create New Owner Form -->
+            <template v-if="assignMode === 'new'">
+              <div class="form-section">
+                <div class="section-title">
+                  <span class="number">01</span>
+                  User Identity
                 </div>
+                <div class="form-grid">
+                  <div class="form-group full-width">
+                    <label>Full Name *</label>
+                    <div class="input-container">
+                      <input v-model="form.name" type="text" placeholder="e.g. Robert Smith" required />
+                    </div>
+                  </div>
 
-                <div class="form-group">
-                  <label>Primary Location</label>
-                  <div class="input-container">
-                    <select v-model="form.location_id" required :disabled="loadingLocations">
-                      <option value="" disabled>Select location</option>
-                      <option v-for="loc in locations" :key="loc.location_id" :value="loc.location_id">
-                        {{ loc.location_name }}
-                      </option>
-                    </select>
+                  <div class="form-group">
+                    <label>Email Address *</label>
+                    <div class="input-container">
+                      <input 
+                        v-model="form.email_id" 
+                        type="email" 
+                        placeholder="e.g. robert@example.com" 
+                        autocomplete="off"
+                        @input="handleEmailInput"
+                        required 
+                      />
+                    </div>
                   </div>
-                  <span v-if="loadingLocations" class="hint pulse">Loading...</span>
+
+                  <div class="form-group">
+                    <label>Phone Number *</label>
+                    <div class="input-container">
+                      <input 
+                        v-model="form.phone_number" 
+                        type="text" 
+                        placeholder="Enter 10-digit phone number" 
+                        maxlength="10"
+                        @input="handlePhoneInput"
+                        autocomplete="none"
+                        required 
+                      />
+                    </div>
+                  </div>
                 </div>
               </div>
-            </div>
+
+              <div class="form-section">
+                <div class="section-title">
+                  <span class="number">02</span>
+                  Security & Assignment
+                </div>
+                <div class="form-grid">
+                  <div class="form-group">
+                    <label>Password *</label>
+                    <div class="input-container">
+                      <input 
+                        v-model="form.password" 
+                        type="password" 
+                        placeholder="Enter password" 
+                        minlength="6" 
+                        autocomplete="new-password"
+                        required 
+                      />
+                    </div>
+                    <span class="hint">Minimum 6 characters</span>
+                  </div>
+
+                  <div class="form-group">
+                    <label>Primary Location</label>
+                    <div class="input-container">
+                      <select v-model="form.location_id" required :disabled="loadingLocations || !!preSelectedLocationId">
+                        <option value="" disabled>Select location</option>
+                        <option v-for="loc in locations" :key="loc.location_id" :value="loc.location_id">
+                          {{ loc.location_name }}
+                        </option>
+                      </select>
+                    </div>
+                    <span v-if="loadingLocations" class="hint pulse">Loading...</span>
+                    <span v-else-if="preSelectedLocationId" class="hint text-primary">Pre-selected from Step 1</span>
+                  </div>
+                </div>
+              </div>
+            </template>
+
+            <!-- Assign Existing Owner Form -->
+            <template v-else>
+              <div class="form-section">
+                <div class="section-title">
+                  <span class="number">01</span>
+                  Select Owner & Location
+                </div>
+                <div class="form-grid">
+                  <div class="form-group full-width">
+                    <label>Select Existing Owner *</label>
+                    <div class="input-container">
+                      <select v-model="form.selected_owner_id" required :disabled="loadingOwners">
+                        <option value="" disabled>Choose an owner...</option>
+                        <option v-for="owner in existingOwners" :key="owner.user_id" :value="owner.user_id">
+                          {{ owner.name }} ({{ owner.email_id }})
+                        </option>
+                      </select>
+                    </div>
+                    <span v-if="loadingOwners" class="hint pulse">Loading owners...</span>
+                  </div>
+
+                  <div class="form-group full-width">
+                    <label>Target Location</label>
+                    <div class="input-container">
+                      <select v-model="form.location_id" required :disabled="loadingLocations || !!preSelectedLocationId">
+                        <option value="" disabled>Select location</option>
+                        <option v-for="loc in locations" :key="loc.location_id" :value="loc.location_id">
+                          {{ loc.location_name }}
+                        </option>
+                      </select>
+                    </div>
+                    <span v-if="loadingLocations" class="hint pulse">Loading...</span>
+                    <span v-else-if="preSelectedLocationId" class="hint text-primary">Pre-selected from Step 1</span>
+                  </div>
+                </div>
+              </div>
+            </template>
 
             <div class="modal-footer">
               <button type="button" class="btn btn-ghost" @click="$emit('close')">Cancel</button>
-              <button type="submit" class="btn btn-primary btn-premium" :disabled="loading || loadingLocations">
-                <span class="btn-text">{{ loading ? 'Deploying...' : 'Create User' }}</span>
+              <button type="submit" class="btn btn-primary btn-premium" :disabled="loading || loadingLocations || loadingOwners">
+                <span class="btn-text">{{ loading ? 'Saving...' : (assignMode === 'new' ? 'Create Owner' : 'Assign Owner') }}</span>
               </button>
             </div>
           </form>
@@ -123,7 +184,11 @@ import { useAuthStore } from '../../stores/auth';
 import axios from 'axios';
 
 const props = defineProps({
-  show: Boolean
+  show: Boolean,
+  preSelectedLocationId: {
+    type: String,
+    default: null
+  }
 });
 
 const emit = defineEmits(['close', 'success']);
@@ -133,15 +198,19 @@ const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
 
 const loading = ref(false);
 const loadingLocations = ref(false);
+const loadingOwners = ref(false);
 const error = ref('');
 const locations = ref([]);
+const existingOwners = ref([]);
+const assignMode = ref('new'); // 'new' or 'existing'
 
 const form = reactive({
   name: '',
   email_id: '',
   phone_number: '',
   password: '',
-  location_id: ''
+  location_id: '',
+  selected_owner_id: ''
 });
 
 const resetForm = () => {
@@ -149,8 +218,10 @@ const resetForm = () => {
   form.email_id = '';
   form.phone_number = '';
   form.password = '';
-  form.location_id = '';
+  form.location_id = props.preSelectedLocationId || '';
+  form.selected_owner_id = '';
   error.value = '';
+  assignMode.value = 'new';
 };
 
 const handleEmailInput = (e) => {
@@ -182,61 +253,117 @@ const fetchLocations = async () => {
   }
 };
 
-const handleSubmit = async () => {
-  error.value = '';
-
-  // 1. Check if all fields are filled
-  if (!form.name || !form.email_id || !form.phone_number || !form.password || !form.location_id) {
-    error.value = 'Please fill in all required fields.';
-    return;
-  }
-
-  // 2. Email Validation
-  const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
-  if (!emailRegex.test(form.email_id)) {
-    error.value = 'Enter a valid email address';
-    return;
-  }
-
-  // 3. Phone Validation
-  if (form.phone_number.length !== 10) {
-    error.value = 'Phone number must be exactly 10 digits.';
-    return;
-  }
-
-  // 4. Password Check
-  if (form.password.length < 6) {
-    error.value = 'Password must be at least 6 characters.';
-    return;
-  }
-
-  loading.value = true;
+const fetchOwners = async () => {
+  loadingOwners.value = true;
   try {
-    const payload = {
-      name: form.name.trim(),
-      email_id: form.email_id.trim().toLowerCase(),
-      phone_number: form.phone_number.trim(),
-      password: form.password,
-      location_id: form.location_id
-    };
-
-    const response = await axios.post(`${API_URL}/admin/owners`, payload, {
+    const response = await axios.get(`${API_URL}/admin/owners`, {
       headers: { Authorization: `Bearer ${authStore.token}` }
     });
-
     if (response.data.success) {
-      emit('success');
-      emit('close');
-      resetForm();
+      existingOwners.value = response.data.data;
     }
   } catch (err) {
-    error.value = err.response?.data?.message || 'Failed to create owner.';
+    console.error('Failed to load owners.');
   } finally {
-    loading.value = false;
+    loadingOwners.value = false;
   }
 };
 
-onMounted(fetchLocations);
+const handleSubmit = async () => {
+  error.value = '';
+
+  if (assignMode.value === 'new') {
+    // Validation for new owner
+    if (!form.name || !form.email_id || !form.phone_number || !form.password || !form.location_id) {
+      error.value = 'Please fill in all required fields.';
+      return;
+    }
+
+    const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+    if (!emailRegex.test(form.email_id)) {
+      error.value = 'Enter a valid email address';
+      return;
+    }
+
+    if (form.phone_number.length !== 10) {
+      error.value = 'Phone number must be exactly 10 digits.';
+      return;
+    }
+
+    if (form.password.length < 6) {
+      error.value = 'Password must be at least 6 characters.';
+      return;
+    }
+
+    loading.value = true;
+    try {
+      const payload = {
+        name: form.name.trim(),
+        email_id: form.email_id.trim().toLowerCase(),
+        phone_number: form.phone_number.trim(),
+        password: form.password,
+        location_id: form.location_id
+      };
+
+      const response = await axios.post(`${API_URL}/admin/owners`, payload, {
+        headers: { Authorization: `Bearer ${authStore.token}` }
+      });
+
+      if (response.data.success) {
+        emit('success');
+        emit('close');
+        resetForm();
+      }
+    } catch (err) {
+      error.value = err.response?.data?.message || 'Failed to create owner.';
+    } finally {
+      loading.value = false;
+    }
+  } else {
+    // Validation for existing owner assignment
+    if (!form.selected_owner_id || !form.location_id) {
+      error.value = 'Please select an owner and a location.';
+      return;
+    }
+
+    loading.value = true;
+    try {
+      // 1. Find existing owner to get their current locations
+      const owner = existingOwners.value.find(o => o.user_id === form.selected_owner_id);
+      let currentLocationIds = [];
+      if (owner && owner.location_ids) {
+        currentLocationIds = owner.location_ids.split(',');
+      }
+
+      // 2. Append new location if not already present
+      if (!currentLocationIds.includes(form.location_id)) {
+        currentLocationIds.push(form.location_id);
+      }
+
+      // 3. Update locations
+      const response = await axios.put(
+        `${API_URL}/admin/owners/${encodeURIComponent(form.selected_owner_id)}/locations`,
+        { location_ids: currentLocationIds },
+        { headers: { Authorization: `Bearer ${authStore.token}` } }
+      );
+
+      if (response.data.success) {
+        emit('success');
+        emit('close');
+        resetForm();
+      }
+    } catch (err) {
+      error.value = err.response?.data?.message || 'Failed to assign location to owner.';
+    } finally {
+      loading.value = false;
+    }
+  }
+};
+
+onMounted(() => {
+  fetchLocations();
+  fetchOwners();
+});
 
 watch(() => props.show, (newVal) => {
   resetForm();
@@ -297,6 +424,38 @@ watch(() => props.show, (newVal) => {
     align-items: center;
     justify-content: center;
     box-shadow: 0 4px 12px -2px var(--primary-shadow);
+}
+
+.mode-tabs {
+  display: flex;
+  background: var(--bg-main);
+  padding: 6px;
+  border-radius: 14px;
+  margin-bottom: 24px;
+  border: 1px solid var(--border-subtle);
+}
+
+.mode-tab {
+  flex: 1;
+  padding: 10px 16px;
+  background: transparent;
+  border: none;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.mode-tab:hover {
+  color: var(--text-main);
+}
+
+.mode-tab.active {
+  background: var(--bg-card);
+  color: var(--primary);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
 }
 
 .modal-header h3 {
