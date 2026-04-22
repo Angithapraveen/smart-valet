@@ -11,15 +11,26 @@
             </button>
 
       <div class="location-info-stack">
-        <h1 class="page-title">{{ location.location_name }}</h1>
+        <div class="title-row">
+            <h1 class="page-title">{{ location.location_name }}</h1>
+            <button class="btn-edit-main" @click="openLocationModal">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                </svg>
+                Edit Location
+            </button>
+        </div>
         <div class="location-meta">
-                        <span class="badge" :class="location.status ? 'badge-success' : 'badge-danger'">
-                            {{ location.status ? 'Active' : 'Inactive' }}
-                        </span>
-          <span class="meta-dot"></span>
-                        <span class="location-type">{{ location.location_type }}</span>
-                    </div>
-                </div>
+            <span class="badge" :class="location.status ? 'badge-success' : 'badge-danger'">
+                {{ location.status ? 'Active' : 'Inactive' }}
+            </span>
+            <span class="meta-dot"></span>
+            <span class="location-type">{{ location.location_type }}</span>
+            <span v-if="location.address" class="meta-dot"></span>
+            <span v-if="location.address" class="location-address">{{ location.address }}</span>
+        </div>
+      </div>
     </header>
 
     <div v-else class="loading-state">
@@ -413,6 +424,83 @@
         </div>
     </div>
 
+    <!-- Edit Location Modal -->
+    <div v-if="showLocationModal" class="modal-overlay" @click.self="closeLocationModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Edit Location Details</h2>
+                <button class="modal-close" @click="closeLocationModal">×</button>
+            </div>
+            <form @submit.prevent="submitLocation">
+                <div v-if="locationError" class="error-message">{{ locationError }}</div>
+                
+                <div class="form-group">
+                    <label>Location ID</label>
+                    <input :value="locationId" type="text" disabled class="form-input disabled-input" />
+                </div>
+                
+                <div class="form-group">
+                    <label>Location Name <span class="required">*</span></label>
+                    <input v-model="locationForm.location_name" type="text" required class="form-input" />
+                </div>
+                
+                <div class="form-group">
+                    <label>Location Type <span class="required">*</span></label>
+                    <select v-model="locationForm.location_type" required class="form-input">
+                        <option value="Mall">Mall</option>
+                        <option value="Hotel">Hotel</option>
+                        <option value="Hospital">Hospital</option>
+                        <option value="Residential">Residential</option>
+                        <option value="Commercial">Commercial</option>
+                        <option value="Other">Other</option>
+                    </select>
+                </div>
+                
+                <div v-if="locationForm.location_type === 'Other'" class="form-group animate-slide-down">
+                    <label>Custom Location Type <span class="required">*</span></label>
+                    <input v-model="customLocationType" type="text" required placeholder="e.g. Airport, Stadium" class="form-input" />
+                </div>
+                
+                <div class="form-group">
+                    <label>Address</label>
+                    <textarea v-model="locationForm.address" rows="2" class="form-input" placeholder="Enter full address"></textarea>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group col">
+                        <label>Valid From <span class="required">*</span></label>
+                        <input v-model="locationForm.valid_from" type="date" required class="form-input" />
+                    </div>
+                    <div class="form-group col">
+                        <label>Valid To</label>
+                        <input v-model="locationForm.valid_to" type="date" class="form-input" />
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group col">
+                        <label>Total Capacity <span class="required">*</span></label>
+                        <input v-model.number="locationForm.total_capacity" type="number" required min="1" class="form-input" />
+                    </div>
+                    <div class="form-group col">
+                        <label>Status <span class="required">*</span></label>
+                        <select v-model="locationForm.status" required class="form-input">
+                            <option :value="true">Active</option>
+                            <option :value="false">Inactive</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="modal-actions">
+                    <button type="button" class="btn-secondary" @click="closeLocationModal">Cancel</button>
+                    <button type="submit" class="btn-primary" :disabled="locationLoading">
+                        {{ locationLoading ? 'Updating...' : 'Update Details' }}
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
   </div>
 </template>
 
@@ -443,14 +531,20 @@ const showManagerModal = ref(false);
 const showDriverModal = ref(false);
 const showBlockModal = ref(false);
 const showEditBlockModal = ref(false);
+const showLocationModal = ref(false);
 const managerLoading = ref(false);
 const driverLoading = ref(false);
 const blockLoading = ref(false);
 const editBlockLoading = ref(false);
+const locationLoading = ref(false);
 const managerError = ref('');
 const driverError = ref('');
 const blockError = ref('');
 const editBlockError = ref('');
+const locationError = ref('');
+
+const standardTypes = ['Mall', 'Hotel', 'Hospital', 'Residential', 'Commercial'];
+const customLocationType = ref('');
 
 // Forms
 const managerForm = ref({
@@ -480,6 +574,16 @@ const editBlockForm = ref({
     capacity: null,
     valid_from: '',
     valid_to: '',
+    status: true
+});
+
+const locationForm = ref({
+    location_name: '',
+    location_type: '',
+    address: '',
+    valid_from: '',
+    valid_to: '',
+    total_capacity: 100,
     status: true
 });
 
@@ -786,6 +890,70 @@ const submitEditBlock = async () => {
     }
 };
 
+// Location Modal
+const openLocationModal = () => {
+    if (!location.value) return;
+    
+    if (standardTypes.includes(location.value.location_type)) {
+        locationForm.value.location_type = location.value.location_type;
+        customLocationType.value = '';
+    } else {
+        locationForm.value.location_type = 'Other';
+        customLocationType.value = location.value.location_type || '';
+    }
+
+    locationForm.value = {
+        ...locationForm.value,
+        location_name: location.value.location_name,
+        address: location.value.address || '',
+        valid_from: location.value.valid_from ? location.value.valid_from.split('T')[0] : '',
+        valid_to: location.value.valid_to ? location.value.valid_to.split('T')[0] : '',
+        total_capacity: location.value.total_capacity || 100,
+        status: location.value.status
+    };
+    showLocationModal.value = true;
+};
+
+const closeLocationModal = () => {
+    showLocationModal.value = false;
+    locationError.value = '';
+    customLocationType.value = '';
+};
+
+const submitLocation = async () => {
+    locationError.value = '';
+    locationLoading.value = true;
+    
+    try {
+        const payload = { ...locationForm.value };
+        if (payload.location_type === 'Other') {
+            if (!customLocationType.value.trim()) {
+                locationError.value = 'Please specify a custom location type.';
+                locationLoading.value = false;
+                return;
+            }
+            payload.location_type = customLocationType.value.trim();
+        }
+
+        const response = await axios.put(
+            `${API_URL}/owner/location/${locationId}`,
+            payload,
+            { headers: { Authorization: `Bearer ${authStore.token}` } }
+        );
+        
+        if (response.data.success) {
+            closeLocationModal();
+            location.value = response.data.data;
+            toast.success('Location details updated successfully!');
+        }
+    } catch (error) {
+        console.error('Location update error:', error);
+        locationError.value = error.response?.data?.message || 'Failed to update location details.';
+    } finally {
+        locationLoading.value = false;
+    }
+};
+
 // Helper function to format dates
 const formatDate = (dateString) => {
     if (!dateString) return '';
@@ -849,9 +1017,46 @@ onMounted(() => {
 
 .page-title {
   margin: 0;
-  font-size: 42px;
+  font-size: 36px;
   color: var(--text-main);
-  line-height:1;
+  font-weight: 800;
+  line-height: 1.2;
+}
+
+.title-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 20px;
+}
+
+.btn-edit-main {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--bg-card);
+    color: var(--primary);
+    border: 1px solid var(--primary);
+    border-radius: 10px;
+    padding: 10px 18px;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s var(--ease-out);
+    white-space: nowrap;
+}
+
+.btn-edit-main:hover {
+    background: var(--primary);
+    color: white;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px var(--primary-light);
+}
+
+.location-address {
+    font-size: 14px;
+    color: var(--text-muted);
+    font-weight: 500;
 }
 
 .location-meta {
@@ -1407,6 +1612,22 @@ onMounted(() => {
     box-shadow: 0 0 0 2px var(--primary-light);
 }
 
+.disabled-input {
+    background: rgba(255, 255, 255, 0.05) !important;
+    color: var(--text-muted) !important;
+    cursor: not-allowed !important;
+    border-color: var(--border-subtle) !important;
+}
+
+.animate-slide-down {
+    animation: slideDown 0.3s ease-out;
+}
+
+@keyframes slideDown {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
 .error-message {
     background: var(--danger-light);
     color: var(--danger);
@@ -1422,6 +1643,15 @@ onMounted(() => {
     gap: 12px;
     justify-content: flex-end;
     margin-top: 24px;
+}
+
+.form-row {
+    display: flex;
+    gap: 16px;
+}
+
+.form-row .col {
+    flex: 1;
 }
 
 .btn-primary, .btn-secondary {

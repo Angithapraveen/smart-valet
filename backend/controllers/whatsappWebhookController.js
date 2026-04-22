@@ -153,23 +153,54 @@ const handleParkingRequest = async (phone, name, locationId, driverId, carNumber
 
 const handleReturnRequest = async (phone, valetId) => {
     try {
-        const query = `
-            UPDATE VALET_TRANSACTIONS 
-            SET status = 'RETURN_REQUESTED', return_requested_time = NOW()
-            WHERE valet_id = $1 AND phone_number = $2 AND status = 'PARKED'
-            RETURNING *
+        // 1. Fetch the transaction details first to perform manual checks
+        const checkQuery = `
+            SELECT phone_number, status 
+            FROM VALET_TRANSACTIONS 
+            WHERE valet_id = $1
         `;
-        const result = await pool.query(query, [valetId, phone]);
+        const checkResult = await pool.query(checkQuery, [valetId]);
 
-        if (result.rows.length === 0) {
-            await whatsappService.sendMessage(phone, "No active parking found for this ID and phone number. Please check if your car is already being returned or if the ID is correct.");
+        if (checkResult.rows.length === 0) {
+            await whatsappService.sendMessage(phone, `⚠️ *Invalid Valet ID:* The ID *${valetId}* was not found in our system. Please check the ID on your digital ticket and try again.`);
             return;
         }
 
-        await whatsappService.sendMessage(phone, `Return request received for Valet ID: ${valetId}. Our driver will be notified immediately!`);
+        const txn = checkResult.rows[0];
+
+        // 2. Security Check: Compare phone numbers
+        // We trim and compare to handle potential whitespace variations
+        // (Note: In a production environment, you might want to handle country code variations as well)
+        if (txn.phone_number !== phone) {
+            console.warn(`[Security-Alert] Return request for ${valetId} from unauthorized number: ${phone}. Expected: ${txn.phone_number}`);
+            await whatsappService.sendMessage(phone, `🚫 *Unauthorized Request:* This phone number is not registered for Valet ID: *${valetId}*. \n\nOnly the number used during parking can request a return. Please use the registered phone number.`);
+            return;
+        }
+
+        // 3. Status Check: Must be PARKED to request return
+        if (txn.status !== 'PARKED') {
+            let statusMsg = "Your car is already being processed.";
+            if (txn.status === 'READY') statusMsg = "Your car is already waiting for you at the exit!";
+            if (txn.status === 'RETURNED') statusMsg = "This vehicle has already been returned.";
+            
+            await whatsappService.sendMessage(phone, `ℹ️ *Status Update:* ${statusMsg}`);
+            return;
+        }
+
+        // 4. All checks passed: Update status to RETURN_REQUESTED
+        const updateQuery = `
+            UPDATE VALET_TRANSACTIONS 
+            SET status = 'RETURN_REQUESTED', return_requested_time = NOW()
+            WHERE valet_id = $1
+            RETURNING *
+        `;
+        await pool.query(updateQuery, [valetId]);
+
+        await whatsappService.sendMessage(phone, `✅ *Request Confirmed:* Your return request for Valet ID: *${valetId}* has been received. Our team has been notified and is bringing your car to the exit! 🏎️💨`);
+
     } catch (error) {
         console.error('Error in handleReturnRequest:', error);
-        await whatsappService.sendErrorMessage(phone, "Failed to process return request.");
+        await whatsappService.sendErrorMessage(phone, "We encountered an error processing your return request. Please try again or contact onsite staff.");
     }
 };
 

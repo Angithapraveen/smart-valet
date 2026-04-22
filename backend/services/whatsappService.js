@@ -84,6 +84,7 @@ class WhatsAppService {
             this.isInitializing = false;
         });
 
+        // Re-enabling internal listener as it is the primary handler for confirmations
         this.client.on('message', async (msg) => {
             console.log(`[WhatsApp-Service] Incoming message from ${msg.from}: ${msg.body}`);
             try {
@@ -94,49 +95,40 @@ class WhatsAppService {
         });
     }
 
-    async sendCapacityAlert(locationId, locationName, currentCount, driverId = null) {
+
+    async isStaffNumber(phoneNumber) {
         try {
-            // Find managers for this location
-            const managerQuery = `
-                SELECT u.phone_number 
-                FROM USERS u
-                JOIN LOCATION_ACCESS la ON u.user_id = la.user_id
-                JOIN ROLE_MASTER rm ON u.role_id = rm.role_id
-                WHERE la.location_id = $1 AND rm.role_name = 'MANAGER' AND u.status = TRUE
-            `;
-            const managers = await pool.query(managerQuery, [locationId]);
+            const cleanNumber = phoneNumber.replace(/\D/g, '');
+            // Check for various formats: 10 digits, 12 digits (with 91), etc.
+            let tenDigits = cleanNumber.length > 10 ? cleanNumber.slice(-10) : cleanNumber;
             
-            const alertMsg = `⚠️ *CAPACITY ALERT*\n\n` +
-                `Location: *${locationName}*\n` +
-                `Maximum Capacity Reached! (Current Key Slot: ${currentCount})\n` +
-                `New vehicles are being parked beyond default capacity.`;
-
-            // Notify Managers
-            for (const mgr of managers.rows) {
-                if (mgr.phone_number) {
-                    await this.sendMessage(mgr.phone_number, alertMsg);
-                }
-            }
-
-            // Notify the specific Driver if provided
-            if (driverId) {
-                const driverRes = await pool.query('SELECT phone_number FROM USERS WHERE user_id = $1 AND status = TRUE', [driverId]);
-                const driverPhone = driverRes.rows[0]?.phone_number;
-                if (driverPhone) {
-                    const driverAlert = `⚠️ *CAPACITY ALERT (Driver Info)*\n\n` +
-                        `Location: *${locationName}*\n` +
-                        `You have parked a car beyond the defined capacity. Key Slot ${currentCount} was allocated.`;
-                    await this.sendMessage(driverPhone, driverAlert);
-                }
-            }
+            const staffQuery = `
+                SELECT rm.role_name 
+                FROM USERS u
+                JOIN ROLE_MASTER rm ON u.role_id = rm.role_id
+                WHERE (u.phone_number = $1 OR u.phone_number = $2 OR u.phone_number = $3)
+                AND rm.role_name IN ('MANAGER', 'DRIVER')
+                AND u.status = TRUE
+            `;
+            const res = await pool.query(staffQuery, [cleanNumber, tenDigits, '91' + tenDigits]);
+            return res.rows.length > 0;
         } catch (error) {
-            console.error('[WhatsApp-Service] Failed to send capacity alert:', error);
+            console.error('[WhatsApp-Service] Error checking staff status:', error);
+            return false;
         }
     }
 
     async handleIncomingMessage(msg) {
         const body = msg.body.trim();
         const from = msg.from; // phone number
+        
+        // 0. Check if sender is Staff (Manager/Driver) - If so, ignore them
+        const isStaff = await this.isStaffNumber(from);
+        if (isStaff) {
+            console.log(`[WhatsApp-Service] Ignoring incoming message from staff: ${from}`);
+            return;
+        }
+
         const contact = await msg.getContact();
         const userName = contact.pushname || 'Customer';
 
@@ -164,16 +156,18 @@ class WhatsAppService {
 
     async handleParkingRequest(msg, body, from, userName) {
         // ... (existing logic)
-        const locationMatch = body.match(/Premises:\s*([^\n\r]+)/i);
-        const driverMatch = body.match(/Driver:\s*([^\n\r]+)/i);
+        const locationMatch = body.match(/Premises:\s*([\w-]+)/i);
+        const driverMatch = body.match(/Driver:\s*([\w-]+)/i);
 
         if (!locationMatch || !driverMatch) {
             await msg.reply('Invalid format. Please include both Premises (Location ID) and Driver (Driver ID).');
             return;
         }
 
-        const locationId = locationMatch[1].trim();
-        const driverId = driverMatch[1].trim();
+        const locationId = locationMatch[1].trim().toUpperCase();
+        const driverId = driverMatch[1].trim().toUpperCase();
+        
+        console.log(`[WhatsApp-Service] Processing Parking Request - Location: ${locationId}, Driver: ${driverId}`);
         
         // Extract vehicle details
         const carNumberMatch = body.match(/Car No:\s*([A-Z0-9-]+)/i) || body.match(/Vehicle No:\s*([A-Z0-9-]+)/i);
@@ -189,23 +183,24 @@ class WhatsAppService {
             const validationQuery = `
                 SELECT l.location_name FROM LOCATION_ACCESS la
                 JOIN LOCATIONS l ON la.location_id = l.location_id
-                WHERE la.location_id = $1 AND la.user_id = $2
+                WHERE UPPER(la.location_id) = $1 AND UPPER(la.user_id) = $2
             `;
             const validResult = await client.query(validationQuery, [locationId, driverId]);
-
-            if (validResult.rows.length === 0) {
-                await client.query('ROLLBACK');
-                await msg.reply('Invalid Location or Driver pairing.');
-                return;
+            let locationName = 'Valet Parking';
+            if (validResult.rows.length > 0) {
+                locationName = validResult.rows[0].location_name;
+            } else {
+                // Fallback: Fetch location name directly if mapping check failed
+                const locRes = await client.query('SELECT location_name FROM LOCATIONS WHERE UPPER(location_id) = $1', [locationId]);
+                if (locRes.rows.length > 0) {
+                    locationName = locRes.rows[0].location_name;
+                }
             }
-
-            const locationName = validResult.rows[0].location_name;
-            const valetController = require('../controllers/valetController');
-            const valetId = await valetController.generateValetId(locationId);
+            const { generateValetId, getNextAvailableKeySlot } = require('../utils/valetUtils');
+            const valetId = await generateValetId(locationId);
             const senderId = from;
 
             // Get Key Slot
-            const { getNextAvailableKeySlot } = require('../utils/valetUtils');
             const { slot: keySlot, isOverCapacity } = await getNextAvailableKeySlot(client, locationId);
             
             console.log(`[WhatsApp-Service] Prepared Insert: ValetId=${valetId}, Loc=${locationId}, Driver=${driverId}, Slot=${keySlot}`);
@@ -270,12 +265,6 @@ class WhatsAppService {
                 `Your car is safely stored. When you're ready to leave, just send the message below:\n\n` +
                 `*Tap to request car:* \nRETURN ${valetId} 🚗💨`;
 
-            if (isOverCapacity) {
-                // Internal alert for staff only
-                this.sendCapacityAlert(locationId, locationName, keySlot, driverId).catch(err => {
-                    console.error('[WhatsApp-Service] Alert notification failed:', err);
-                });
-            }
 
             await this.sendMessage(from, confirmationMsg);
 
@@ -307,7 +296,25 @@ class WhatsAppService {
             );
 
             if (result.rows.length === 0) {
-                await msg.reply(`Could not find a parked car with Valet ID: ${valetId}`);
+                // If update failed, check why (maybe it's already being processed)
+                const checkRes = await pool.query('SELECT status FROM VALET_TRANSACTIONS WHERE valet_id = $1', [valetId]);
+                
+                if (checkRes.rows.length === 0) {
+                    await msg.reply(`⚠️ *ID Not Found:* The Valet ID *${valetId}* was not found. Please verify the ID on your ticket.`);
+                } else {
+                    const status = checkRes.rows[0].status;
+                    let statusMsg = "Your car is already being processed.";
+                    
+                    if (status === 'RETURN_REQUESTED' || status === 'ON_THE_WAY') {
+                        statusMsg = "⏳ *In Progress:* Your return request is already being processed. Our driver is bringing your car! 🏎️💨";
+                    } else if (status === 'READY') {
+                        statusMsg = "📍 *Ready:* Your car is already waiting for you at the exit pickup area!";
+                    } else if (status === 'RETURNED') {
+                        statusMsg = "✅ *Completed:* This vehicle has already been returned to you.";
+                    }
+                    
+                    await msg.reply(`ℹ️ *Status Update:* ${statusMsg}`);
+                }
                 return;
             }
 
@@ -342,7 +349,8 @@ class WhatsAppService {
             const checkResult = await pool.query(checkQuery, [valetId]);
 
             if (checkResult.rows.length > 0) {
-                await msg.reply('Thank you! We already received your feedback for your recent trip.');
+                console.log(`[WhatsApp-Service] Feedback already exists for Valet ID: ${valetId}`);
+                await msg.reply('Thank you! We have already recorded your feedback for your recent trip. 😊');
                 return;
             }
 
@@ -389,6 +397,13 @@ class WhatsAppService {
     async sendMessage(to, message) {
         if (!this.isInitialized) {
             console.warn(`[WhatsApp-Service] Attempted to send message before initialization. Target: ${to}`);
+            return;
+        }
+
+        // Anti-Staff Guard: Skip if recipient is a Manager or Driver
+        const isStaff = await this.isStaffNumber(to);
+        if (isStaff) {
+            console.log(`[WhatsApp-Service] Blocking outgoing message to staff number: ${to}`);
             return;
         }
 

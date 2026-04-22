@@ -106,11 +106,6 @@ const createWhatsAppTransaction = async (req, res) => {
                     console.error('[WhatsApp-Error] Failed to send parking confirmation:', err);
                 });
 
-                if (isOverCapacity) {
-                    whatsappService.sendCapacityAlert(location_id, locationName, keySlot, driver_id).catch(err => {
-                        console.error('[WhatsApp-Alert-Error] Failed to send capacity alert:', err);
-                    });
-                }
             } catch (err) {
                 console.error('[WhatsApp-Error] Error fetching location for confirmation:', err);
             }
@@ -639,9 +634,6 @@ const updateTransactionStatus = async (req, res) => {
                 } else if (status === 'PARKED') {
                     const msg = `💤 *Car Reparked:* Since you weren't able to arrive in time, your car (${valetId}) has been safely reparked. \n\nWhenever you are ready, just request your car again! 🚗🔄`;
                     
-                    if (isOverCapacity) {
-                        whatsappService.sendCapacityAlert(locationId, locationName, newKeySlotValue, currentUserId).catch(err => console.error('WS Alert Error:', err));
-                    }
                     
                     whatsappService.sendMessage(updatedTxn.phone_number, msg).catch(err => console.error('WS MSG Error:', err));
                 }

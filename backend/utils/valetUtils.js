@@ -38,37 +38,37 @@ const generateValetId = async (locationId) => {
 };
 
 /**
- * Get Next Available Key Slot (Sequence 1 to Capacity, allows exceed)
+ * Get Next Available Key Slot (Reuse smallest available, allow overflow)
  */
 const getNextAvailableKeySlot = async (client, locationId) => {
-    // 1. Get current capacity
-    const capQuery = 'SELECT COALESCE(total_capacity, 100) as capacity FROM LOCATIONS WHERE location_id = $1';
+    // 1. Get current capacity & lock location for sequential assignment
+    const capQuery = 'SELECT COALESCE(total_capacity, 100) as capacity FROM LOCATIONS WHERE location_id = $1 FOR UPDATE';
     const capRes = await client.query(capQuery, [locationId]);
     const capacity = parseInt(capRes.rows[0]?.capacity || 100);
 
-    // 2. Try to find smallest gap within capacity
+    // 2. Find the current max key_slot to define search range
+    const maxQuery = `
+        SELECT MAX(key_slot) as max_slot 
+        FROM VALET_TRANSACTIONS 
+        WHERE location_id = $1 AND status NOT IN ('RETURNED', 'CANCELLED')
+    `;
+    const maxRes = await client.query(maxQuery, [locationId]);
+    const currentMax = parseInt(maxRes.rows[0]?.max_slot || 0);
+
+    // 3. Search for the smallest gap starting from 1 up to currentMax + 1
+    // Using currentMax + 1 ensures we always find a slot, even if there are no gaps
     const gapQuery = `
         SELECT id FROM generate_series(1, $1) AS id
         EXCEPT
         SELECT key_slot FROM VALET_TRANSACTIONS WHERE location_id = $2 AND status NOT IN ('RETURNED', 'CANCELLED')
         ORDER BY id ASC LIMIT 1
     `;
-    const gapResult = await client.query(gapQuery, [capacity, locationId]);
-
-    if (gapResult.rows.length > 0) {
-        return { slot: gapResult.rows[0].id, isOverCapacity: false };
-    }
-
-    // 3. If no gap found within capacity, find absolute max active slot and return max + 1
-    const maxQuery = `
-        SELECT MAX(key_slot) as max_slot 
-        FROM VALET_TRANSACTIONS 
-        WHERE location_id = $1 AND status NOT IN ('RETURNED', 'CANCELLED')
-    `;
-    const maxResult = await client.query(maxQuery, [locationId]);
-    const maxActiveSlot = parseInt(maxResult.rows[0]?.max_slot || capacity);
+    const gapResult = await client.query(gapQuery, [currentMax + 1, locationId]);
     
-    return { slot: maxActiveSlot + 1, isOverCapacity: true };
+    const assignedSlot = gapResult.rows[0].id;
+    const isOverCapacity = assignedSlot > capacity;
+
+    return { slot: assignedSlot, isOverCapacity };
 };
 
 module.exports = {
