@@ -15,7 +15,10 @@ async function createLocation(req, res) {
             valid_from,
             valid_to,
             total_capacity,
-            status
+            status,
+            state,
+            city,
+            pincode
         } = req.body;
 
         // Validation
@@ -48,6 +51,9 @@ async function createLocation(req, res) {
             valid_from,
             valid_to: valid_to || null,
             total_capacity: total_capacity || 100,
+            state: state ? String(state).trim() : null,
+            city: city ? String(city).trim() : null,
+            pincode: pincode ? String(pincode).trim() : null,
             status: status !== false
         });
 
@@ -177,7 +183,10 @@ async function updateLocation(req, res) {
             valid_from,
             valid_to,
             total_capacity,
-            status
+            status,
+            state,
+            city,
+            pincode
         } = req.body;
 
         // Validation
@@ -195,6 +204,9 @@ async function updateLocation(req, res) {
             valid_from,
             valid_to: valid_to || null,
             total_capacity: total_capacity || 100,
+            state: state ? String(state).trim() : null,
+            city: city ? String(city).trim() : null,
+            pincode: pincode ? String(pincode).trim() : null,
             status: status !== false
         });
 

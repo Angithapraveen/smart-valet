@@ -73,13 +73,13 @@ class LocationMaster {
      */
     static async getCitiesByState(state, search = '') {
         const query = `
-            SELECT DISTINCT city_name 
+            SELECT DISTINCT city_name, state_name 
             FROM INDIA_LOCATION_MASTER 
             WHERE state_name = $1 AND city_name ILIKE $2 
             ORDER BY city_name ASC
         `;
         const result = await pool.query(query, [state, `${search}%`]);
-        return result.rows.map(row => row.city_name);
+        return result.rows;
     }
 }
 

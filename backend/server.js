@@ -52,6 +52,7 @@ app.use('/api/owner', ownerActionRoutes);
 app.use('/api/owner', blockRoutes);
 app.use('/api/valet', require('./routes/valetRoutes'));
 app.use('/api/car-master', require('./routes/carMasterRoutes'));
+app.use('/api/location-master', require('./routes/locationMasterRoutes'));
 
 // 404 handler
 app.use((req, res) => {

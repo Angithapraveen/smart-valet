@@ -113,14 +113,12 @@
                 <div class="form-group">
                   <label>State</label>
                   <div class="input-container">
-                    <input 
-                        v-model="form.state" 
-                        type="text" 
-                        placeholder="e.g. Tamil Nadu" 
-                        readonly 
-                        class="bg-readonly"
-                        required
-                    />
+                    <select v-model="form.state" required @change="handleStateChange">
+                      <option value="" disabled>Select State</option>
+                      <option v-for="state in states" :key="state" :value="state">
+                        {{ state }}
+                      </option>
+                    </select>
                   </div>
                 </div>
 
@@ -229,6 +227,23 @@ const citySuggestions = ref([]);
 const showCitySuggestions = ref(false);
 const pincodeSuggestions = ref([]);
 const showPincodeSuggestions = ref(false);
+const states = ref([]);
+
+onMounted(async () => {
+    try {
+        states.value = await LocationMasterService.getStates();
+    } catch (err) {
+        console.error('Failed to fetch states', err);
+    }
+});
+
+const handleStateChange = () => {
+    // Clear city and pincode when state changes
+    form.city = '';
+    form.pincode = '';
+    citySuggestions.value = [];
+    pincodeSuggestions.value = [];
+};
 
 const handleCitySearch = async (e) => {
     // Restrict input to only letters and spaces
@@ -245,7 +260,7 @@ const handleCitySearch = async (e) => {
         return;
     }
     try {
-        const results = await LocationMasterService.searchCities(form.city);
+        const results = await LocationMasterService.searchCities(form.city, form.state);
         citySuggestions.value = results;
         showCitySuggestions.value = true;
     } catch (err) {

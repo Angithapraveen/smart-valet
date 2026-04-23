@@ -13,15 +13,19 @@ class Location {
             address,
             valid_from,
             valid_to,
-            status
+            status,
+            state,
+            city,
+            pincode
         } = locationData;
 
         const query = `
             INSERT INTO LOCATIONS (
                 location_id, location_name, location_short_code, location_type,
-                address, valid_from, valid_to, total_capacity, status
+                address, valid_from, valid_to, total_capacity, status,
+                state, city, pincode
             )
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
             RETURNING *
         `;
         const result = await pool.query(query, [
@@ -33,7 +37,10 @@ class Location {
             valid_from,
             valid_to || null,
             locationData.total_capacity || 100,
-            status !== false
+            status !== false,
+            state || null,
+            city || null,
+            pincode || null
         ]);
         return result.rows[0];
     }
@@ -59,6 +66,7 @@ class Location {
         const query = `
             SELECT 
                 l.location_id, l.location_name, l.location_short_code, l.location_type, l.address,
+                l.state, l.city, l.pincode,
                 (l.status AND l.valid_from <= CURRENT_DATE AND (l.valid_to IS NULL OR l.valid_to >= CURRENT_DATE)) as status,
                 l.valid_from, l.valid_to, l.total_capacity,
                 COALESCE(b.total_blocks, 0) as total_blocks,
@@ -143,6 +151,9 @@ class Location {
                 valid_to = $6,
                 total_capacity = $7,
                 status = $8,
+                state = $9,
+                city = $10,
+                pincode = $11,
                 updated_at = CURRENT_TIMESTAMP
             WHERE location_id = $1
             RETURNING *
@@ -155,7 +166,10 @@ class Location {
             valid_from,
             valid_to || null,
             locationData.total_capacity || 100,
-            status !== false
+            status !== false,
+            locationData.state || null,
+            locationData.city || null,
+            locationData.pincode || null
         ]);
         return result.rows[0] || null;
     }
