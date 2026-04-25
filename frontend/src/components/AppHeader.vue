@@ -10,6 +10,13 @@
           </svg>
           <span class="app-name">  EZVALET </span>
         </div>
+
+        <nav class="header-nav">
+          <router-link :to="homePath" class="nav-link" active-class="active">Home</router-link>
+          
+          <router-link v-if="isAdmin" to="/admin/plans" class="nav-link" active-class="active">Plans</router-link>
+          <router-link v-if="isOwner || isManager" to="/my-plan" class="nav-link" active-class="active">My Plan</router-link>
+        </nav>
       </div>
 
       <div class="header-right">
@@ -69,10 +76,20 @@ const userInitial = computed(() => {
 });
 
 const userName = computed(() => authStore.user?.name || 'User');
+const isAdmin = computed(() => authStore.userRole === 'ADMIN');
 const isOwner = computed(() => authStore.userRole === 'OWNER');
 const isManager = computed(() => {
   const role = authStore.userRole ? authStore.userRole.toUpperCase() : '';
   return role === 'MANAGER';
+});
+
+const homePath = computed(() => {
+  const role = authStore.userRole ? authStore.userRole.toUpperCase() : '';
+  if (role === 'ADMIN') return '/admin/dashboard';
+  if (role === 'OWNER') return '/owner/dashboard';
+  if (role === 'MANAGER') return '/manager/dashboard';
+  if (role === 'DRIVER') return '/driver/dashboard';
+  return '/login';
 });
 const userLocations = computed(() => authStore.accessibleLocations || []);
 const selectedLocation = ref(authStore.selectedLocationId || (userLocations.value.length ? userLocations.value[0].location_id : ''));
@@ -161,6 +178,42 @@ onUnmounted(() => {
     -webkit-background-clip: text;
     background-clip: text;
     -webkit-text-fill-color: transparent;
+}
+
+.header-nav {
+  margin-left: 40px;
+  display: flex;
+  align-items: center;
+  gap: 24px;
+}
+
+.nav-link {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-decoration: none;
+  transition: var(--ts-base);
+  position: relative;
+  padding: 4px 0;
+}
+
+.nav-link:hover {
+  color: var(--primary);
+}
+
+.nav-link.active {
+  color: var(--primary);
+}
+
+.nav-link.active::after {
+  content: '';
+  position: absolute;
+  bottom: -4px;
+  left: 0;
+  width: 100%;
+  height: 2px;
+  background-color: var(--primary);
+  border-radius: 2px;
 }
 
 .header-right {

@@ -2,6 +2,7 @@ const pool = require('../config/database');
 const { validateIndianPlate } = require('../utils/plateValidation');
 const { generateValetId, getNextAvailableKeySlot } = require('../utils/valetUtils');
 const whatsappService = require('../services/whatsappService');
+const subscriptionService = require('../services/subscriptionService');
 
 /**
  * Handle WhatsApp Transaction
@@ -16,6 +17,17 @@ const createWhatsAppTransaction = async (req, res) => {
         return res.status(400).json({
             success: false,
             message: 'Location ID and Driver ID are required.'
+        });
+    }
+
+    try {
+        // Check Subscription Limit
+        const subCheck = await subscriptionService.checkParkingLimit(location_id);
+        req.subscription_id = subCheck.subscription_id; // Store for later use
+    } catch (error) {
+        return res.status(403).json({
+            success: false,
+            message: error.message || 'Subscription check failed.'
         });
     }
 
@@ -91,6 +103,11 @@ const createWhatsAppTransaction = async (req, res) => {
                 transaction = updateTxn.rows[0];
                 blockAssigned = true;
             }
+        }
+
+        // Decrement Subscription Usage
+        if (req.subscription_id) {
+            await subscriptionService.decrementUsage(req.subscription_id);
         }
 
         await client.query('COMMIT');

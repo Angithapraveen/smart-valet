@@ -48,6 +48,7 @@ app.use('/api/admin/locations', adminLocationRoutes);
 app.use('/api/admin/owners', adminOwnerRoutes);
 app.use('/api/admin/users', adminUserRoutes);
 app.use('/api/admin/blocks', adminBlockRoutes);
+app.use('/api/admin/subscriptions', require('./routes/subscriptionRoutes'));
 app.use('/api/owner', ownerActionRoutes);
 app.use('/api/owner', blockRoutes);
 app.use('/api/valet', require('./routes/valetRoutes'));

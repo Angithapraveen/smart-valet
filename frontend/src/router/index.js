@@ -54,6 +54,12 @@ const routes = [
         component: () => import('../views/admin/UserList.vue'),
         meta: { role: 'ADMIN' }
       },
+      {
+        path: 'admin/plans',
+        name: 'AdminPlans',
+        component: () => import('../views/admin/AdminPlans.vue'),
+        meta: { role: 'ADMIN' }
+      },
       // Owner Routes
       {
         path: 'owner/dashboard',
@@ -121,6 +127,12 @@ const routes = [
         name: 'ManagerSettings',
         component: () => import('../views/manager/Settings.vue'),
         meta: { role: 'MANAGER' }
+      },
+      {
+        path: 'my-plan',
+        name: 'MyPlan',
+        component: () => import('../views/MyPlan.vue'),
+        meta: { role: ['OWNER', 'MANAGER'] }
       }
     ]
   },
@@ -198,20 +210,23 @@ router.beforeEach((to, from, next) => {
 
     const role = userRole ? userRole.toUpperCase() : '';
     // Check role requirement - if role mismatch, redirect to correct dashboard
-    if (to.meta.role && role !== to.meta.role.toUpperCase()) {
-      // User doesn't have required role, redirect to their dashboard
-      if (role === 'ADMIN') {
-        next('/admin/dashboard');
-      } else if (role === 'OWNER') {
-        next('/owner/dashboard');
-      } else if (role === 'MANAGER') {
-        next('/manager/dashboard');
-      } else if (role === 'DRIVER') {
-        next('/driver/dashboard');
-      } else {
-        next('/login');
+    if (to.meta.role) {
+      const allowedRoles = Array.isArray(to.meta.role) ? to.meta.role : [to.meta.role];
+      if (!allowedRoles.map(r => r.toUpperCase()).includes(role)) {
+        // User doesn't have required role, redirect to their dashboard
+        if (role === 'ADMIN') {
+          next('/admin/dashboard');
+        } else if (role === 'OWNER') {
+          next('/owner/dashboard');
+        } else if (role === 'MANAGER') {
+          next('/manager/dashboard');
+        } else if (role === 'DRIVER') {
+          next('/driver/dashboard');
+        } else {
+          next('/login');
+        }
+        return;
       }
-      return;
     }
   }
 
