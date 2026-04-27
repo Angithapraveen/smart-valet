@@ -77,20 +77,20 @@
           <div class="w-full">
             <div class="card bg-main border-subtle h-full shadow-none overflow-visible">
               <div class="p-10">
-                <div class="flex items-center gap-3 mb-10 border-b border-subtle pb-6">
-                  <div class="w-10 h-10 rounded-xl bg-primary-light flex items-center justify-center text-primary">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
+                <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 32px; padding-bottom: 24px; border-bottom: 1px solid var(--border-subtle);">
+                  <div style="width: 48px; height: 48px; border-radius: 12px; background-color: rgba(99, 102, 241, 0.1); display: flex; align-items: center; justify-content: center; color: var(--primary);">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
                   </div>
                   <div>
-                    <h3 class="text-xl font-extrabold text-main leading-tight">Initialize New Tier</h3>
-                    <p class="text-xs text-muted mt-1 font-medium">Define a new subscription model for your locations</p>
+                    <h3 style="font-size: 22px; font-weight: 800; color: var(--text-main); margin: 0; line-height: 1.2;">Initialize New Tier</h3>
+                    <p style="font-size: 13px; color: var(--text-muted); margin: 4px 0 0 0; font-weight: 500;">Define a new subscription model for your locations</p>
                   </div>
                 </div>
 
-                <form @submit.prevent="handleCreatePlan" class="admin-form-grid">
+                <form @submit.prevent="handleCreatePlan" style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">
                   
                   <!-- Row 1: Plan Identity & Total Transactions -->
-                  <div class="form-group">
+                  <div class="form-group" style="margin: 0;">
                     <label class="form-label text-[10px] font-bold text-muted uppercase tracking-wider mb-2 block">Plan Identity</label>
                     <input 
                       v-model="newPlan.plan_name" 
@@ -100,7 +100,7 @@
                       required 
                     />
                   </div>
-                  <div class="form-group">
+                  <div class="form-group" style="margin: 0;">
                     <label class="form-label text-[10px] font-bold text-muted uppercase tracking-wider mb-2 block">Total Transactions</label>
                     <input 
                       v-model.number="newPlan.total_transactions" 
@@ -112,7 +112,7 @@
                   </div>
 
                   <!-- Row 2: Duration & Valuation -->
-                  <div class="form-group">
+                  <div class="form-group" style="margin: 0;">
                     <label class="form-label text-[10px] font-bold text-muted uppercase tracking-wider mb-2 block">Duration (Months)</label>
                     <input 
                       v-model.number="newPlan.duration_months" 
@@ -122,17 +122,16 @@
                       required 
                     />
                   </div>
-                  <div class="form-group">
+                  <div class="form-group" style="margin: 0;">
                     <label class="form-label text-[10px] font-bold text-muted uppercase tracking-wider mb-2 block">Valuation (Price)</label>
-                    <div class="relative">
-                      <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                        <span class="text-muted font-bold text-sm">₹</span>
-                      </div>
+                    <div style="position: relative; display: flex; align-items: center;">
+                      <div style="position: absolute; left: 16px; color: var(--text-muted); font-weight: bold; font-size: 14px; pointer-events: none;">₹</div>
                       <input 
                         v-model.number="newPlan.price" 
                         type="number" 
                         step="0.01" 
-                        class="form-input h-12 pl-10 font-bold w-full" 
+                        class="form-input w-full" 
+                        style="padding-left: 36px; font-weight: bold; height: 48px;" 
                         placeholder="0.00" 
                         required 
                       />
@@ -140,7 +139,7 @@
                   </div>
 
                   <!-- Row 3: Plan Status -->
-                  <div class="form-group">
+                  <div class="form-group" style="margin: 0;">
                     <label class="form-label text-[10px] font-bold text-muted uppercase tracking-wider mb-2 block">Default Status</label>
                     <select v-model="newPlan.status" class="form-input h-12 w-full bg-main">
                       <option value="draft">Draft (Private)</option>
@@ -149,16 +148,14 @@
                     </select>
                   </div>
 
-                  <!-- Grid Alignment Placeholder -->
-                  <div class="hidden md:block"></div>
-
                   <!-- Multi-Action Buttons -->
-                  <div class="col-span-full mt-4 flex flex-col sm:flex-row gap-4">
+                  <div style="display: flex; gap: 16px; justify-content: flex-end; align-items: flex-end;">
                     <button 
                       type="button" 
                       @click="handleCreatePlan('draft')"
                       :disabled="loading" 
-                      class="btn btn-outline flex-1 py-4"
+                      class="btn btn-outline"
+                      style="padding: 12px 32px;"
                     >
                       <span v-if="!loading">Save as Draft</span>
                       <div v-else class="spinner-sm"></div>
@@ -167,7 +164,8 @@
                       type="button" 
                       @click="handleCreatePlan('active')"
                       :disabled="loading" 
-                      class="btn btn-primary flex-1 py-4"
+                      class="btn btn-primary"
+                      style="padding: 12px 32px;"
                     >
                       <span v-if="!loading">Publish Plan</span>
                       <div v-else class="spinner-sm"></div>
@@ -183,27 +181,27 @@
           <div class="w-full">
             <div class="card bg-main border-subtle p-0 overflow-hidden h-full shadow-none">
               <div class="p-10 border-b border-subtle">
-                <div class="flex items-center gap-3">
-                  <div class="w-10 h-10 rounded-xl bg-info-light flex items-center justify-center text-info">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
+                <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 24px;">
+                  <div style="width: 48px; height: 48px; border-radius: 12px; background-color: rgba(59, 130, 246, 0.1); display: flex; align-items: center; justify-content: center; color: var(--info);">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
                   </div>
                   <div>
-                    <h3 class="text-xl font-extrabold text-main leading-tight">Service Tiers Ledger</h3>
-                    <p class="text-xs text-muted mt-1 font-medium">Manage and filter existing subscription architectures</p>
+                    <h3 style="font-size: 22px; font-weight: 800; color: var(--text-main); margin: 0; line-height: 1.2;">Service Tiers Ledger</h3>
+                    <p style="font-size: 13px; color: var(--text-muted); margin: 4px 0 0 0; font-weight: 500;">Manage and filter existing subscription architectures</p>
                   </div>
                 </div>
               </div>
                 
                 <!-- Filters Bar (Matches Initialize New Tier Style) -->
-                <div class="admin-form-grid bg-main/50 p-8 rounded-xl border border-subtle mb-8">
+                <div style="background-color: var(--bg-main); padding: 32px; border-radius: 16px; border: 1px solid var(--border-subtle); margin-bottom: 32px; display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">
                   <!-- Row 1: Name & Status -->
-                  <div class="form-group">
+                  <div class="form-group" style="margin: 0;">
                     <label class="form-label text-[10px] font-bold text-muted uppercase tracking-wider mb-2 block">Plan Name</label>
-                    <input v-model="tempFilters.name" type="text" placeholder="Search plans..." class="form-input h-12 py-0 text-sm w-full" />
+                    <input v-model="tempFilters.name" type="text" placeholder="Search plans..." class="form-input" style="height: 48px; width: 100%;" />
                   </div>
-                  <div class="form-group">
+                  <div class="form-group" style="margin: 0;">
                     <label class="form-label text-[10px] font-bold text-muted uppercase tracking-wider mb-2 block">Lifecycle Status</label>
-                    <select v-model="tempFilters.status" class="form-input h-12 py-0 text-sm w-full bg-main">
+                    <select v-model="tempFilters.status" class="form-input" style="height: 48px; width: 100%; background-color: var(--bg-main);">
                       <option value="all">All Statuses</option>
                       <option value="draft">Draft</option>
                       <option value="active">Active</option>
@@ -213,64 +211,64 @@
                   </div>
 
                   <!-- Row 2: Price & Capacity -->
-                  <div class="form-group">
+                  <div class="form-group" style="margin: 0;">
                     <label class="form-label text-[10px] font-bold text-muted uppercase tracking-wider mb-2 block">Valuation Range (₹)</label>
                     <div class="range-group">
-                      <input v-model.number="tempFilters.minPrice" type="number" placeholder="Min Price" class="form-input range-input h-10 py-0 text-xs" />
-                      <span class="text-muted text-xs font-bold shrink-0">-</span>
-                      <input v-model.number="tempFilters.maxPrice" type="number" placeholder="Max Price" class="form-input range-input h-10 py-0 text-xs" />
+                      <input v-model.number="tempFilters.minPrice" type="number" placeholder="Min Price" class="form-input range-input" style="height: 40px; font-size: 12px;" />
+                      <span style="color: var(--text-muted); font-weight: bold; font-size: 12px; flex-shrink: 0;">-</span>
+                      <input v-model.number="tempFilters.maxPrice" type="number" placeholder="Max Price" class="form-input range-input" style="height: 40px; font-size: 12px;" />
                     </div>
                   </div>
-                  <div class="form-group">
+                  <div class="form-group" style="margin: 0;">
                     <label class="form-label text-[10px] font-bold text-muted uppercase tracking-wider mb-2 block">Capacity Range (txn)</label>
                     <div class="range-group">
-                      <input v-model.number="tempFilters.minTransactions" type="number" placeholder="Min Txn" class="form-input range-input h-10 py-0 text-xs" />
-                      <span class="text-muted text-xs font-bold shrink-0">-</span>
-                      <input v-model.number="tempFilters.maxTransactions" type="number" placeholder="Max Txn" class="form-input range-input h-10 py-0 text-xs" />
+                      <input v-model.number="tempFilters.minTransactions" type="number" placeholder="Min Txn" class="form-input range-input" style="height: 40px; font-size: 12px;" />
+                      <span style="color: var(--text-muted); font-weight: bold; font-size: 12px; flex-shrink: 0;">-</span>
+                      <input v-model.number="tempFilters.maxTransactions" type="number" placeholder="Max Txn" class="form-input range-input" style="height: 40px; font-size: 12px;" />
                     </div>
                   </div>
 
                   <!-- Row 3: Action Buttons -->
-                  <div class="col-span-full flex gap-4 pt-4">
-                    <button @click="applyFilters" class="btn btn-primary flex-1 h-12 text-sm font-bold uppercase tracking-wider shadow-none">
+                  <div style="grid-column: 1 / -1; display: flex; gap: 16px; justify-content: flex-start; margin-top: 16px;">
+                    <button @click="applyFilters" class="btn btn-primary" style="width: 180px; height: 44px; font-weight: bold; text-transform: uppercase; letter-spacing: 0.05em; font-size: 13px;">
                       Apply Filters
                     </button>
-                    <button @click="resetFilters" class="btn btn-outline flex-1 h-12 text-sm font-bold uppercase tracking-wider">
+                    <button @click="resetFilters" class="btn btn-outline" style="width: 180px; height: 44px; font-weight: bold; text-transform: uppercase; letter-spacing: 0.05em; font-size: 13px;">
                       Reset All
                     </button>
                   </div>
                 </div>
-              <div class="table-container border-none rounded-none">
-                <table class="table">
+              <div class="table-container border-none rounded-none w-full">
+                <table class="table" style="width: 100%; table-layout: fixed;">
                   <thead>
                     <tr>
-                      <th>Tier Name</th>
-                      <th>Capacity</th>
-                      <th>Duration</th>
-                      <th>Valuation</th>
-                      <th>Status</th>
-                      <th class="text-center">Actions</th>
+                      <th style="width: 20%; padding-left: 24px;">Tier Name</th>
+                      <th style="width: 14%; text-align: center;">Capacity</th>
+                      <th style="width: 14%; text-align: center;">Duration</th>
+                      <th style="width: 14%; text-align: center;">Valuation</th>
+                      <th style="width: 12%; text-align: center;">Status</th>
+                      <th style="width: 26%; text-align: right; padding-right: 24px;">Actions</th>
                     </tr>
                   </thead>
                   <tbody>
                     <tr v-for="plan in filteredPlans" :key="plan.plan_id">
-                      <td class="font-bold">{{ plan.plan_name }}</td>
-                      <td>{{ plan.total_transactions }} txn</td>
-                      <td>{{ plan.duration_months }} Months</td>
-                      <td class="font-bold text-primary">₹{{ plan.price }}</td>
-                      <td>
+                      <td class="font-bold truncate" style="padding-left: 24px;">{{ plan.plan_name }}</td>
+                      <td style="text-align: center;">{{ plan.total_transactions }} txn</td>
+                      <td style="text-align: center;">{{ plan.duration_months }} Months</td>
+                      <td class="font-bold text-primary" style="text-align: center;">₹{{ plan.price }}</td>
+                      <td style="text-align: center;">
                         <span :class="getStatusBadgeClass(plan.status)" class="badge uppercase text-[10px]">
                           {{ plan.status }}
                         </span>
                       </td>
-                      <td>
-                        <div class="flex items-center justify-center gap-2">
-                          <button @click="openAssignModal(plan)" class="btn btn-primary py-1.5 px-3 text-xs" :disabled="plan.status !== 'active'">Assign</button>
-                          <button @click="openEditModal(plan)" class="btn btn-outline py-1.5 px-3 text-xs text-primary hover:bg-primary-light">Edit</button>
-                          <button @click="togglePlanStatus(plan)" class="btn btn-outline py-1.5 px-3 text-xs">
+                      <td style="text-align: right; padding-right: 24px;">
+                        <div style="display: flex; align-items: center; justify-content: flex-end; gap: 8px;">
+                          <button @click="openAssignModal(plan)" class="btn btn-primary py-1.5 px-3 text-xs whitespace-nowrap" :disabled="plan.status !== 'active'">Assign</button>
+                          <button @click="openEditModal(plan)" class="btn btn-outline py-1.5 px-3 text-xs text-primary hover:bg-primary-light whitespace-nowrap">Edit</button>
+                          <button @click="togglePlanStatus(plan)" class="btn btn-outline py-1.5 px-3 text-xs whitespace-nowrap">
                             {{ plan.status === 'active' ? 'Deactivate' : 'Activate' }}
                           </button>
-                          <button @click="handleDeletePlan(plan.plan_id)" class="btn btn-outline py-1.5 px-3 text-xs text-danger hover:bg-danger-light">Delete</button>
+                          <button @click="handleDeletePlan(plan.plan_id)" class="btn btn-outline py-1.5 px-3 text-xs text-danger hover:bg-danger-light whitespace-nowrap">Delete</button>
                         </div>
                       </td>
                     </tr>
@@ -288,45 +286,45 @@
       <div class="p-10">
         <div class="card bg-main border-subtle p-0 overflow-hidden shadow-none">
           <div class="p-10 border-b border-subtle">
-            <div class="flex items-center gap-3">
-              <div class="w-10 h-10 rounded-xl bg-success-light flex items-center justify-center text-success">
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+            <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 24px;">
+              <div style="width: 48px; height: 48px; border-radius: 12px; background-color: rgba(16, 185, 129, 0.1); display: flex; align-items: center; justify-content: center; color: var(--success);">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
               </div>
               <div>
-                <h3 class="text-xl font-extrabold text-main leading-tight">Live Deployments Registry</h3>
-                <p class="text-xs text-muted mt-1 font-medium">Monitoring active subscription terms across all locations</p>
+                <h3 style="font-size: 22px; font-weight: 800; color: var(--text-main); margin: 0; line-height: 1.2;">Live Deployments Registry</h3>
+                <p style="font-size: 13px; color: var(--text-muted); margin: 4px 0 0 0; font-weight: 500;">Monitoring active subscription terms across all locations</p>
               </div>
             </div>
           </div>
 
           <!-- Subscription Filters -->
-          <div class="px-10 py-8 border-b border-subtle bg-main/30">
-            <div class="admin-form-grid">
-              <div class="form-group">
+          <div style="background-color: var(--bg-main); padding: 32px; border-bottom: 1px solid var(--border-subtle);">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">
+              <div class="form-group" style="margin: 0;">
                 <label class="form-label text-[10px] font-bold text-muted uppercase tracking-wider mb-2 block">Search Location</label>
-                <input v-model="tempSubFilters.location" type="text" placeholder="Search by location..." class="form-input h-12 w-full" />
+                <input v-model="tempSubFilters.location" type="text" placeholder="Search by location..." class="form-input" style="height: 48px; width: 100%;" />
               </div>
-              <div class="form-group">
+              <div class="form-group" style="margin: 0;">
                 <label class="form-label text-[10px] font-bold text-muted uppercase tracking-wider mb-2 block">Assigned Tier</label>
-                <select v-model="tempSubFilters.plan" class="form-input h-12 w-full bg-main">
+                <select v-model="tempSubFilters.plan" class="form-input" style="height: 48px; width: 100%; background-color: var(--bg-main);">
                   <option value="all">All Tiers</option>
                   <option v-for="plan in plans" :key="plan.plan_id" :value="plan.plan_name">{{ plan.plan_name }}</option>
                 </select>
               </div>
-              <div class="form-group">
+              <div class="form-group" style="margin: 0;">
                 <label class="form-label text-[10px] font-bold text-muted uppercase tracking-wider mb-2 block">Lifecycle Status</label>
-                <select v-model="tempSubFilters.status" class="form-input h-12 w-full bg-main">
+                <select v-model="tempSubFilters.status" class="form-input" style="height: 48px; width: 100%; background-color: var(--bg-main);">
                   <option value="all">All States</option>
                   <option value="ACTIVE">Active</option>
                   <option value="EXPIRED">Expired</option>
                   <option value="PENDING">Pending</option>
                 </select>
               </div>
-              <div class="flex gap-4 items-end pb-1">
-                <button @click="applySubFilters" class="btn btn-primary flex-1 h-12 text-xs font-black uppercase tracking-widest shadow-none">
+              <div style="display: flex; gap: 16px; align-items: flex-end;">
+                <button @click="applySubFilters" class="btn btn-primary" style="width: 140px; height: 48px; font-weight: bold; text-transform: uppercase; letter-spacing: 0.05em; font-size: 13px;">
                   Apply
                 </button>
-                <button @click="resetSubFilters" class="btn btn-outline flex-1 h-12 text-xs font-black uppercase tracking-widest">
+                <button @click="resetSubFilters" class="btn btn-outline" style="width: 140px; height: 48px; font-weight: bold; text-transform: uppercase; letter-spacing: 0.05em; font-size: 13px;">
                   Reset
                 </button>
               </div>

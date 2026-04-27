@@ -208,9 +208,10 @@ class SubscriptionService {
      */
     async getLocationSubscription(locationId) {
         const query = `
-            SELECT s.*, p.plan_name, p.total_transactions as plan_limit, p.duration_months
+            SELECT s.*, p.plan_name, p.total_transactions as plan_limit, p.duration_months, l.location_name
             FROM LOCATION_SUBSCRIPTIONS s
             JOIN PAYMENT_PLANS p ON s.plan_id = p.plan_id
+            JOIN LOCATIONS l ON s.location_id = l.location_id
             WHERE s.location_id = $1
             ORDER BY s.created_at DESC
             LIMIT 1

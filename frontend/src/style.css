@@ -9,6 +9,7 @@
   --primary-l: 59%;
 
   --primary: hsl(var(--primary-h), var(--primary-s), var(--primary-l));
+  --primary-rgb: 79, 70, 229;
   --primary-hover: hsl(var(--primary-h), var(--primary-s), calc(var(--primary-l) - 5%));
   --primary-light: hsl(var(--primary-h), var(--primary-s), 96%);
   --primary-border: hsl(var(--primary-h), var(--primary-s), 90%);
@@ -60,6 +61,7 @@
   --primary-light: hsla(var(--primary-h), var(--primary-s), var(--primary-l), 0.1);
   --primary-border: hsla(var(--primary-h), var(--primary-s), var(--primary-l), 0.2);
   --primary-shadow: hsla(var(--primary-h), var(--primary-s), var(--primary-l), 0.4);
+  --primary-rgb: 99, 102, 241;
   --primary-accent: hsl(var(--primary-h), var(--primary-s), 75%);
 
   /* Adjusted Status for Dark Mode */
