@@ -37,8 +37,8 @@ const isManager = computed(() => {
   display: flex;
   flex: 1;
   position: relative;
-  margin-top: 64px; /* Space for fixed header */
-  height: calc(100vh - 64px);
+  margin-top: 72px; /* Space for fixed header */
+  height: calc(100vh - 72px);
   overflow: hidden;
 }
 
@@ -48,7 +48,7 @@ const isManager = computed(() => {
 
 .page-container {
   flex: 1;
-  padding: 0 8px 32px 8px;
+  padding: 20px 24px 32px 24px;
   width: 100%;
   height: 100%;
   overflow-y: auto; /* Scrollable content area */
@@ -57,7 +57,7 @@ const isManager = computed(() => {
 
 @media (max-width: 1280px) {
   .page-container {
-    padding: 24px;
+    padding: 20px 24px 32px 24px;
   }
 }
 

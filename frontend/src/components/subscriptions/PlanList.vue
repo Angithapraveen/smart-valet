@@ -1,9 +1,9 @@
 <template>
   <div class="card p-0 overflow-hidden h-full flex flex-col">
-    <div class="px-6 py-5 border-b border-subtle flex justify-between items-center bg-main">
+    <div class="px-6 py-4 border-b border-subtle flex justify-between items-center bg-main">
       <div class="flex items-center space-x-3">
-        <h3 class="text-lg font-bold text-main">Service Tiers</h3>
-        <span class="badge badge-info uppercase text-[10px]">
+        <h3 style="font-size: 16px; font-weight: 750; color: var(--text-main); margin: 0;">Service Tiers</h3>
+        <span class="badge badge-info uppercase text-[9px]">
           {{ plans.length }} Loaded
         </span>
       </div>

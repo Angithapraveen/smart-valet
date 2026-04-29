@@ -1,21 +1,21 @@
 <template>
   <div class="dashboard-page animate-fade-in">
-    <header class="page-header">
+    <header class="page-header" style="margin-bottom: 20px; padding: 12px 20px; border-radius: 12px;">
       <div>
-        <h1 class="page-title">Manager Dashboard</h1>
-        <p class="subtitle">Overview for {{ dashboardData?.location?.location_name || 'Loading...' }}</p>
+        <h1 style="font-size: 24px; font-weight: 800; color: var(--text-main); margin: 0; letter-spacing: -0.03em;">Manager Dashboard</h1>
+        <p style="font-size: 12px; color: var(--text-muted); margin-top: 2px;">{{ dashboardData?.location?.location_name || 'Loading...' }}</p>
       </div>
-      <div class="header-actions">
-        <div v-if="isOverCapacity" class="capacity-alert animate-bounce">
-            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
-            Key Slot Limit Reached!
+      <div class="header-actions" style="gap: 12px;">
+        <div v-if="isOverCapacity" class="capacity-alert animate-bounce" style="padding: 4px 10px; font-size: 11px;">
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+            Limit Reached!
         </div>
-        <button class="settings-btn" @click="router.push('/manager/settings')" title="Configure Location">
-            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+        <button class="settings-btn" style="width: 32px; height: 32px;" @click="router.push('/manager/settings')" title="Configure Location">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1-2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
         </button>
-        <div class="live-indicator">
+        <div class="live-indicator" style="font-size: 11px; padding: 4px 10px;">
           <span class="dot animate-pulse"></span>
-          Live Updates
+          Live
         </div>
       </div>
     </header>
@@ -27,47 +27,47 @@
 
     <div v-else class="dashboard-content">
       <!-- 1. KPI Cards -->
-      <div class="stats-grid">
-        <div class="stat-card" :class="{ 'stat-danger': isOverCapacity }">
-          <div class="stat-icon parkings" :class="{ 'icon-danger': isOverCapacity }">
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.4 2.9A3.7 3.7 0 0 0 2 12v4c0 .6.4 1 1 1h2"/><circle cx="7" cy="17" r="2"/><circle cx="17" cy="17" r="2"/><path d="M14 17h-5"/></svg>
+      <div class="stats-grid" style="gap: 12px; margin-bottom: 20px;">
+        <div class="stat-card" :class="{ 'stat-danger': isOverCapacity }" style="padding: 12px 16px; border-radius: 12px;">
+          <div class="stat-icon parkings" :class="{ 'icon-danger': isOverCapacity }" style="width: 36px; height: 36px; border-radius: 10px;">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.4 2.9A3.7 3.7 0 0 0 2 12v4c0 .6.4 1 1 1h2"/><circle cx="7" cy="17" r="2"/><circle cx="17" cy="17" r="2"/><path d="M14 17h-5"/></svg>
           </div>
           <div class="stat-info">
-            <span class="label">Live Parked</span>
-            <span class="value">{{ dashboardData?.activeParkings || 0 }}</span>
-            <span v-if="dashboardData?.location?.total_capacity" class="capacity-hint">
-                of {{ dashboardData.location.total_capacity }}
+            <span class="label" style="font-size: 9px;">Live Parked</span>
+            <span class="value" style="font-size: 20px;">{{ dashboardData?.activeParkings || 0 }}</span>
+            <span v-if="dashboardData?.location?.total_capacity" class="capacity-hint" style="font-size: 10px;">
+                / {{ dashboardData.location.total_capacity }}
             </span>
           </div>
         </div>
 
-        <div class="stat-card">
-          <div class="stat-icon blocks">
-             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
+        <div class="stat-card" style="padding: 12px 16px; border-radius: 12px;">
+          <div class="stat-icon blocks" style="width: 36px; height: 36px; border-radius: 10px;">
+             <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
           </div>
           <div class="stat-info">
-            <span class="label">Empty Slots</span>
-            <span class="value">{{ dashboardData?.availableBlocks || 0 }}</span>
+            <span class="label" style="font-size: 9px;">Empty Slots</span>
+            <span class="value" style="font-size: 20px;">{{ dashboardData?.availableBlocks || 0 }}</span>
           </div>
         </div>
 
-        <div class="stat-card">
-          <div class="stat-icon transactions">
-             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline><polyline points="17 6 23 6 23 12"></polyline></svg>
+        <div class="stat-card" style="padding: 12px 16px; border-radius: 12px;">
+          <div class="stat-icon transactions" style="width: 36px; height: 36px; border-radius: 10px;">
+             <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline><polyline points="17 6 23 6 23 12"></polyline></svg>
           </div>
           <div class="stat-info">
-            <span class="label">Today's Entry</span>
-            <span class="value">{{ dashboardData?.todayStats?.entered || 0 }}</span>
+            <span class="label" style="font-size: 9px;">Today In</span>
+            <span class="value" style="font-size: 20px;">{{ dashboardData?.todayStats?.entered || 0 }}</span>
           </div>
         </div>
 
-        <div class="stat-card">
-          <div class="stat-icon checkouts">
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"></path><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path></svg>
+        <div class="stat-card" style="padding: 12px 16px; border-radius: 12px;">
+          <div class="stat-icon checkouts" style="width: 36px; height: 36px; border-radius: 10px;">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"></path><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path></svg>
           </div>
           <div class="stat-info">
-            <span class="label">Today's Exits</span>
-            <span class="value">{{ dashboardData?.todayStats?.returned || 0 }}</span>
+            <span class="label" style="font-size: 9px;">Today Out</span>
+            <span class="value" style="font-size: 20px;">{{ dashboardData?.todayStats?.returned || 0 }}</span>
           </div>
         </div>
       </div>
@@ -75,8 +75,8 @@
       <div class="dashboard-grid">
         <!-- 2. Block Status -->
         <div class="card block-status-section">
-          <div class="card-header">
-            <h3>Block Capacity Status</h3>
+          <div class="card-header" style="padding: 12px 16px;">
+            <h3 style="font-size: 14px; font-weight: 750;">Block Capacity Status</h3>
           </div>
           <div class="card-body">
             <div v-if="!dashboardData?.blocksData?.length" class="empty-text">No block data available.</div>
@@ -279,7 +279,7 @@ onUnmounted(() => {
 <style scoped>
 
 .dashboard-page {
-  padding: 24px 0;
+  padding: 0;
   max-width: 100%;
   margin: 0;
 }

@@ -132,7 +132,7 @@ onUnmounted(() => {
 
 <style scoped>
 .app-header {
-  height: 64px;
+  height: 72px;
   background-color: var(--bg-header);
   border-bottom: 1px solid var(--header-border);
   color: var(--text-main);
@@ -146,7 +146,7 @@ onUnmounted(() => {
 .header-inner {
   width: 100%;
   height: 100%;
-  padding: 0 40px;
+  padding: 0 24px;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -184,17 +184,17 @@ onUnmounted(() => {
   margin-left: 40px;
   display: flex;
   align-items: center;
-  gap: 24px;
+  gap: 32px;
 }
 
 .nav-link {
-  font-size: 14px;
+  font-size: 15px;
   font-weight: 600;
   color: var(--text-muted);
   text-decoration: none;
   transition: var(--ts-base);
   position: relative;
-  padding: 4px 0;
+  padding: 8px 12px;
 }
 
 .nav-link:hover {
@@ -208,12 +208,13 @@ onUnmounted(() => {
 .nav-link.active::after {
   content: '';
   position: absolute;
-  bottom: -4px;
-  left: 0;
-  width: 100%;
-  height: 2px;
+  bottom: 0;
+  left: 12px;
+  right: 12px;
+  height: 3px;
   background-color: var(--primary);
-  border-radius: 2px;
+  border-radius: 4px 4px 0 0;
+  box-shadow: 0 -2px 10px var(--primary-shadow);
 }
 
 .header-right {
@@ -267,10 +268,10 @@ onUnmounted(() => {
 .user-trigger {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   cursor: pointer;
-  padding: 6px 12px;
-  border-radius: 12px;
+  padding: 4px 8px;
+  border-radius: 10px;
   transition: var(--ts-base);
   border: 1px solid transparent;
 }
@@ -281,16 +282,16 @@ onUnmounted(() => {
 }
 
 .avatar {
-  width: 34px;
-  height: 34px;
+  width: 30px;
+  height: 30px;
   background: linear-gradient(135deg, var(--primary), var(--primary-hover));
   color: white;
-  border-radius: 10px;
+  border-radius: 8px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-weight: 700;
-  font-size: 14px;
+  font-weight: 750;
+  font-size: 13px;
   box-shadow: 0 4px 10px var(--primary-shadow);
 }
 

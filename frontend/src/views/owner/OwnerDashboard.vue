@@ -1,54 +1,55 @@
 <template>
   <div class="dashboard-page animate-fade-in">
-    <div class="dashboard-header">
-      <h1>Dashboard</h1>
+    <div class="dashboard-header" style="margin-bottom: 20px;">
+      <h1 style="font-size: 24px; font-weight: 800; color: var(--text-main); letter-spacing: -0.03em;">Dashboard</h1>
     </div>
 
     <!-- Summary Cards -->
-    <div class="summary-cards">
-      <div class="summary-card locations-card">
-        <div class="card-icon">
-          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="2" ry="2"></rect><path d="M9 17V7h4a3 3 0 0 1 0 6H9"></path></svg>
+    <div class="summary-cards" style="margin-bottom: 24px; gap: 12px;">
+      <div class="summary-card locations-card" style="padding: 12px 16px; border-radius: 12px;">
+        <div class="card-icon" style="width: 36px; height: 36px; border-radius: 10px;">
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="2" ry="2"></rect><path d="M9 17V7h4a3 3 0 0 1 0 6H9"></path></svg>
         </div>
         <div class="card-content">
-          <div class="card-label">Total Locations</div>
-          <div class="card-value">{{ visibleLocationCount }}</div>
+          <div class="card-label" style="font-size: 9px;">Total Locations</div>
+          <div class="card-value" style="font-size: 20px;">{{ visibleLocationCount }}</div>
         </div>
       </div>
 
-      <div class="summary-card managers-card">
-        <div class="card-icon">
-          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="8.5" cy="7" r="4"></circle><polyline points="22 14 19 11 16 14"></polyline></svg>
+      <div class="summary-card managers-card" style="padding: 12px 16px; border-radius: 12px;">
+        <div class="card-icon" style="width: 36px; height: 36px; border-radius: 10px;">
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="8.5" cy="7" r="4"></circle><polyline points="22 14 19 11 16 14"></polyline></svg>
         </div>
         <div class="card-content">
-          <div class="card-label">Total Managers</div>
-          <div class="card-value">{{ summary.total_managers }}</div>
+          <div class="card-label" style="font-size: 9px;">Total Managers</div>
+          <div class="card-value" style="font-size: 20px;">{{ summary.total_managers }}</div>
         </div>
       </div>
 
-      <div class="summary-card drivers-card">
-        <div class="card-icon">
-          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"></path></svg>
+      <div class="summary-card drivers-card" style="padding: 12px 16px; border-radius: 12px;">
+        <div class="card-icon" style="width: 36px; height: 36px; border-radius: 10px;">
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"></path></svg>
         </div>
         <div class="card-content">
-          <div class="card-label">Total Drivers</div>
-          <div class="card-value">{{ summary.total_drivers }}</div>
+          <div class="card-label" style="font-size: 9px;">Total Drivers</div>
+          <div class="card-value" style="font-size: 20px;">{{ summary.total_drivers }}</div>
         </div>
       </div>
     </div>
 
     <!-- My Locations Section -->
     <div class="locations-section">
-      <div class="section-header">
-        <div class="header-main-info">
-          <h2>My Locations</h2>
+      <div class="section-header" style="padding: 12px 20px;">
+        <div class="header-main-info" style="gap: 16px;">
+          <h2 style="font-size: 16px; font-weight: 750;">My Locations</h2>
           <div class="search-box">
-            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="search-icon"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="search-icon"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
             <input 
               type="text" 
               v-model="searchQuery" 
-              placeholder="Search by name or city..." 
+              placeholder="Search location..." 
               class="search-input"
+              style="padding: 6px 12px 6px 32px; height: 34px; font-size: 12px; width: 220px;"
             />
           </div>
         </div>
@@ -347,7 +348,7 @@ onMounted(() => {
 
 <style scoped>
 .dashboard-page {
-  padding-top: 16px;
+  padding-top: 0;
 }
 
 .dashboard-header {

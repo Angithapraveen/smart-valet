@@ -3,9 +3,11 @@ const router = express.Router();
 const valetController = require('../controllers/valetController');
 const { authenticate } = require('../middleware/auth');
 
+const { checkSubscription } = require('../middleware/subscriptionGuard');
+
 // Protected route for simulation/manual testing
 // In a real webhook scenario, this might use signature verification instead of JWT
-router.post('/whatsapp', authenticate, valetController.createWhatsAppTransaction);
+router.post('/whatsapp', authenticate, checkSubscription, valetController.createWhatsAppTransaction);
 router.get('/vehicles', authenticate, valetController.getValetVehicles);
 router.get('/history', authenticate, valetController.getTransactionHistory);
 // Status Updates (Manager)

@@ -106,9 +106,9 @@ class SubscriptionService {
 
             // 5. Add to Payment History
             await client.query(
-                `INSERT INTO PAYMENT_HISTORY (location_id, subscription_id, amount, status)
-                 VALUES ($1, $2, $3, 'COMPLETED')`,
-                [locationId, subscription.subscription_id, plan.price]
+                `INSERT INTO PAYMENT_HISTORY (location_id, plan_id, amount, status)
+                 VALUES ($1, $2, $3, 'SUCCESS')`,
+                [locationId, planId, plan.price]
             );
 
             await client.query('COMMIT');
@@ -212,7 +212,7 @@ class SubscriptionService {
             FROM LOCATION_SUBSCRIPTIONS s
             JOIN PAYMENT_PLANS p ON s.plan_id = p.plan_id
             JOIN LOCATIONS l ON s.location_id = l.location_id
-            WHERE s.location_id = $1
+            WHERE s.location_id = $1 AND s.status = 'ACTIVE'
             ORDER BY s.created_at DESC
             LIMIT 1
         `;
@@ -285,6 +285,104 @@ class SubscriptionService {
         `;
         const result = await pool.query(query, [locationId]);
         return result.rows;
+    }
+
+    /**
+     * Initiate a payment
+     * @param {string} locationId
+     * @param {number} planId
+     */
+    async initiatePayment(locationId, planId) {
+        // 1. Fetch Plan Details
+        const planResult = await pool.query(
+            'SELECT * FROM PAYMENT_PLANS WHERE plan_id = $1',
+            [planId]
+        );
+
+        if (planResult.rows.length === 0) {
+            throw new Error('Invalid plan ID');
+        }
+
+        const plan = planResult.rows[0];
+
+        // 2. Insert into payment_history
+        const insertQuery = `
+            INSERT INTO PAYMENT_HISTORY (location_id, plan_id, amount, status)
+            VALUES ($1, $2, $3, 'PENDING')
+            RETURNING payment_id
+        `;
+        const result = await pool.query(insertQuery, [locationId, planId, plan.price]);
+        return result.rows[0].payment_id;
+    }
+
+    /**
+     * Handle payment result
+     * @param {number} paymentId
+     * @param {string} status SUCCESS or FAILED
+     */
+    async updatePaymentStatus(paymentId, status) {
+        const client = await pool.connect();
+        try {
+            await client.query('BEGIN');
+
+            // 1. Update Payment History status
+            const updatePaymentQuery = `
+                UPDATE PAYMENT_HISTORY 
+                SET status = $1, payment_date = NOW() 
+                WHERE payment_id = $2 
+                RETURNING *
+            `;
+            const paymentResult = await client.query(updatePaymentQuery, [status, paymentId]);
+
+            if (paymentResult.rows.length === 0) {
+                throw new Error('Payment record not found');
+            }
+
+            const payment = paymentResult.rows[0];
+
+            if (status === 'SUCCESS') {
+                // 2. Fetch Plan Details
+                const planResult = await client.query(
+                    'SELECT * FROM PAYMENT_PLANS WHERE plan_id = $1',
+                    [payment.plan_id]
+                );
+                const plan = planResult.rows[0];
+
+                // 3. Calculate dates
+                const startDate = new Date();
+                const endDate = new Date();
+                endDate.setMonth(startDate.getMonth() + plan.duration_months);
+
+                // 4. Deactivate any existing active subscriptions for this location
+                await client.query(
+                    "UPDATE LOCATION_SUBSCRIPTIONS SET status = 'EXPIRED' WHERE location_id = $1 AND status = 'ACTIVE'",
+                    [payment.location_id]
+                );
+
+                // 5. Create New Subscription
+                const insertSubQuery = `
+                    INSERT INTO LOCATION_SUBSCRIPTIONS 
+                    (location_id, plan_id, start_date, end_date, status, remaining_transactions)
+                    VALUES ($1, $2, $3, $4, 'ACTIVE', $5)
+                    RETURNING *
+                `;
+                await client.query(insertSubQuery, [
+                    payment.location_id, 
+                    payment.plan_id, 
+                    startDate, 
+                    endDate, 
+                    plan.total_transactions
+                ]);
+            }
+
+            await client.query('COMMIT');
+            return payment;
+        } catch (error) {
+            await client.query('ROLLBACK');
+            throw error;
+        } finally {
+            client.release();
+        }
     }
 
     /**

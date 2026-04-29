@@ -215,6 +215,54 @@ const updatePlan = async (req, res) => {
     }
 };
 
+/**
+ * Initiate Payment
+ * POST /api/subscriptions/initiate-payment
+ */
+const initiatePayment = async (req, res) => {
+    const { location_id, plan_id } = req.body;
+
+    if (!location_id || !plan_id) {
+        return res.status(400).json({ success: false, message: 'Location ID and Plan ID are required.' });
+    }
+
+    try {
+        const paymentId = await subscriptionService.initiatePayment(location_id, plan_id);
+        res.json({
+            success: true,
+            message: 'Payment initiated.',
+            data: { payment_id: paymentId }
+        });
+    } catch (error) {
+        console.error('Initiate Payment Error:', error);
+        res.status(500).json({ success: false, message: error.message || 'Failed to initiate payment.' });
+    }
+};
+
+/**
+ * Update Payment Status
+ * POST /api/subscriptions/payment-status
+ */
+const updatePaymentStatus = async (req, res) => {
+    const { payment_id, status } = req.body;
+
+    if (!payment_id || !status) {
+        return res.status(400).json({ success: false, message: 'Payment ID and Status are required.' });
+    }
+
+    try {
+        const payment = await subscriptionService.updatePaymentStatus(payment_id, status);
+        res.json({
+            success: true,
+            message: status === 'SUCCESS' ? 'Payment Successful. Plan Activated.' : 'Payment Failed. Please try again.',
+            data: payment
+        });
+    } catch (error) {
+        console.error('Update Payment Status Error:', error);
+        res.status(500).json({ success: false, message: error.message || 'Failed to update payment status.' });
+    }
+};
+
 module.exports = {
     createPlan,
     assignPlan,
@@ -225,5 +273,7 @@ module.exports = {
     getMySubscriptions,
     deletePlan,
     updatePlanStatus,
-    updatePlan
+    updatePlan,
+    initiatePayment,
+    updatePaymentStatus
 };

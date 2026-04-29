@@ -289,14 +289,7 @@ h6 {
 /* Layout Utilities */
 .page-header,
 .dashboard-header {
-  position: -webkit-sticky;
-  position: sticky;
-  top: 0;
-  /* Height of AppHeader */
-  z-index: 40;
   background-color: var(--bg-main);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
   margin-bottom: 24px;
   display: flex;
   justify-content: space-between;

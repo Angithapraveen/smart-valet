@@ -165,7 +165,7 @@ const formatDate = (dateStr) => {
 }
 
 .plan-title {
-  font-size: 24px;
+  font-size: 20px;
   font-weight: 800;
   color: var(--text-main);
   letter-spacing: -0.02em;
@@ -217,7 +217,7 @@ const formatDate = (dateStr) => {
 
 .metric-card {
   background: var(--bg-card);
-  padding: 16px;
+  padding: 12px;
   border-radius: 12px;
   border: 1px solid var(--border-subtle);
   transition: border-color 0.2s;
@@ -243,7 +243,7 @@ const formatDate = (dateStr) => {
 }
 
 .metric-value {
-  font-size: 22px;
+  font-size: 18px;
   font-weight: 800;
   font-family: 'Outfit', sans-serif;
   color: var(--text-main);
@@ -263,7 +263,7 @@ const formatDate = (dateStr) => {
 /* Intelligence Section */
 .intelligence-card {
   background: var(--bg-card);
-  padding: 20px;
+  padding: 16px;
   border-radius: 16px;
   border: 1px solid var(--border-subtle);
 }
@@ -282,17 +282,17 @@ const formatDate = (dateStr) => {
 }
 
 .percentage-label {
-  font-size: 18px;
+  font-size: 16px;
   font-weight: 800;
   color: var(--primary);
 }
 
 .progress-track-thin {
   width: 100%;
-  height: 6px;
+  height: 5px;
   background: var(--bg-main);
   border-radius: 100px;
-  margin-bottom: 20px;
+  margin-bottom: 16px;
   overflow: hidden;
 }
 

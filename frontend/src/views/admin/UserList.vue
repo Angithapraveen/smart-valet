@@ -546,7 +546,7 @@ input:checked + .slider:before {
 }
 
 .modal-header {
-  padding: 24px 32px;
+  padding: 16px 24px;
   border-bottom: 1px solid var(--border-subtle);
   display: flex;
   justify-content: space-between;
@@ -554,7 +554,7 @@ input:checked + .slider:before {
 }
 
 .modal-form {
-  padding: 32px;
+  padding: 24px;
 }
 
 .form-group {
@@ -573,10 +573,10 @@ input:checked + .slider:before {
 
 .form-group input {
   width: 100%;
-  padding: 12px 16px;
+  padding: 10px 14px;
   border: 1.5px solid var(--border-subtle);
-  border-radius: 12px;
-  font-size: 15px;
+  border-radius: 10px;
+  font-size: 14px;
   background: var(--bg-main);
   color: var(--text-main);
   transition: all 0.2s;
@@ -623,8 +623,9 @@ input:checked + .slider:before {
 
 .modal-actions .btn {
   flex: 1;
-  padding: 14px;
+  padding: 10px;
   font-weight: 700;
+  font-size: 13px;
 }
 
 .loading-state, .empty-state {

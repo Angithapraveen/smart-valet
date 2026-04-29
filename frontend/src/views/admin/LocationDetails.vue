@@ -326,13 +326,109 @@
                         </div>
                     </div>
 
-                    <!-- SUMMARY TAB -->
-                    <div v-if="currentTab === 'summary'" class="tab-pane">
+                    <!-- SUBSCRIPTIONS TAB -->
+                    <div v-if="currentTab === 'subscriptions'" class="tab-pane">
                         <div class="pane-header">
-                            <h3>Performance Summary</h3>
+                            <h3>Subscription Status</h3>
+                            <div class="header-badges" v-if="currentSubscription">
+                                <span class="badge" :class="getPlanBadgeClass(currentSubscription)">
+                                    {{ currentSubscription.status }}
+                                </span>
+                            </div>
                         </div>
-                         <div class="empty-state-pane">
-                            Stats coming soon...
+
+                        <div v-if="tabLoading" class="loading-state">
+                            <p>Loading subscription details...</p>
+                        </div>
+
+                        <div v-else-if="currentSubscription" class="subscription-overview">
+                            <!-- Active Plan Card -->
+                            <div class="active-plan-card">
+                                <div class="plan-main-info">
+                                    <div class="plan-identity">
+                                        <div class="plan-icon-hex">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"></path></svg>
+                                        </div>
+                                        <div>
+                                            <h4 class="plan-display-name">{{ currentSubscription.plan_name }}</h4>
+                                            <p class="plan-validity">Valid until {{ formatDate(currentSubscription.end_date) }}</p>
+                                        </div>
+                                    </div>
+                                    <div class="plan-pricing">
+                                        <span class="price-tag">Active</span>
+                                    </div>
+                                </div>
+
+                                <div class="usage-grid">
+                                    <div class="usage-stat">
+                                        <label>Remaining</label>
+                                        <div class="stat-value highlight">{{ currentSubscription.remaining_transactions }}</div>
+                                        <div class="stat-sub">Transactions</div>
+                                    </div>
+                                    <div class="usage-stat">
+                                        <label>Plan Limit</label>
+                                        <div class="stat-value">{{ currentSubscription.plan_limit }}</div>
+                                        <div class="stat-sub">Total Credits</div>
+                                    </div>
+                                    <div class="usage-stat">
+                                        <label>Duration</label>
+                                        <div class="stat-value">{{ currentSubscription.duration_months }}</div>
+                                        <div class="stat-sub">Months</div>
+                                    </div>
+                                </div>
+
+                                <div class="usage-progress-container">
+                                    <div class="progress-labels">
+                                        <span>Usage Progress</span>
+                                        <span>{{ calculateUsagePercent(currentSubscription) }}% Used</span>
+                                    </div>
+                                    <div class="progress-bar-bg">
+                                        <div class="progress-bar-fill" :style="{ width: calculateUsagePercent(currentSubscription) + '%' }" :class="getUsageColorClass(currentSubscription)"></div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- History Table -->
+                            <div class="subscription-history-section">
+                                <h4 class="sub-section-title">Subscription History</h4>
+                                <div class="table-container compact-table">
+                                    <table class="data-table">
+                                        <thead>
+                                            <tr>
+                                                <th>Plan Name</th>
+                                                <th>Purchased On</th>
+                                                <th>Expiry Date</th>
+                                                <th>Initial Credits</th>
+                                                <th>Status</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr v-for="sub in subscriptionHistory" :key="sub.subscription_id">
+                                                <td class="font-medium">{{ sub.plan_name }}</td>
+                                                <td class="text-dim">{{ formatDate(sub.start_date) }}</td>
+                                                <td class="text-dim">{{ formatDate(sub.end_date) }}</td>
+                                                <td>{{ sub.remaining_transactions }}</td>
+                                                <td>
+                                                    <span class="status-pill" :class="sub.status.toLowerCase()">
+                                                        {{ sub.status }}
+                                                    </span>
+                                                </td>
+                                            </tr>
+                                            <tr v-if="subscriptionHistory.length === 0">
+                                                <td colspan="5" class="empty-message">No subscription history found.</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div v-else class="empty-state-pane">
+                            <div class="no-sub-content">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="text-dim"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+                                <p>This location does not have an active subscription.</p>
+                                <button class="btn btn-primary mt-4" @click="$router.push('/admin/dashboard')">Assign a Plan</button>
+                            </div>
                         </div>
                         </div>
                     </div>
@@ -539,6 +635,8 @@ const blocks = ref([]);
 const currentTab = ref('');
 const tabLoading = ref(false);
 const togglingUser = ref(null);
+const currentSubscription = ref(null);
+const subscriptionHistory = ref([]);
 
 // Modal states
 const showBlockModal = ref(false);
@@ -587,7 +685,7 @@ const tabs = computed(() => {
             { id: 'blocks', label: 'Blocks' },
             { id: 'managers', label: 'Managers' },
             { id: 'drivers', label: 'Drivers' },
-            { id: 'summary', label: 'Summary' }
+            { id: 'subscriptions', label: 'Subscriptions' }
         ];
     }
     return [
@@ -595,7 +693,7 @@ const tabs = computed(() => {
         { id: 'owners', label: 'Owners' },
         { id: 'managers', label: 'Managers' },
         { id: 'drivers', label: 'Drivers' },
-        { id: 'summary', label: 'Summary' }
+        { id: 'subscriptions', label: 'Subscriptions' }
     ];
 });
 
@@ -771,10 +869,55 @@ const fetchLocationDetails = async () => {
         fetchOwners();
         fetchManagers();
         fetchDrivers();
+        fetchSubscriptions();
     } else if (isOwner.value) {
         fetchManagers();
         fetchDrivers();
+        fetchSubscriptions();
     }
+};
+
+const fetchSubscriptions = async () => {
+    try {
+        // Fetch current active plan
+        const currentRes = await axios.get(`${API_URL}/admin/subscriptions/my-plan/${locationId}`, {
+            headers: { Authorization: `Bearer ${authStore.token}` }
+        });
+        if (currentRes.data.success) {
+            currentSubscription.value = currentRes.data.data;
+        }
+
+        // Fetch history
+        const historyRes = await axios.get(`${API_URL}/admin/subscriptions/my-subscriptions/${locationId}`, {
+            headers: { Authorization: `Bearer ${authStore.token}` }
+        });
+        if (historyRes.data.success) {
+            subscriptionHistory.value = historyRes.data.data;
+        }
+    } catch (e) {
+        console.error("Error fetching subscriptions", e);
+    }
+};
+
+const calculateUsagePercent = (sub) => {
+    if (!sub || !sub.plan_limit) return 0;
+    const used = sub.used_transactions || 0;
+    return Math.min(Math.round((used / sub.plan_limit) * 100), 100);
+};
+
+const getUsageColorClass = (sub) => {
+    const percent = calculateUsagePercent(sub);
+    if (percent > 90) return 'critical';
+    if (percent > 70) return 'warning';
+    return 'safe';
+};
+
+const getPlanBadgeClass = (sub) => {
+    if (!sub) return '';
+    const isExpired = sub.status === 'EXPIRED' || (sub.end_date && new Date(sub.end_date) < new Date());
+    if (isExpired) return 'badge-danger';
+    if (sub.remaining_transactions <= 0) return 'badge-warning';
+    return 'badge-success';
 };
 
 const fetchOwners = async () => {
@@ -1790,5 +1933,180 @@ onMounted(async () => {
     align-items: center;
     gap: 10px;
 }
+.subscription-overview {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+}
+
+.active-plan-card {
+    background: linear-gradient(145deg, var(--bg-card) 0%, var(--bg-main) 100%);
+    border: 1.5px solid var(--border-subtle);
+    border-radius: 20px;
+    padding: 32px;
+    box-shadow: var(--shadow-md);
+}
+
+.plan-main-info {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 32px;
+}
+
+.plan-identity {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+
+.plan-icon-hex {
+    width: 64px;
+    height: 64px;
+    background: var(--primary);
+    color: white;
+    border-radius: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 12px 24px -8px var(--primary-shadow);
+}
+
+.plan-display-name {
+    font-size: 24px;
+    font-weight: 800;
+    margin: 0 0 4px 0;
+    color: var(--text-main);
+    letter-spacing: -0.02em;
+}
+
+.plan-validity {
+    font-size: 14px;
+    color: var(--text-muted);
+    font-weight: 500;
+}
+
+.price-tag {
+    background: #ecfdf5;
+    color: #059669;
+    padding: 6px 16px;
+    border-radius: 100px;
+    font-weight: 700;
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    border: 1px solid #10b98133;
+}
+
+.usage-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 24px;
+    margin-bottom: 32px;
+    padding: 24px;
+    background: var(--bg-card);
+    border-radius: 16px;
+    border: 1px solid var(--border-subtle);
+}
+
+.usage-stat {
+    text-align: center;
+}
+
+.usage-stat label {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    letter-spacing: 0.1em;
+}
+
+.stat-value {
+    font-size: 32px;
+    font-weight: 800;
+    color: var(--text-main);
+    line-height: 1.2;
+    margin: 4px 0;
+    font-family: 'Outfit', sans-serif;
+}
+
+.stat-value.highlight {
+    color: var(--primary);
+}
+
+.stat-sub {
+    font-size: 12px;
+    color: var(--text-muted);
+    font-weight: 500;
+}
+
+.usage-progress-container {
+    padding: 0 4px;
+}
+
+.progress-labels {
+    display: flex;
+    justify-content: space-between;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-main);
+    margin-bottom: 12px;
+}
+
+.progress-bar-bg {
+    height: 12px;
+    background: var(--bg-main);
+    border-radius: 100px;
+    overflow: hidden;
+    border: 1px solid var(--border-subtle);
+}
+
+.progress-bar-fill {
+    height: 100%;
+    border-radius: 100px;
+    transition: width 1s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.progress-bar-fill.safe { background: var(--success); }
+.progress-bar-fill.warning { background: var(--warning); }
+.progress-bar-fill.critical { background: var(--danger); }
+
+.subscription-history-section {
+    margin-top: 12px;
+}
+
+.sub-section-title {
+    font-size: 18px;
+    font-weight: 700;
+    margin-bottom: 20px;
+    color: var(--text-main);
+}
+
+.compact-table .data-table td {
+    padding: 12px 16px;
+    font-size: 13px;
+}
+
+.status-pill {
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+}
+
+.status-pill.active { background: #ecfdf5; color: #059669; }
+.status-pill.expired { background: #fef2f2; color: #dc2626; }
+.status-pill.over { background: #fffbeb; color: #d97706; }
+
+.no-sub-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+    padding: 40px;
+}
+
+.mt-4 { margin-top: 16px; }
 </style>
 

@@ -145,6 +145,45 @@
                 Manage Locations
             </button>
         </div>
+
+        <!-- Only block for Inactive Site, not for Limits (Limits are checked on Generate) -->
+        <div v-if="subscriptionBlocked" class="content-restriction-overlay glass-overlay">
+            <div class="modal-card restricted-card animate-pop-in">
+                <div class="restriction-icon-wrapper">
+                    <div class="icon-pulse"></div>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+                </div>
+                <h3>Access Restricted</h3>
+                <p class="restriction-text">
+                    Subscription architecture is currently inactive. Valet operations are locked.
+                </p>
+                <button class="retry-btn" @click="checkSubscriptionStatus" :disabled="checkingSubscription">
+                    <span v-if="checkingSubscription" class="mini-spinner"></span>
+                    {{ checkingSubscription ? 'Verifying...' : 'Retry Connection' }}
+                </button>
+            </div>
+        </div>
+
+        <!-- Specific Limit Exhausted Modal -->
+        <div v-if="limitReached" class="modal-overlay glass-overlay">
+            <div class="modal-card restricted-card animate-pop-in">
+                <div class="restriction-icon-wrapper">
+                    <div class="icon-pulse"></div>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+                </div>
+                <h3>Limit Exhausted</h3>
+                <p class="restriction-text">
+                    You have reached the transaction limit for this service tier. No new vehicles can be parked.
+                </p>
+                <div class="limit-contact-box">
+                    Please contact your manager to upgrade the plan. 
+                    <strong>Existing cars can still be returned.</strong>
+                </div>
+                <button class="retry-btn" @click="limitReached = false">
+                    Dismiss
+                </button>
+            </div>
+        </div>
     </div>
 
     <!-- Capacity Alert Pop-up Modal -->
@@ -282,6 +321,7 @@
 import { ref, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '../../stores/auth';
+import { SubscriptionService } from '../../services/SubscriptionService';
 import axios from 'axios';
 
 import { useToast } from '../../stores/toast';
@@ -297,6 +337,9 @@ const currentTime = ref(new Date());
 const locationCapacity = ref(0);
 const isOverCapacity = ref(false);
 const showCapacityPopup = ref(false);
+const subscriptionBlocked = ref(false);
+const limitReached = ref(false);
+const checkingSubscription = ref(false);
 
 const handleAcknowledge = () => {
     if (popupValetId.value) {
@@ -599,8 +642,52 @@ const logout = () => {
     router.push('/login');
 };
 
-const openQrModal = () => {
-    showQrModal.value = true;
+const openQrModal = async () => {
+    checkingSubscription.value = true;
+    try {
+        const locId = authStore.accessibleLocations?.[0]?.location_id;
+        if (!locId) return;
+
+        const subRes = await SubscriptionService.getMyPlan(locId);
+        const sub = subRes.data;
+
+        if (!sub || sub.status !== 'ACTIVE') {
+            subscriptionBlocked.value = true;
+            return;
+        }
+
+        if (sub.remaining_transactions <= 0 || (sub.calculated_remaining !== undefined && sub.calculated_remaining <= 0)) {
+            limitReached.value = true;
+            return;
+        }
+        
+        subscriptionBlocked.value = false;
+        limitReached.value = false;
+        showQrModal.value = true;
+    } catch (error) {
+        console.error('Subscription Check Error:', error);
+        subscriptionBlocked.value = true;
+    } finally {
+        checkingSubscription.value = false;
+    }
+};
+
+const checkSubscriptionStatus = async () => {
+    const locId = authStore.accessibleLocations?.[0]?.location_id;
+    if (!locId) return;
+    
+    checkingSubscription.value = true;
+    try {
+        const subRes = await SubscriptionService.getMyPlan(locId);
+        const sub = subRes.data;
+        
+        subscriptionBlocked.value = !sub || sub.status !== 'ACTIVE';
+        // We do NOT set limitReached here to keep the dashboard visible
+    } catch (err) {
+        subscriptionBlocked.value = true;
+    } finally {
+        checkingSubscription.value = false;
+    }
 };
 
 const openBlockAssignment = (vehicle) => {
@@ -666,6 +753,7 @@ onMounted(async () => {
     loading.value = true;
     try {
         await fetchBotStatus();
+        await checkSubscriptionStatus();
         await fetchVehicles();
         // Poll every 10 seconds (faster for testing)
         setInterval(fetchVehicles, 10000);
@@ -1564,5 +1652,160 @@ onMounted(async () => {
     color: var(--text-muted);
     font-style: italic;
     font-size: 13px;
+}
+.main-content-wrapper {
+    position: relative;
+    min-height: 400px;
+}
+
+/* Enhanced Restriction UI (Sectional) */
+.content-restriction-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(var(--bg-main-rgb), 0.8);
+    backdrop-filter: blur(12px);
+    z-index: 50;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    border-radius: 24px;
+}
+
+.restricted-card {
+    background: var(--bg-card);
+    border-radius: 32px;
+    padding: 40px 30px;
+    text-align: center;
+    max-width: 340px;
+    width: 90%;
+    border: 1px solid rgba(239, 68, 68, 0.2);
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+}
+
+.restriction-icon-wrapper {
+    position: relative;
+    width: 80px;
+    height: 80px;
+    background: rgba(239, 68, 68, 0.1);
+    color: #ef4444;
+    border-radius: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 24px;
+}
+
+.icon-pulse {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    border-radius: 24px;
+    border: 2px solid #ef4444;
+    animation: icon-pulse 2s infinite;
+    opacity: 0;
+}
+
+@keyframes icon-pulse {
+    0% { transform: scale(1); opacity: 0.5; }
+    100% { transform: scale(1.4); opacity: 0; }
+}
+
+.restricted-card h3 {
+    font-size: 24px;
+    font-weight: 800;
+    color: var(--text-main);
+    margin-bottom: 12px;
+    letter-spacing: -0.02em;
+}
+
+.restriction-text {
+    font-size: 14px;
+    color: var(--text-muted);
+    line-height: 1.6;
+    margin-bottom: 24px;
+    font-weight: 500;
+}
+
+.limit-contact-box {
+    background: rgba(245, 158, 11, 0.1);
+    border: 1px solid rgba(245, 158, 11, 0.2);
+    color: #f59e0b;
+    border-radius: 12px;
+    padding: 16px;
+    font-size: 12px;
+    font-weight: 600;
+    margin-bottom: 24px;
+    text-align: left;
+}
+
+.restriction-info-box {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid var(--border-subtle);
+    border-radius: 12px;
+    padding: 12px;
+    font-size: 11px;
+    color: var(--text-muted);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 30px;
+    text-align: left;
+}
+
+.retry-btn {
+    width: 100%;
+    padding: 16px;
+    border-radius: 16px;
+    background: #ef4444;
+    color: white;
+    font-weight: 800;
+    font-size: 14px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    box-shadow: 0 10px 20px rgba(239, 68, 68, 0.2);
+}
+
+.retry-btn:hover:not(:disabled) {
+    background: #dc2626;
+    transform: translateY(-2px);
+    box-shadow: 0 15px 25px rgba(239, 68, 68, 0.3);
+}
+
+.retry-btn:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+}
+
+.mini-spinner {
+    width: 16px;
+    height: 16px;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-top-color: white;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+}
+
+.animate-pop-in {
+    animation: popIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes popIn {
+    0% { transform: scale(0.9); opacity: 0; }
+    100% { transform: scale(1); opacity: 1; }
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
 }
 </style>

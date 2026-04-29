@@ -5,10 +5,10 @@
 CREATE TABLE IF NOT EXISTS PAYMENT_HISTORY (
     payment_id SERIAL PRIMARY KEY,
     location_id VARCHAR(12) NOT NULL REFERENCES LOCATIONS(location_id),
-    subscription_id INTEGER REFERENCES LOCATION_SUBSCRIPTIONS(subscription_id),
+    plan_id INTEGER REFERENCES PAYMENT_PLANS(plan_id),
     amount DECIMAL(10, 2) NOT NULL,
-    payment_method VARCHAR(50) DEFAULT 'CASH',
-    status VARCHAR(20) DEFAULT 'COMPLETED',
+    status VARCHAR(20) DEFAULT 'PENDING' CHECK (status IN ('PENDING', 'SUCCESS', 'FAILED')),
+    payment_date TIMESTAMP DEFAULT NOW(),
     transaction_ref VARCHAR(100),
     created_at TIMESTAMP DEFAULT NOW()
 );

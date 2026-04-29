@@ -7,10 +7,10 @@
         </router-link>
     </div>
 
-    <header class="page-header">
+    <header class="page-header" style="margin-bottom: 24px;">
       <div class="header-info">
-          <h1>Owners List</h1>
-          <p class="subtitle">Manage and monitor all platform owners</p>
+          <h1 style="font-size: 24px; font-weight: 800; color: var(--text-main); margin: 0; letter-spacing: -0.03em;">Owners List</h1>
+          <p style="font-size: 12px; color: var(--text-muted); margin-top: 2px;">Manage and monitor all platform owners</p>
       </div>
     </header>
 
@@ -83,31 +83,31 @@
 
     <!-- Edit Access Modal -->
     <div v-if="showModal" class="modal-overlay" @click.self="closeModal">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h3>Manage Access: {{ selectedOwner?.name }}</h3>
-          <button class="close-btn" @click="closeModal">&times;</button>
+      <div class="modal-content" style="max-width: 500px; border-radius: 12px;">
+        <div class="modal-header" style="padding: 16px 24px;">
+          <h3 style="font-size: 18px; font-weight: 750; color: var(--text-main); margin: 0;">Manage Access: {{ selectedOwner?.name }}</h3>
+          <button class="close-btn" style="font-size: 20px;" @click="closeModal">&times;</button>
         </div>
-        <div class="modal-body">
-          <p class="modal-hint">Select the locations this owner should have access to:</p>
-          <div v-if="loadingLocations" class="modal-loading">
+        <div class="modal-body" style="padding: 20px;">
+          <p class="modal-hint" style="font-size: 12px; margin-bottom: 16px;">Select the locations this owner should have access to:</p>
+          <div v-if="loadingLocations" class="modal-loading" style="padding: 20px;">
             <div class="spinner"></div>
-            <p>Loading locations...</p>
+            <p style="font-size: 12px;">Loading locations...</p>
           </div>
-          <div v-else class="locations-grid">
-            <label v-for="loc in allLocations" :key="loc.location_id" class="location-checkbox-card" :class="{ checked: isSelected(loc.location_id) }">
+          <div v-else class="locations-grid" style="grid-template-columns: 1fr; gap: 8px;">
+            <label v-for="loc in allLocations" :key="loc.location_id" class="location-checkbox-card" :class="{ checked: isSelected(loc.location_id) }" style="padding: 8px 12px; border-radius: 8px;">
               <input type="checkbox" :value="loc.location_id" v-model="tempSelectedLocations">
               <div class="loc-card-content">
-                <span class="loc-name">{{ loc.location_name }}</span>
-                <span class="loc-id">{{ loc.location_id }}</span>
+                <span class="loc-name" style="font-size: 13px;">{{ loc.location_name }}</span>
+                <span class="loc-id" style="font-size: 10px;">{{ loc.location_id }}</span>
               </div>
             </label>
           </div>
         </div>
-        <div class="modal-footer">
-          <button class="btn btn-secondary" @click="closeModal" :disabled="saving">Cancel</button>
-          <button class="btn btn-primary" @click="saveAccess" :disabled="saving">
-            {{ saving ? 'Saving...' : 'Save Changes' }}
+        <div class="modal-footer" style="padding: 16px 24px;">
+          <button class="btn btn-secondary" style="padding: 6px 12px; font-size: 12px; border-radius: 8px;" @click="closeModal" :disabled="saving">Cancel</button>
+          <button class="btn btn-primary" style="padding: 6px 12px; font-size: 12px; border-radius: 8px;" @click="saveAccess" :disabled="saving">
+            {{ saving ? 'Saving...' : 'Save' }}
           </button>
         </div>
       </div>
@@ -342,9 +342,9 @@ export default {
 
 .data-table th {
     background: var(--bg-main);
-    padding: 16px 24px;
+    padding: 12px 16px;
     text-align: left;
-    font-size: 12px;
+    font-size: 11px;
     font-weight: 700;
     color: var(--text-muted);
     text-transform: uppercase;
@@ -353,8 +353,8 @@ export default {
 }
 
 .data-table td {
-    padding: 18px 24px;
-    font-size: 14px;
+    padding: 12px 16px;
+    font-size: 13px;
     color: var(--text-main);
     border-bottom: 1px solid var(--border-subtle);
 }

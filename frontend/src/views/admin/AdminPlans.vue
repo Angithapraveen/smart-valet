@@ -71,93 +71,90 @@
           </div>
         </div>
         
-               <div class="p-10 space-y-24"> <!-- Spacious vertical separation -->
+        <div class="p-6 space-y-8"> <!-- Optimized separation -->
           
           <!-- Create Plan Section -->
           <div class="w-full">
             <div class="card bg-main border-subtle h-full shadow-none overflow-visible">
-              <div class="p-10">
-                <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 32px; padding-bottom: 24px; border-bottom: 1px solid var(--border-subtle);">
-                  <div style="width: 48px; height: 48px; border-radius: 12px; background-color: rgba(99, 102, 241, 0.1); display: flex; align-items: center; justify-content: center; color: var(--primary);">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
+              <div class="p-6">
+                <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid var(--border-subtle);">
+                  <div style="width: 32px; height: 32px; border-radius: 8px; background-color: rgba(99, 102, 241, 0.08); display: flex; align-items: center; justify-content: center; color: var(--primary);">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
                   </div>
                   <div>
-                    <h3 style="font-size: 22px; font-weight: 800; color: var(--text-main); margin: 0; line-height: 1.2;">Initialize New Tier</h3>
-                    <p style="font-size: 13px; color: var(--text-muted); margin: 4px 0 0 0; font-weight: 500;">Define a new subscription model for your locations</p>
+                    <h3 style="font-size: 15px; font-weight: 750; color: var(--text-main); margin: 0; line-height: 1.1;">Initialize New Tier</h3>
                   </div>
                 </div>
 
-                <form @submit.prevent="handleCreatePlan" style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">
+                <form @submit.prevent="handleCreatePlan" style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px 24px; align-items: flex-end;">
                   
-                  <!-- Row 1: Plan Identity & Total Transactions -->
                   <div class="form-group" style="margin: 0;">
-                    <label class="form-label text-[10px] font-bold text-muted uppercase tracking-wider mb-2 block">Plan Identity</label>
+                    <label class="form-label text-[9px] font-bold text-muted uppercase tracking-wider mb-1.5 block">Plan Identity</label>
                     <input 
                       v-model="newPlan.plan_name" 
                       type="text" 
                       placeholder="e.g. Enterprise Tier" 
-                      class="form-input h-12 w-full" 
-                      required 
-                    />
-                  </div>
-                  <div class="form-group" style="margin: 0;">
-                    <label class="form-label text-[10px] font-bold text-muted uppercase tracking-wider mb-2 block">Total Transactions</label>
-                    <input 
-                      v-model.number="newPlan.total_transactions" 
-                      type="number" 
-                      placeholder="5000" 
-                      class="form-input h-12 w-full" 
+                      class="form-input h-9 w-full text-xs" 
                       required 
                     />
                   </div>
 
-                  <!-- Row 2: Duration & Valuation -->
                   <div class="form-group" style="margin: 0;">
-                    <label class="form-label text-[10px] font-bold text-muted uppercase tracking-wider mb-2 block">Duration (Months)</label>
+                    <label class="form-label text-[9px] font-bold text-muted uppercase tracking-wider mb-1.5 block">Transaction Capacity</label>
+                    <input 
+                      v-model.number="newPlan.total_transactions" 
+                      type="number" 
+                      placeholder="5000" 
+                      class="form-input h-9 w-full text-xs" 
+                      required 
+                    />
+                  </div>
+
+                  <div class="form-group" style="margin: 0;">
+                    <label class="form-label text-[9px] font-bold text-muted uppercase tracking-wider mb-1.5 block">Contract Term (Months)</label>
                     <input 
                       v-model.number="newPlan.duration_months" 
                       type="number" 
                       placeholder="12" 
-                      class="form-input h-12 w-full" 
+                      class="form-input h-9 w-full text-xs" 
                       required 
                     />
                   </div>
+
                   <div class="form-group" style="margin: 0;">
-                    <label class="form-label text-[10px] font-bold text-muted uppercase tracking-wider mb-2 block">Valuation (Price)</label>
+                    <label class="form-label text-[9px] font-bold text-muted uppercase tracking-wider mb-1.5 block">Tier Valuation (Price)</label>
                     <div style="position: relative; display: flex; align-items: center;">
-                      <div style="position: absolute; left: 16px; color: var(--text-muted); font-weight: bold; font-size: 14px; pointer-events: none;">₹</div>
+                      <div style="position: absolute; left: 12px; color: var(--text-muted); font-weight: bold; font-size: 11px; pointer-events: none;">₹</div>
                       <input 
                         v-model.number="newPlan.price" 
                         type="number" 
                         step="0.01" 
-                        class="form-input w-full" 
-                        style="padding-left: 36px; font-weight: bold; height: 48px;" 
+                        class="form-input w-full text-xs" 
+                        style="padding-left: 24px; font-weight: bold; height: 36px;" 
                         placeholder="0.00" 
                         required 
                       />
                     </div>
                   </div>
 
-                  <!-- Row 3: Plan Status -->
                   <div class="form-group" style="margin: 0;">
-                    <label class="form-label text-[10px] font-bold text-muted uppercase tracking-wider mb-2 block">Default Status</label>
-                    <select v-model="newPlan.status" class="form-input h-12 w-full bg-main">
+                    <label class="form-label text-[9px] font-bold text-muted uppercase tracking-wider mb-1.5 block">Publication Status</label>
+                    <select v-model="newPlan.status" class="form-input h-9 w-full bg-main text-xs" style="padding: 0 8px;">
                       <option value="draft">Draft (Private)</option>
                       <option value="active">Active (Visible)</option>
                       <option value="inactive">Inactive (Hidden)</option>
                     </select>
                   </div>
 
-                  <!-- Multi-Action Buttons -->
-                  <div style="display: flex; gap: 16px; justify-content: flex-end; align-items: flex-end;">
+                  <div style="display: flex; gap: 8px; justify-content: flex-end;">
                     <button 
                       type="button" 
                       @click="handleCreatePlan('draft')"
                       :disabled="loading" 
                       class="btn btn-outline"
-                      style="padding: 12px 32px;"
+                      style="padding: 0 16px; font-size: 11px; height: 36px; border-radius: 8px;"
                     >
-                      <span v-if="!loading">Save as Draft</span>
+                      <span v-if="!loading">Save Draft</span>
                       <div v-else class="spinner-sm"></div>
                     </button>
                     <button 
@@ -165,7 +162,7 @@
                       @click="handleCreatePlan('active')"
                       :disabled="loading" 
                       class="btn btn-primary"
-                      style="padding: 12px 32px;"
+                      style="padding: 0 16px; font-size: 11px; height: 36px; border-radius: 8px;"
                     >
                       <span v-if="!loading">Publish Plan</span>
                       <div v-else class="spinner-sm"></div>
@@ -180,61 +177,75 @@
           <!-- Plans List Section -->
           <div class="w-full">
             <div class="card bg-main border-subtle p-0 overflow-hidden h-full shadow-none">
-              <div class="p-10 border-b border-subtle">
-                <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 24px;">
-                  <div style="width: 48px; height: 48px; border-radius: 12px; background-color: rgba(59, 130, 246, 0.1); display: flex; align-items: center; justify-content: center; color: var(--info);">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
+              <div class="p-6 border-b border-subtle">
+                <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 0;">
+                  <div style="width: 40px; height: 40px; border-radius: 10px; background-color: rgba(59, 130, 246, 0.08); display: flex; align-items: center; justify-content: center; color: var(--info);">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
                   </div>
                   <div>
-                    <h3 style="font-size: 22px; font-weight: 800; color: var(--text-main); margin: 0; line-height: 1.2;">Service Tiers Ledger</h3>
-                    <p style="font-size: 13px; color: var(--text-muted); margin: 4px 0 0 0; font-weight: 500;">Manage and filter existing subscription architectures</p>
+                    <h3 style="font-size: 18px; font-weight: 750; color: var(--text-main); margin: 0; line-height: 1.1;">Service Tiers Ledger</h3>
+                    <p style="font-size: 12px; color: var(--text-muted); margin: 3px 0 0 0; font-weight: 500;">Manage and filter existing subscription architectures</p>
                   </div>
                 </div>
               </div>
                 
-                <!-- Filters Bar (Matches Initialize New Tier Style) -->
-                <div style="background-color: var(--bg-main); padding: 32px; border-radius: 16px; border: 1px solid var(--border-subtle); margin-bottom: 32px; display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">
-                  <!-- Row 1: Name & Status -->
-                  <div class="form-group" style="margin: 0;">
-                    <label class="form-label text-[10px] font-bold text-muted uppercase tracking-wider mb-2 block">Plan Name</label>
-                    <input v-model="tempFilters.name" type="text" placeholder="Search plans..." class="form-input" style="height: 48px; width: 100%;" />
-                  </div>
-                  <div class="form-group" style="margin: 0;">
-                    <label class="form-label text-[10px] font-bold text-muted uppercase tracking-wider mb-2 block">Lifecycle Status</label>
-                    <select v-model="tempFilters.status" class="form-input" style="height: 48px; width: 100%; background-color: var(--bg-main);">
-                      <option value="all">All Statuses</option>
-                      <option value="draft">Draft</option>
-                      <option value="active">Active</option>
-                      <option value="inactive">Inactive</option>
-                      <option value="expired">Expired</option>
-                    </select>
-                  </div>
+                <!-- Professional Compact Filters Bar -->
+                <div class="filter-glass-bar">
+                  <div class="filter-grid">
+                    <!-- Column 1: Search -->
+                    <div class="filter-group">
+                      <label class="filter-label">Search Plan</label>
+                      <div class="filter-input-wrapper">
+                        <svg class="filter-icon" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                        <input v-model="tempFilters.name" type="text" placeholder="Tier identity..." class="filter-field" />
+                      </div>
+                    </div>
 
-                  <!-- Row 2: Price & Capacity -->
-                  <div class="form-group" style="margin: 0;">
-                    <label class="form-label text-[10px] font-bold text-muted uppercase tracking-wider mb-2 block">Valuation Range (₹)</label>
-                    <div class="range-group">
-                      <input v-model.number="tempFilters.minPrice" type="number" placeholder="Min Price" class="form-input range-input" style="height: 40px; font-size: 12px;" />
-                      <span style="color: var(--text-muted); font-weight: bold; font-size: 12px; flex-shrink: 0;">-</span>
-                      <input v-model.number="tempFilters.maxPrice" type="number" placeholder="Max Price" class="form-input range-input" style="height: 40px; font-size: 12px;" />
+                    <!-- Column 2: Status -->
+                    <div class="filter-group">
+                      <label class="filter-label">Lifecycle Status</label>
+                      <div class="filter-input-wrapper">
+                        <svg class="filter-icon" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+                        <select v-model="tempFilters.status" class="filter-field select-field">
+                          <option value="all">All States</option>
+                          <option value="draft">Draft</option>
+                          <option value="active">Active</option>
+                          <option value="inactive">Inactive</option>
+                          <option value="expired">Expired</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    <!-- Column 3: Valuation Range -->
+                    <div class="filter-group">
+                      <label class="filter-label">Valuation (₹)</label>
+                      <div class="filter-range-wrapper">
+                        <input v-model.number="tempFilters.minPrice" type="number" placeholder="Min" class="filter-field half" />
+                        <span class="range-sep">-</span>
+                        <input v-model.number="tempFilters.maxPrice" type="number" placeholder="Max" class="filter-field half" />
+                      </div>
+                    </div>
+
+                    <!-- Column 4: Capacity Range -->
+                    <div class="filter-group">
+                      <label class="filter-label">Capacity (txn)</label>
+                      <div class="filter-range-wrapper">
+                        <input v-model.number="tempFilters.minTransactions" type="number" placeholder="Min" class="filter-field half" />
+                        <span class="range-sep">-</span>
+                        <input v-model.number="tempFilters.maxTransactions" type="number" placeholder="Max" class="filter-field half" />
+                      </div>
                     </div>
                   </div>
-                  <div class="form-group" style="margin: 0;">
-                    <label class="form-label text-[10px] font-bold text-muted uppercase tracking-wider mb-2 block">Capacity Range (txn)</label>
-                    <div class="range-group">
-                      <input v-model.number="tempFilters.minTransactions" type="number" placeholder="Min Txn" class="form-input range-input" style="height: 40px; font-size: 12px;" />
-                      <span style="color: var(--text-muted); font-weight: bold; font-size: 12px; flex-shrink: 0;">-</span>
-                      <input v-model.number="tempFilters.maxTransactions" type="number" placeholder="Max Txn" class="form-input range-input" style="height: 40px; font-size: 12px;" />
-                    </div>
-                  </div>
 
-                  <!-- Row 3: Action Buttons -->
-                  <div style="grid-column: 1 / -1; display: flex; gap: 16px; justify-content: flex-start; margin-top: 16px;">
-                    <button @click="applyFilters" class="btn btn-primary" style="width: 180px; height: 44px; font-weight: bold; text-transform: uppercase; letter-spacing: 0.05em; font-size: 13px;">
-                      Apply Filters
+                  <!-- Action Buttons -->
+                  <div class="filter-actions">
+                    <button @click="applyFilters" class="filter-btn-primary">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon></svg>
+                      <span>Apply Filters</span>
                     </button>
-                    <button @click="resetFilters" class="btn btn-outline" style="width: 180px; height: 44px; font-weight: bold; text-transform: uppercase; letter-spacing: 0.05em; font-size: 13px;">
-                      Reset All
+                    <button @click="resetFilters" class="filter-btn-outline">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path><polyline points="3 3 3 8 8 8"></polyline></svg>
+                      <span>Reset</span>
                     </button>
                   </div>
                 </div>
@@ -242,33 +253,55 @@
                 <table class="table" style="width: 100%; table-layout: fixed;">
                   <thead>
                     <tr>
-                      <th style="width: 20%; padding-left: 24px;">Tier Name</th>
-                      <th style="width: 14%; text-align: center;">Capacity</th>
-                      <th style="width: 14%; text-align: center;">Duration</th>
-                      <th style="width: 14%; text-align: center;">Valuation</th>
-                      <th style="width: 12%; text-align: center;">Status</th>
-                      <th style="width: 26%; text-align: right; padding-right: 24px;">Actions</th>
+                      <th style="width: 25%; padding-left: 24px;">Tier Identity</th>
+                      <th class="text-center" style="width: 15%;">Capacity</th>
+                      <th class="text-center" style="width: 15%;">Contract Term</th>
+                      <th class="text-right" style="width: 15%;">Valuation</th>
+                      <th class="text-center" style="width: 12%;">Status</th>
+                      <th style="width: 18%; text-align: right; padding-right: 24px;">Management</th>
                     </tr>
                   </thead>
                   <tbody>
                     <tr v-for="plan in filteredPlans" :key="plan.plan_id">
-                      <td class="font-bold truncate" style="padding-left: 24px;">{{ plan.plan_name }}</td>
-                      <td style="text-align: center;">{{ plan.total_transactions }} txn</td>
-                      <td style="text-align: center;">{{ plan.duration_months }} Months</td>
-                      <td class="font-bold text-primary" style="text-align: center;">₹{{ plan.price }}</td>
-                      <td style="text-align: center;">
-                        <span :class="getStatusBadgeClass(plan.status)" class="badge uppercase text-[10px]">
+                      <td class="font-bold truncate pl-6 text-main">{{ plan.plan_name }}</td>
+                      <td class="text-center tabular-nums text-xs font-bold text-muted">{{ plan.total_transactions }} <span class="text-[9px] uppercase tracking-tighter">txn</span></td>
+                      <td class="text-center tabular-nums text-xs font-bold text-muted">{{ plan.duration_months }} <span class="text-[9px] uppercase tracking-tighter">Mo</span></td>
+                      <td class="font-black text-primary text-right tabular-nums">₹{{ plan.price }}</td>
+                      <td class="text-center">
+                        <span :class="getStatusBadgeClass(plan.status)" class="badge uppercase text-[8px] px-2 py-0.5 font-black tracking-widest">
                           {{ plan.status }}
                         </span>
                       </td>
                       <td style="text-align: right; padding-right: 24px;">
-                        <div style="display: flex; align-items: center; justify-content: flex-end; gap: 8px;">
-                          <button @click="openAssignModal(plan)" class="btn btn-primary py-1.5 px-3 text-xs whitespace-nowrap" :disabled="plan.status !== 'active'">Assign</button>
-                          <button @click="openEditModal(plan)" class="btn btn-outline py-1.5 px-3 text-xs text-primary hover:bg-primary-light whitespace-nowrap">Edit</button>
-                          <button @click="togglePlanStatus(plan)" class="btn btn-outline py-1.5 px-3 text-xs whitespace-nowrap">
-                            {{ plan.status === 'active' ? 'Deactivate' : 'Activate' }}
+                        <div class="action-cluster">
+                          <button 
+                            @click="openAssignModal(plan)" 
+                            class="action-btn assign-btn" 
+                            :disabled="plan.status !== 'active'"
+                            title="Assign to Location"
+                          >
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="8.5" cy="7" r="4"></circle><line x1="20" y1="8" x2="20" y2="14"></line><line x1="23" y1="11" x2="17" y2="11"></line></svg>
+                            <span>Assign</span>
                           </button>
-                          <button @click="handleDeletePlan(plan.plan_id)" class="btn btn-outline py-1.5 px-3 text-xs text-danger hover:bg-danger-light whitespace-nowrap">Delete</button>
+                          
+                          <button 
+                            @click="openEditModal(plan)" 
+                            class="action-btn edit-btn"
+                            title="Edit Specifications"
+                          >
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+                            <span>Edit</span>
+                          </button>
+                          
+                          <button 
+                            @click="togglePlanStatus(plan)" 
+                            :class="['action-btn', plan.status === 'active' ? 'status-btn-deactivate' : 'status-btn-activate']"
+                            :title="plan.status === 'active' ? 'Deactivate Tier' : 'Activate Tier'"
+                          >
+                            <svg v-if="plan.status === 'active'" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+                            <svg v-else xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11V9a4 4 0 0 1 4-4h14"></path><path d="M7 21a4 4 0 0 0 4-4v-2"></path><rect x="14" y="11" width="8" height="10" rx="2" ry="2"></rect></svg>
+                            <span>{{ plan.status === 'active' ? 'Deactivate' : 'Activate' }}</span>
+                          </button>
                         </div>
                       </td>
                     </tr>
@@ -283,48 +316,48 @@
 
     <!-- Tab 2: Live Subscriptions -->
     <div v-if="activeTab === 'liveSubscriptions'" class="animate-fade-in">
-      <div class="p-10">
+      <div class="p-6">
         <div class="card bg-main border-subtle p-0 overflow-hidden shadow-none">
-          <div class="p-10 border-b border-subtle">
-            <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 24px;">
-              <div style="width: 48px; height: 48px; border-radius: 12px; background-color: rgba(16, 185, 129, 0.1); display: flex; align-items: center; justify-content: center; color: var(--success);">
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+          <div class="p-6 border-b border-subtle">
+            <div style="display: flex; align-items: center; gap: 12px;">
+              <div style="width: 40px; height: 40px; border-radius: 10px; background-color: rgba(16, 185, 129, 0.08); display: flex; align-items: center; justify-content: center; color: var(--success);">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
               </div>
               <div>
-                <h3 style="font-size: 22px; font-weight: 800; color: var(--text-main); margin: 0; line-height: 1.2;">Live Deployments Registry</h3>
-                <p style="font-size: 13px; color: var(--text-muted); margin: 4px 0 0 0; font-weight: 500;">Monitoring active subscription terms across all locations</p>
+                <h3 style="font-size: 18px; font-weight: 750; color: var(--text-main); margin: 0; line-height: 1.1;">Live Deployments Registry</h3>
+                <p style="font-size: 12px; color: var(--text-muted); margin: 3px 0 0 0; font-weight: 500;">Monitoring active subscription terms across all locations</p>
               </div>
             </div>
           </div>
 
           <!-- Subscription Filters -->
-          <div style="background-color: var(--bg-main); padding: 32px; border-bottom: 1px solid var(--border-subtle);">
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">
+          <div style="background-color: var(--bg-main); padding: 24px; border-bottom: 1px solid var(--border-subtle);">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
               <div class="form-group" style="margin: 0;">
                 <label class="form-label text-[10px] font-bold text-muted uppercase tracking-wider mb-2 block">Search Location</label>
-                <input v-model="tempSubFilters.location" type="text" placeholder="Search by location..." class="form-input" style="height: 48px; width: 100%;" />
+                <input v-model="tempSubFilters.location" type="text" placeholder="Search by location..." class="form-input h-10 w-full" />
               </div>
               <div class="form-group" style="margin: 0;">
                 <label class="form-label text-[10px] font-bold text-muted uppercase tracking-wider mb-2 block">Assigned Tier</label>
-                <select v-model="tempSubFilters.plan" class="form-input" style="height: 48px; width: 100%; background-color: var(--bg-main);">
+                <select v-model="tempSubFilters.plan" class="form-input h-10 w-full bg-main">
                   <option value="all">All Tiers</option>
                   <option v-for="plan in plans" :key="plan.plan_id" :value="plan.plan_name">{{ plan.plan_name }}</option>
                 </select>
               </div>
               <div class="form-group" style="margin: 0;">
                 <label class="form-label text-[10px] font-bold text-muted uppercase tracking-wider mb-2 block">Lifecycle Status</label>
-                <select v-model="tempSubFilters.status" class="form-input" style="height: 48px; width: 100%; background-color: var(--bg-main);">
+                <select v-model="tempSubFilters.status" class="form-input h-10 w-full bg-main">
                   <option value="all">All States</option>
                   <option value="ACTIVE">Active</option>
                   <option value="EXPIRED">Expired</option>
                   <option value="PENDING">Pending</option>
                 </select>
               </div>
-              <div style="display: flex; gap: 16px; align-items: flex-end;">
-                <button @click="applySubFilters" class="btn btn-primary" style="width: 140px; height: 48px; font-weight: bold; text-transform: uppercase; letter-spacing: 0.05em; font-size: 13px;">
+              <div style="display: flex; gap: 12px; align-items: flex-end;">
+                <button @click="applySubFilters" class="btn btn-primary" style="padding: 0 24px; height: 40px; font-weight: bold; text-transform: uppercase; letter-spacing: 0.05em; font-size: 12px;">
                   Apply
                 </button>
-                <button @click="resetSubFilters" class="btn btn-outline" style="width: 140px; height: 48px; font-weight: bold; text-transform: uppercase; letter-spacing: 0.05em; font-size: 13px;">
+                <button @click="resetSubFilters" class="btn btn-outline" style="padding: 0 24px; height: 40px; font-weight: bold; text-transform: uppercase; letter-spacing: 0.05em; font-size: 12px;">
                   Reset
                 </button>
               </div>
@@ -335,27 +368,32 @@
             <table class="table">
               <thead>
                 <tr>
-                  <th class="pl-10">Location</th>
-                  <th>Assigned Tier</th>
-                  <th>Term End Date</th>
-                  <th class="text-center pr-10">Lifecycle State</th>
+                  <th class="pl-10" style="width: 35%;">Location</th>
+                  <th style="width: 25%;">Assigned Tier</th>
+                  <th class="text-center" style="width: 25%;">Term End Date</th>
+                  <th class="text-center pr-10" style="width: 15%;">Lifecycle State</th>
                 </tr>
               </thead>
               <tbody>
                 <tr v-for="sub in filteredSubscriptions" :key="sub.subscription_id">
-                  <td class="font-extrabold pl-10 text-main">{{ sub.location_name }}</td>
+                  <td class="pl-10">
+                    <div class="flex flex-col">
+                      <span class="font-bold text-main">{{ sub.location_name }}</span>
+                      <span class="text-[9px] text-muted font-bold uppercase tracking-tighter">Site ID: {{ sub.location_id }}</span>
+                    </div>
+                  </td>
                   <td>
                     <span 
                       @click="openViewPlanModal(sub.plan_name)"
-                      class="badge bg-info/10 text-info border-info/20 uppercase text-[10px] px-3 font-bold cursor-pointer hover:bg-info/20 transition-all active:scale-95"
+                      class="badge bg-info/10 text-info border-info/20 uppercase text-[9px] px-2.5 py-1 font-bold cursor-pointer hover:bg-info/20 transition-all active:scale-95 tracking-wider"
                       title="Click to view plan details"
                     >
                       {{ sub.plan_name }}
                     </span>
                   </td>
-                  <td class="text-muted font-medium">{{ formatDate(sub.end_date) }}</td>
+                  <td class="text-muted font-bold text-center text-xs">{{ formatDate(sub.end_date) }}</td>
                   <td class="text-center pr-10">
-                    <span :class="sub.status === 'ACTIVE' ? 'badge-success' : 'badge-danger'" class="badge uppercase text-[10px] px-3 font-bold">
+                    <span :class="sub.status === 'ACTIVE' ? 'badge-success' : 'badge-danger'" class="badge uppercase text-[8px] px-2 py-0.5 font-black tracking-widest">
                       {{ sub.status }}
                     </span>
                   </td>
@@ -378,37 +416,89 @@
 
     <!-- Tab 3: Revenue Ledger -->
     <div v-if="activeTab === 'revenueLedger'" class="animate-fade-in">
-      <div class="p-10">
+      <div class="p-6">
         <div class="card bg-main border-subtle p-0 overflow-hidden shadow-none">
-          <div class="p-10 border-b border-subtle">
+          <div class="p-6 border-b border-subtle">
             <div class="flex items-center gap-3">
-              <div class="w-10 h-10 rounded-xl bg-warning-light flex items-center justify-center text-warning">
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"></line><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
-              </div>
+             
               <div>
-                <h3 class="text-xl font-extrabold text-main leading-tight">Financial Transaction Logs</h3>
-                <p class="text-xs text-muted mt-1 font-medium">Historical record of all subscription-based revenue</p>
+                <h3 style="font-size: 18px; font-weight: 750; color: var(--text-main); margin: 0; line-height: 1.1;">Financial Transaction Logs</h3>
+                <p style="font-size: 12px; color: var(--text-muted); margin: 3px 0 0 0; font-weight: 500;">Historical record of all subscription-based revenue</p>
               </div>
             </div>
           </div>
           
-          <div v-if="payments.length > 0" class="table-container border-none rounded-none">
+          <!-- Revenue Metrics Summary -->
+          <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; padding: 20px 24px; background-color: var(--bg-main); border-bottom: 1px solid var(--border-subtle);">
+            <div class="card bg-card border-subtle p-4 shadow-none">
+              <p class="text-[10px] font-bold text-muted uppercase tracking-widest mb-1">Filtered Revenue</p>
+              <h4 class="text-xl font-black text-main">₹{{ totalRevenue }}</h4>
+            </div>
+            <div class="card bg-card border-subtle p-4 shadow-none">
+              <p class="text-[10px] font-bold text-muted uppercase tracking-widest mb-1">Settled Transactions</p>
+              <h4 class="text-xl font-black text-main">{{ settledTransactionsCount }}</h4>
+            </div>
+            <div class="card bg-card border-subtle p-4 shadow-none">
+              <p class="text-[10px] font-bold text-muted uppercase tracking-widest mb-1">Avg Ticket Size</p>
+              <h4 class="text-xl font-black text-main">₹{{ avgTicketSize }}</h4>
+            </div>
+          </div>
+
+          <!-- Revenue Filters -->
+          <div style="background-color: var(--bg-card); padding: 16px 24px; border-bottom: 1px solid var(--border-subtle);">
+            <div style="display: grid; grid-template-columns: 2fr 1fr 1fr auto; gap: 16px; align-items: flex-end;">
+              <div class="form-group" style="margin: 0;">
+                <label class="form-label text-[9px] font-bold text-muted uppercase tracking-wider mb-1.5 block">Filter Location</label>
+                <input v-model="tempPaymentFilters.location" type="text" placeholder="Search by site..." class="form-input h-9 w-full text-xs" />
+              </div>
+              <div class="form-group" style="margin: 0;">
+                <label class="form-label text-[9px] font-bold text-muted uppercase tracking-wider mb-1.5 block">Payment Status</label>
+                <select v-model="tempPaymentFilters.status" class="form-input h-9 w-full bg-main text-xs">
+                  <option value="all">All Statuses</option>
+                  <option value="COMPLETED">Completed</option>
+                  <option value="PENDING">Pending</option>
+                </select>
+              </div>
+              <div class="form-group" style="margin: 0;">
+                <label class="form-label text-[9px] font-bold text-muted uppercase tracking-wider mb-1.5 block">Sort Order</label>
+                <select v-model="tempPaymentFilters.sort" class="form-input h-9 w-full bg-main text-xs">
+                  <option value="desc">Newest First</option>
+                  <option value="asc">Oldest First</option>
+                </select>
+              </div>
+              <div style="display: flex; gap: 8px;">
+                <button @click="applyPaymentFilters" class="btn btn-primary" style="height: 36px; padding: 0 16px; font-size: 11px; border-radius: 8px;">
+                  Filter
+                </button>
+                <button @click="resetPaymentFilters" class="btn btn-outline" style="height: 36px; padding: 0 16px; font-size: 11px; border-radius: 8px;">
+                  Reset
+                </button>
+              </div>
+            </div>
+          </div>
+          
+          <div v-if="filteredPayments.length > 0" class="table-container border-none rounded-none">
             <table class="table">
               <thead>
                 <tr>
-                  <th class="pl-10">Beneficiary Location</th>
-                  <th class="text-right">Valuation Amount</th>
-                  <th>Settlement Timestamp</th>
-                  <th class="text-center pr-10">Payment State</th>
+                  <th class="pl-10" style="width: 35%;">Beneficiary Location</th>
+                  <th class="text-right" style="width: 25%;">Settlement Value</th>
+                  <th class="text-center" style="width: 25%;">Transaction Date</th>
+                  <th class="text-center pr-10" style="width: 15%;">State</th>
                 </tr>
               </thead>
               <tbody>
-                <tr v-for="payment in payments" :key="payment.payment_id">
-                  <td class="font-extrabold pl-10 text-main">{{ payment.location_name }}</td>
-                  <td class="font-black text-success text-right">₹{{ payment.amount }}</td>
-                  <td class="text-muted font-medium">{{ formatDate(payment.created_at) }}</td>
+                <tr v-for="payment in filteredPayments" :key="payment.payment_id">
+                  <td class="pl-10">
+                    <div class="flex flex-col">
+                      <span class="font-bold text-main">{{ payment.location_name }}</span>
+                      <span class="text-[9px] text-muted font-bold uppercase tracking-tighter">Site ID: {{ payment.location_id }}</span>
+                    </div>
+                  </td>
+                  <td class="font-black text-success text-right tabular-nums">₹{{ payment.amount }}</td>
+                  <td class="text-muted font-bold text-center text-xs">{{ formatDate(payment.created_at) }}</td>
                   <td class="text-center pr-10">
-                    <span class="badge badge-success uppercase text-[10px] px-3 font-bold">
+                    <span class="badge badge-success uppercase text-[8px] px-2 py-0.5 font-black tracking-widest border-none">
                       {{ payment.status }}
                     </span>
                   </td>
@@ -419,9 +509,7 @@
           
           <!-- Empty State -->
           <div v-else class="p-20 flex flex-col items-center justify-center text-center">
-            <div class="w-16 h-16 bg-main rounded-full flex items-center justify-center mb-4 border border-subtle">
-              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-muted"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
-            </div>
+          
             <h4 class="text-lg font-bold">No Financial History</h4>
             <p class="text-sm text-muted max-w-xs mt-2">Revenue records will appear here as soon as subscription settlements are processed.</p>
           </div>
@@ -432,30 +520,30 @@
     <!-- MODAL -->
     <div v-if="assignModal.show" class="modal-overlay glass animate-fade-in" @click.self="assignModal.show = false">
       <div class="modal-content animate-slide-up">
-        <div class="modal-header">
+        <div class="modal-header" style="padding: 16px 24px;">
           <div>
-            <h3 class="text-xl font-bold">Assign {{ assignModal.plan?.plan_name }}</h3>
-            <p class="text-xs text-muted mt-1">Provision this tier to a specific location</p>
+            <h3 style="font-size: 18px; font-weight: 750; color: var(--text-main); margin: 0;">Assign {{ assignModal.plan?.plan_name }}</h3>
+            <p style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">Provision this tier to a specific location</p>
           </div>
-          <button @click="assignModal.show = false" class="p-2 hover:bg-main rounded-full transition-colors">
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+          <button @click="assignModal.show = false" class="p-1.5 hover:bg-main rounded-full transition-colors border border-subtle">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
           </button>
         </div>
         
-        <div class="modal-body space-y-6">
-          <div class="form-group">
-            <label class="form-label">Target Location</label>
-            <select v-model="assignModal.location_id" class="form-input w-full">
+        <div class="modal-body" style="padding: 24px; gap: 16px; display: flex; flex-direction: column;">
+          <div class="form-group" style="margin: 0;">
+            <label class="form-label text-[10px] font-bold text-muted uppercase tracking-wider mb-2 block">Target Location</label>
+            <select v-model="assignModal.location_id" class="form-input h-10 w-full bg-main">
               <option value="" disabled>Choose a location...</option>
               <option v-for="loc in locations" :key="loc.location_id" :value="loc.location_id">{{ loc.location_name }}</option>
             </select>
           </div>
-          <div class="form-group">
-            <label class="form-label">Activation Timestamp</label>
-            <input v-model="assignModal.start_date" type="date" class="form-input w-full" />
+          <div class="form-group" style="margin: 0;">
+            <label class="form-label text-[10px] font-bold text-muted uppercase tracking-wider mb-2 block">Activation Timestamp</label>
+            <input v-model="assignModal.start_date" type="date" class="form-input h-10 w-full bg-main" />
           </div>
-          <div class="pt-4">
-            <button @click="handleAssign" :disabled="!assignModal.location_id || !assignModal.start_date || loading" class="btn btn-primary w-full py-4 text-sm font-bold uppercase tracking-wider">
+          <div style="padding-top: 8px;">
+            <button @click="handleAssign" :disabled="!assignModal.location_id || !assignModal.start_date || loading" class="btn btn-primary w-full h-10 text-xs font-bold uppercase tracking-wider">
               <span v-if="!loading">Initialize Provisioning</span>
               <div v-else class="spinner-sm"></div>
             </button>
@@ -467,31 +555,31 @@
     <!-- EDIT MODAL -->
     <div v-if="editModal.show" class="modal-overlay glass animate-fade-in" @click.self="editModal.show = false">
       <div class="modal-content animate-slide-up max-w-2xl">
-        <div class="modal-header">
+        <div class="modal-header" style="padding: 16px 24px;">
           <div>
-            <h3 class="text-xl font-bold">Edit {{ editModal.plan?.plan_name }}</h3>
-            <p class="text-xs text-muted mt-1">Modify the specifications for this service tier</p>
+            <h3 style="font-size: 18px; font-weight: 750; color: var(--text-main); margin: 0;">Edit {{ editModal.plan?.plan_name }}</h3>
+            <p style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">Modify the specifications for this service tier</p>
           </div>
-          <button @click="editModal.show = false" class="p-2 hover:bg-main rounded-full transition-colors">
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+          <button @click="editModal.show = false" class="p-1.5 hover:bg-main rounded-full transition-colors border border-subtle">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
           </button>
         </div>
         
-        <div class="modal-body">
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div class="modal-body" style="padding: 24px;">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div class="form-group col-span-full">
               <label class="form-label text-[10px] font-bold text-muted uppercase tracking-wider mb-2 block">Plan Identity</label>
-              <input v-model="editModal.form.plan_name" type="text" class="form-input w-full" />
+              <input v-model="editModal.form.plan_name" type="text" class="form-input h-10 w-full bg-main" />
             </div>
             
             <div class="form-group">
               <label class="form-label text-[10px] font-bold text-muted uppercase tracking-wider mb-2 block">Total Transactions</label>
-              <input v-model.number="editModal.form.total_transactions" type="number" class="form-input w-full" />
+              <input v-model.number="editModal.form.total_transactions" type="number" class="form-input h-10 w-full bg-main" />
             </div>
             
             <div class="form-group">
               <label class="form-label text-[10px] font-bold text-muted uppercase tracking-wider mb-2 block">Duration (Months)</label>
-              <input v-model.number="editModal.form.duration_months" type="number" class="form-input w-full" />
+              <input v-model.number="editModal.form.duration_months" type="number" class="form-input h-10 w-full bg-main" />
             </div>
             
             <div class="form-group">
@@ -500,13 +588,13 @@
                 <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
                   <span class="text-muted font-bold text-sm">₹</span>
                 </div>
-                <input v-model.number="editModal.form.price" type="number" step="0.01" class="form-input pl-10 font-bold w-full" />
+                <input v-model.number="editModal.form.price" type="number" step="0.01" class="form-input h-10 pl-10 font-bold w-full bg-main" />
               </div>
             </div>
             
             <div class="form-group">
               <label class="form-label text-[10px] font-bold text-muted uppercase tracking-wider mb-2 block">Plan Status</label>
-              <select v-model="editModal.form.status" class="form-input w-full bg-main">
+              <select v-model="editModal.form.status" class="form-input h-10 w-full bg-main">
                 <option value="draft">Draft</option>
                 <option value="active">Active</option>
                 <option value="inactive">Inactive</option>
@@ -515,9 +603,9 @@
             </div>
           </div>
           
-          <div class="pt-8 border-t border-subtle mt-8 flex gap-4">
-            <button @click="editModal.show = false" class="btn btn-outline flex-1 py-4 text-sm font-bold">Cancel</button>
-            <button @click="handleUpdatePlan" :disabled="loading" class="btn btn-primary flex-1 py-4 text-sm font-bold uppercase tracking-wider">
+          <div style="padding-top: 24px; border-top: 1px solid var(--border-subtle); margin-top: 24px; display: flex; gap: 12px;">
+            <button @click="editModal.show = false" class="btn btn-outline flex-1 h-10 text-xs font-bold">Cancel</button>
+            <button @click="handleUpdatePlan" :disabled="loading" class="btn btn-primary flex-1 h-10 text-xs font-bold uppercase tracking-wider">
               <span v-if="!loading">Save Changes</span>
               <div v-else class="spinner-sm"></div>
             </button>
@@ -530,23 +618,23 @@
     <div v-if="viewPlanModal.show" class="modal-overlay glass animate-fade-in" @click.self="viewPlanModal.show = false">
       <div class="modal-content animate-slide-up max-w-md">
         <!-- Header with Icon and Status -->
-        <div class="modal-header border-b border-subtle pb-6 mb-8 flex justify-between items-start">
-          <div class="flex items-center gap-4">
-            <div class="w-12 h-12 rounded-2xl bg-primary-light flex items-center justify-center text-primary shadow-sm">
-              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+        <div class="modal-header" style="padding: 16px 24px; border-bottom: 1px solid var(--border-subtle);">
+          <div class="flex items-center gap-3">
+            <div style="width: 40px; height: 40px; border-radius: 10px; background-color: rgba(99, 102, 241, 0.08); display: flex; align-items: center; justify-content: center; color: var(--primary);">
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
             </div>
             <div>
-              <div class="flex items-center gap-3">
-                <h3 class="text-2xl font-black text-main tracking-tight leading-none">{{ viewPlanModal.plan?.plan_name }}</h3>
-                <span :class="getStatusBadgeClass(viewPlanModal.plan?.status)" class="badge uppercase text-[9px] px-2 py-0.5 font-bold">
+              <div class="flex items-center gap-2">
+                <h3 style="font-size: 18px; font-weight: 750; color: var(--text-main); margin: 0; line-height: 1.1;">{{ viewPlanModal.plan?.plan_name }}</h3>
+                <span :class="getStatusBadgeClass(viewPlanModal.plan?.status)" class="badge uppercase text-[8px] px-1.5 py-0.5 font-bold">
                   {{ viewPlanModal.plan?.status }}
                 </span>
               </div>
-              <p class="text-[10px] text-muted mt-2 font-bold uppercase tracking-widest">Plan Specifications Overview</p>
+              <p style="font-size: 10px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); margin-top: 2px; font-weight: 700;">Service Tier Overview</p>
             </div>
           </div>
-          <button @click="viewPlanModal.show = false" class="p-2 hover:bg-main rounded-xl border border-subtle transition-all">
-            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+          <button @click="viewPlanModal.show = false" class="p-1.5 hover:bg-main rounded-lg border border-subtle transition-all">
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
           </button>
         </div>
         
@@ -600,9 +688,31 @@ const activeSubscriptionsCount = computed(() =>
   subscriptions.value.filter(s => s.status === 'ACTIVE').length
 );
 
+const filteredPayments = computed(() => {
+  let result = payments.value.filter(payment => {
+    const matchesLocation = payment.location_name.toLowerCase().includes(appliedPaymentFilters.location.toLowerCase());
+    const matchesStatus = appliedPaymentFilters.status === 'all' || payment.status === appliedPaymentFilters.status;
+    return matchesLocation && matchesStatus;
+  });
+
+  return result.sort((a, b) => {
+    const dateA = new Date(a.created_at);
+    const dateB = new Date(b.created_at);
+    return appliedPaymentFilters.sort === 'desc' ? dateB - dateA : dateA - dateB;
+  });
+});
+
 const totalRevenue = computed(() => 
-  payments.value.reduce((sum, p) => sum + parseFloat(p.amount), 0).toLocaleString('en-IN')
+  filteredPayments.value.reduce((sum, p) => sum + parseFloat(p.amount), 0).toLocaleString('en-IN')
 );
+
+const settledTransactionsCount = computed(() => filteredPayments.value.length);
+
+const avgTicketSize = computed(() => {
+  if (filteredPayments.value.length === 0) return '0';
+  const total = filteredPayments.value.reduce((sum, p) => sum + parseFloat(p.amount), 0);
+  return (total / filteredPayments.value.length).toLocaleString('en-IN', { maximumFractionDigits: 0 });
+});
 
 const newPlan = reactive({
   plan_name: '',
@@ -640,6 +750,14 @@ const tempSubFilters = reactive({
 
 const appliedSubFilters = reactive({ ...tempSubFilters });
 
+const tempPaymentFilters = reactive({
+  location: '',
+  status: 'all',
+  sort: 'desc'
+});
+
+const appliedPaymentFilters = reactive({ ...tempPaymentFilters });
+
 const applyFilters = () => {
   Object.assign(appliedFilters, JSON.parse(JSON.stringify(tempFilters)));
 };
@@ -667,6 +785,19 @@ const resetSubFilters = () => {
     status: 'all'
   });
   applySubFilters();
+};
+
+const applyPaymentFilters = () => {
+  Object.assign(appliedPaymentFilters, JSON.parse(JSON.stringify(tempPaymentFilters)));
+};
+
+const resetPaymentFilters = () => {
+  Object.assign(tempPaymentFilters, {
+    location: '',
+    status: 'all',
+    sort: 'desc'
+  });
+  applyPaymentFilters();
 };
 
 const filteredPlans = computed(() => {
@@ -792,18 +923,7 @@ const getStatusBadgeClass = (status) => {
   return 'badge-info';
 };
 
-const handleDeletePlan = async (id) => {
-  if (!confirm('Are you sure you want to delete this plan?')) return;
-  try {
-    await axios.delete(`${API_BASE_URL}/subscriptions/plans/${id}`, {
-      headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-    });
-    toast.success('Plan deleted successfully');
-    await fetchData();
-  } catch (error) {
-    toast.error(error.response?.data?.message || 'Delete failed');
-  }
-};
+
 
 const openAssignModal = (plan) => {
   assignModal.plan = plan;
@@ -1003,13 +1123,134 @@ onMounted(fetchData);
   align-items: center;
 }
 
-select.form-input {
-  appearance: none;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%236b7280'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E");
-  background-repeat: no-repeat;
-  background-position: right 1rem center;
-  background-size: 1.25rem;
-  padding-right: 2.5rem;
+/* Refined Table UI */
+.table thead th {
+  background: var(--bg-main);
+  text-transform: uppercase;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  color: var(--text-muted);
+  padding: 16px 12px;
+  border-bottom: 2px solid var(--border-subtle);
+}
+
+.table tbody tr {
+  transition: all 0.2s ease;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.table tbody tr:hover {
+  background-color: rgba(var(--primary-rgb), 0.02);
+}
+
+.table td {
+  padding: 12px 16px;
+  font-size: 13px;
+  vertical-align: middle;
+}
+
+.tier-name-cell {
+  font-weight: 700;
+  color: var(--text-main);
+  letter-spacing: -0.01em;
+}
+
+/* Premium Action Buttons */
+.action-cluster {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.action-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: 10px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  border: 1px solid transparent;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.assign-btn {
+  background: var(--primary);
+  color: white;
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.2);
+}
+
+.assign-btn:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 15px rgba(99, 102, 241, 0.3);
+  filter: brightness(1.1);
+}
+
+.assign-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  filter: grayscale(1);
+}
+
+.edit-btn {
+  background: var(--bg-card);
+  border-color: var(--border-subtle);
+  color: var(--text-main);
+}
+
+.edit-btn:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+  background: var(--primary-light);
+}
+
+.status-btn-activate {
+  background: rgba(16, 185, 129, 0.1);
+  color: #10b981;
+  border-color: rgba(16, 185, 129, 0.2);
+}
+
+.status-btn-activate:hover {
+  background: #10b981;
+  color: white;
+}
+
+.status-btn-deactivate {
+  background: rgba(245, 158, 11, 0.1);
+  color: #f59e0b;
+  border-color: rgba(245, 158, 11, 0.2);
+}
+
+.status-btn-deactivate:hover {
+  background: #f59e0b;
+  color: white;
+}
+
+/* Premium Badge Styling */
+.badge {
+  padding: 4px 10px;
+  border-radius: 8px;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  box-shadow: inset 0 0 0 1px rgba(0,0,0,0.05);
+}
+
+.badge-success {
+  background: rgba(16, 185, 129, 0.15);
+  color: #10b981;
+  border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.badge-warning {
+  background: rgba(245, 158, 11, 0.15);
+  color: #f59e0b;
+  border: 1px solid rgba(245, 158, 11, 0.3);
 }
 
 .range-group {
@@ -1102,12 +1343,148 @@ select.form-input {
   padding: 32px;
 }
 
-.animate-slide-up {
-  animation: slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+/* Professional Compact Filter Bar Styling */
+.filter-glass-bar {
+  background: var(--bg-main);
+  padding: 16px 20px;
+  border-radius: 12px;
+  border: 1px solid var(--border-subtle);
+  margin: 0 16px 16px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
 }
 
-@keyframes slideUp {
-  from { transform: translateY(20px); opacity: 0; }
-  to { transform: translateY(0); opacity: 1; }
+.filter-grid {
+  display: grid;
+  grid-template-columns: 1.5fr 1fr 1fr 1fr;
+  gap: 16px;
+  align-items: flex-end;
+}
+
+.filter-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.filter-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding-left: 2px;
+}
+
+.filter-input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.filter-icon {
+  position: absolute;
+  left: 12px;
+  color: var(--text-muted);
+  pointer-events: none;
+}
+
+.filter-field {
+  width: 100%;
+  height: 38px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: 10px;
+  padding: 0 12px 0 34px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-main);
+  transition: all 0.2s ease;
+}
+
+.filter-field:focus {
+  border-color: var(--primary);
+  background: var(--bg-main);
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+  outline: none;
+}
+
+.select-field {
+  appearance: none;
+  cursor: pointer;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%236b7280'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.75rem center;
+  background-size: 1rem;
+  padding-right: 2.5rem;
+}
+
+.filter-range-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.filter-field.half {
+  padding: 0 10px;
+  text-align: center;
+  font-size: 12px;
+}
+
+.range-sep {
+  color: var(--text-muted);
+  font-weight: 900;
+  font-size: 12px;
+}
+
+.filter-actions {
+  display: flex;
+  gap: 12px;
+  padding-top: 4px;
+  border-top: 1px solid var(--border-subtle);
+}
+
+.filter-btn-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 20px;
+  height: 36px;
+  background: var(--primary);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.filter-btn-primary:hover {
+  filter: brightness(1.1);
+  transform: translateY(-1px);
+}
+
+.filter-btn-outline {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 20px;
+  height: 36px;
+  background: transparent;
+  border: 1px solid var(--border-subtle);
+  color: var(--text-muted);
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.filter-btn-outline:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+  background: var(--primary-light);
 }
 </style>

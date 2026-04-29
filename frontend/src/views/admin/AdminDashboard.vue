@@ -1,84 +1,93 @@
 <template>
   <div class="dashboard-page animate-fade-in">
-    <div class="dashboard-header">
-      <h1>Dashboard</h1>
+    <div class="dashboard-header" style="margin-bottom: 20px;">
+      <h1 style="font-size: 24px; font-weight: 800; color: var(--text-main); letter-spacing: -0.03em;">Dashboard</h1>
     </div>
 
     <!-- Summary Cards -->
-    <div class="summary-cards">
-      <div class="summary-card locations-card">
-        <div class="card-icon">
-          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="2" ry="2"></rect><path d="M9 17V7h4a3 3 0 0 1 0 6H9"></path></svg>
+    <div class="summary-cards" style="margin-bottom: 24px; gap: 12px;">
+      <div class="summary-card locations-card" style="padding: 12px 16px; border-radius: 12px;">
+        <div class="card-icon" style="width: 36px; height: 36px; border-radius: 10px;">
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="2" ry="2"></rect><path d="M9 17V7h4a3 3 0 0 1 0 6H9"></path></svg>
         </div>
         <div class="card-content">
-          <div class="card-label">Total Locations</div>
-          <div class="card-value">{{ summary.total_locations }}</div>
+          <div class="card-label" style="font-size: 9px;">Total Locations</div>
+          <div class="card-value" style="font-size: 20px;">{{ summary.total_locations }}</div>
         </div>
       </div>
 
-      <div class="summary-card owners-card">
-        <div class="card-icon">
-          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+      <div class="summary-card owners-card" style="padding: 12px 16px; border-radius: 12px;">
+        <div class="card-icon" style="width: 36px; height: 36px; border-radius: 10px;">
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
         </div>
         <div class="card-content">
-          <div class="card-label">Total Owners</div>
-          <div class="card-value">{{ summary.total_owners }}</div>
+          <div class="card-label" style="font-size: 9px;">Total Owners</div>
+          <div class="card-value" style="font-size: 20px;">{{ summary.total_owners }}</div>
         </div>
       </div>
 
-      <div class="summary-card managers-card">
-        <div class="card-icon">
-          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="8.5" cy="7" r="4"></circle><polyline points="22 14 19 11 16 14"></polyline></svg>
+      <div class="summary-card managers-card" style="padding: 12px 16px; border-radius: 12px;">
+        <div class="card-icon" style="width: 36px; height: 36px; border-radius: 10px;">
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="8.5" cy="7" r="4"></circle><polyline points="22 14 19 11 16 14"></polyline></svg>
         </div>
         <div class="card-content">
-          <div class="card-label">Total Managers</div>
-          <div class="card-value">{{ summary.total_managers }}</div>
+          <div class="card-label" style="font-size: 9px;">Total Managers</div>
+          <div class="card-value" style="font-size: 20px;">{{ summary.total_managers }}</div>
         </div>
       </div>
 
-      <div class="summary-card drivers-card">
-        <div class="card-icon">
-          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"></path></svg>
+      <div class="summary-card drivers-card" style="padding: 12px 16px; border-radius: 12px;">
+        <div class="card-icon" style="width: 36px; height: 36px; border-radius: 10px;">
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"></path></svg>
         </div>
         <div class="card-content">
-          <div class="card-label">Total Drivers</div>
-          <div class="card-value">{{ summary.total_drivers }}</div>
+          <div class="card-label" style="font-size: 9px;">Total Drivers</div>
+          <div class="card-value" style="font-size: 20px;">{{ summary.total_drivers }}</div>
         </div>
       </div>
     </div>
 
     <!-- My Locations Section -->
     <div class="locations-section">
-      <div class="section-header">
-        <div class="header-main-info">
-          <h2>My Locations</h2>
+      <div class="section-header" style="padding: 12px 20px;">
+        <div class="header-main-info" style="gap: 16px;">
+          <h2 style="font-size: 16px; font-weight: 750;">My Locations</h2>
           <div class="header-filters">
             <div class="search-box">
-              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="search-icon"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="search-icon"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
               <input 
                 type="text" 
                 v-model="searchQuery" 
-                placeholder="Search by name or city..." 
+                placeholder="Search location..." 
                 class="search-input"
+                style="padding: 6px 12px 6px 32px; height: 34px; font-size: 12px; width: 200px;"
               />
             </div>
             <div class="filter-box">
-              <select v-model="statusFilter" class="filter-select">
+              <select v-model="statusFilter" class="filter-select" style="padding: 6px 28px 6px 10px; height: 34px; font-size: 12px; min-width: 110px;">
                 <option value="all">All Status</option>
                 <option value="active">Active</option>
                 <option value="inactive">Inactive</option>
                 <option value="expired">Expired</option>
               </select>
             </div>
+            <div class="filter-box">
+              <select v-model="planFilter" class="filter-select" style="padding: 6px 28px 6px 10px; height: 34px; font-size: 12px; min-width: 130px;">
+                <option value="all">All Plans</option>
+                <option value="no-plan">No Active Plan</option>
+                <option v-for="plan in plans" :key="plan.plan_id" :value="plan.plan_name">
+                  {{ plan.plan_name }}
+                </option>
+              </select>
+            </div>
           </div>
         </div>
-        <div class="header-actions">
-          <button class="btn btn-outline" @click="$router.push('/admin/users')">Manage Users</button>
-          <button class="btn btn-outline" @click="$router.push('/admin/owners')">Manage Owners</button>
-          <button class="btn btn-outline" @click="$router.push('/admin/locations')">All Locations</button>
-          <button class="btn btn-primary" @click="openAddLocationModal">
-            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-            Add Location
+        <div class="header-actions" style="gap: 8px;">
+          <button class="btn btn-outline" style="padding: 6px 12px; font-size: 12px; border-radius: 8px;" @click="$router.push('/admin/users')">Users</button>
+          <button class="btn btn-outline" style="padding: 6px 12px; font-size: 12px; border-radius: 8px;" @click="$router.push('/admin/owners')">Owners</button>
+          <button class="btn btn-primary" style="padding: 6px 12px; font-size: 12px; border-radius: 8px;" @click="openAddLocationModal">
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+            Add
           </button>
         </div>
       </div>
@@ -99,13 +108,21 @@
       <div v-else class="locations-grid">
         <div v-for="loc in filteredLocations" :key="loc.location_id" class="location-card">
           <div class="loc-card-header">
-            <div class="loc-type-eyebrow">{{ loc.location_type }}</div>
+            <div class="loc-header-top">
+              <div class="loc-type-eyebrow">{{ loc.location_type }}</div>
+              <div class="status-badges-row">
+                <div class="loc-status-badge" :class="getLocStatusClass(loc)">
+                  <span class="dot"></span>
+                  {{ getLocStatusLabel(loc) }}
+                </div>
+                <div v-if="loc.active_plan" class="plan-status-badge" :class="getPlanBadgeClass(loc)">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"></path></svg>
+                  {{ loc.active_plan }}
+                </div>
+              </div>
+            </div>
             <div class="loc-title-row">
               <h3>{{ loc.location_name }}</h3>
-              <div class="loc-status-badge" :class="getLocStatusClass(loc)">
-                <span class="dot"></span>
-                {{ getLocStatusLabel(loc) }}
-              </div>
             </div>
           </div>
           
@@ -236,6 +253,8 @@ const locations = ref([]);
 const loading = ref(true);
 const searchQuery = ref('');
 const statusFilter = ref('all');
+const planFilter = ref('all');
+const plans = ref([]);
 const expandedLocations = ref({});
 
 const isExpired = (loc) => {
@@ -253,6 +272,17 @@ const getLocStatusClass = (loc) => {
     return loc.status ? 'active' : 'inactive';
 };
 
+const getPlanBadgeClass = (loc) => {
+    if (!loc.active_plan) return '';
+    
+    const isPlanExpired = loc.subscription_status === 'EXPIRED' || 
+                         (loc.subscription_end_date && new Date(loc.subscription_end_date) < new Date());
+    
+    if (isPlanExpired) return 'plan-expired';
+    if (loc.remaining_transactions <= 0) return 'plan-over';
+    return 'plan-live';
+};
+
 const filteredLocations = computed(() => {
     let result = locations.value;
 
@@ -267,12 +297,22 @@ const filteredLocations = computed(() => {
         });
     }
 
+    // Plan Filter
+    if (planFilter.value !== 'all') {
+        if (planFilter.value === 'no-plan') {
+            result = result.filter(loc => !loc.active_plan);
+        } else {
+            result = result.filter(loc => loc.active_plan === planFilter.value);
+        }
+    }
+
     // Search Query Filter
     if (searchQuery.value) {
         const query = searchQuery.value.toLowerCase().trim();
         result = result.filter(loc => 
             loc.location_name.toLowerCase().includes(query) || 
-            (loc.address && loc.address.toLowerCase().includes(query))
+            (loc.address && loc.address.toLowerCase().includes(query)) ||
+            (loc.active_plan && loc.active_plan.toLowerCase().includes(query))
         );
     }
     
@@ -308,10 +348,24 @@ const fetchLocations = async () => {
     }
 };
 
+const fetchPlans = async () => {
+    try {
+        const response = await axios.get(`${API_URL}/admin/subscriptions/plans`, {
+            headers: { Authorization: `Bearer ${authStore.token}` }
+        });
+        if (response.data.success) {
+            plans.value = response.data.data;
+        }
+    } catch (error) {
+        console.error('Error fetching plans:', error);
+    }
+};
+
 const fetchDashboardData = async () => {
     await Promise.all([
         fetchSummary(),
-        fetchLocations()
+        fetchLocations(),
+        fetchPlans()
     ]);
 };
 
@@ -427,12 +481,13 @@ const getInitials = (name) => {
 onMounted(() => {
     fetchSummary();
     fetchLocations();
+    fetchPlans();
 });
 </script>
 
 <style scoped>
 .dashboard-page {
-  padding-top: 16px;
+  padding-top: 0;
 }
 
 .dashboard-header {
@@ -635,7 +690,14 @@ onMounted(() => {
   margin-bottom: 16px;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 8px;
+}
+
+.loc-header-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2px;
 }
 
 .loc-type-eyebrow {
@@ -648,28 +710,23 @@ onMounted(() => {
 }
 
 .loc-title-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+  display: block;
 }
 
 .loc-title-row h3 {
-  font-size: 18px;
+  font-size: 20px;
   font-weight: 750;
   color: var(--text-main);
   letter-spacing: -0.02em;
   margin: 0;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 70%;
+  line-height: 1.3;
 }
 
 .loc-status-badge {
   display: flex;
   align-items: center;
   gap: 5px;
-  padding: 3px 8px;
+  padding: 4px 10px;
   border-radius: 12px;
   font-size: 10px;
   font-weight: 800;
@@ -677,6 +734,45 @@ onMounted(() => {
   color: var(--text-muted);
   text-transform: uppercase;
   letter-spacing: 0.02em;
+  flex-shrink: 0;
+}
+
+.status-badges-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.plan-status-badge {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  box-shadow: var(--shadow-sm);
+}
+
+.plan-live {
+  background: #ecfdf5;
+  color: #059669;
+  border: 1px solid #10b98133;
+}
+
+.plan-over {
+  background: #fffbeb;
+  color: #d97706;
+  border: 1px solid #f59e0b33;
+}
+
+.plan-expired {
+  background: #fef2f2;
+  color: #dc2626;
+  border: 1px solid #ef444433;
 }
 
 .loc-status-badge.active {
@@ -698,13 +794,13 @@ onMounted(() => {
 
 .loc-address {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 8px;
   color: var(--text-muted);
   font-size: 13px;
   margin-bottom: 20px;
-  height: 36px;
-  overflow: hidden;
+  min-height: 36px;
+  line-height: 1.4;
 }
 
 .loc-address svg {
@@ -717,7 +813,7 @@ onMounted(() => {
   grid-template-columns: repeat(4, 1fr);
   background: var(--bg-main);
   border-radius: 16px;
-  height: 64px;
+  min-height: 64px;
   border: 1px solid var(--border-subtle);
   margin-bottom: 20px;
 }
@@ -1073,11 +1169,11 @@ onMounted(() => {
 
 .modal-form input, .modal-form select, .modal-form textarea {
     width: 100%;
-    padding: 14px 18px;
+    padding: 10px 14px;
     background: var(--bg-card);
     border: 1.5px solid var(--border-subtle);
-    border-radius: 16px;
-    font-size: 15px;
+    border-radius: 12px;
+    font-size: 13px;
     font-weight: 500;
     color: var(--text-main);
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -1175,18 +1271,18 @@ onMounted(() => {
 }
 
 .modal-footer {
-    margin-top: 48px;
+    margin-top: 32px;
     display: flex;
     justify-content: flex-end;
     align-items: center;
-    gap: 20px;
+    gap: 16px;
 }
 
 .btn-premium {
-  padding: 16px 32px;
-  border-radius: 18px;
+  padding: 10px 24px;
+  border-radius: 12px;
   background: linear-gradient(135deg, var(--primary), var(--primary-hover));
-  font-size: 16px;
+  font-size: 14px;
   box-shadow: 0 12px 24px -6px var(--primary-shadow);
 }
 

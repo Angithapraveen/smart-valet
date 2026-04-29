@@ -72,7 +72,11 @@ class Location {
                 COALESCE(b.total_blocks, 0) as total_blocks,
                 COALESCE(be.available_slots, 0) as available_slots,
                 COALESCE(be.occupied_slots, 0) as occupied_slots,
-                COALESCE(vt.active_parkings, 0) as active_parkings
+                COALESCE(vt.active_parkings, 0) as active_parkings,
+                ps.plan_name as active_plan,
+                ps.status as subscription_status,
+                ps.remaining_transactions,
+                ps.end_date as subscription_end_date
             FROM LOCATIONS l
             LEFT JOIN (
                 SELECT location_id, COUNT(*) as total_blocks 
@@ -96,6 +100,12 @@ class Location {
                 WHERE status IN ('PARKED', 'RETURN_REQUESTED', 'READY')
                 GROUP BY location_id
             ) vt ON l.location_id = vt.location_id
+            LEFT JOIN (
+                SELECT s.location_id, p.plan_name, s.status, s.remaining_transactions, s.end_date
+                FROM LOCATION_SUBSCRIPTIONS s
+                JOIN PAYMENT_PLANS p ON s.plan_id = p.plan_id
+                WHERE s.status = 'ACTIVE'
+            ) ps ON l.location_id = ps.location_id
             ORDER BY l.created_at DESC
         `;
         const result = await pool.query(query);

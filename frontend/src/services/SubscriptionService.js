@@ -73,6 +73,26 @@ export const SubscriptionService = {
       headers: getHeaders()
     });
     return response.data;
+  },
+
+  async initiatePayment(locationId, planId) {
+    const response = await axios.post(`${API_BASE_URL}/admin/subscriptions/initiate-payment`, {
+      location_id: locationId,
+      plan_id: planId
+    }, {
+      headers: getHeaders()
+    });
+    return response.data;
+  },
+
+  async updatePaymentStatus(paymentId, status) {
+    const response = await axios.post(`${API_BASE_URL}/admin/subscriptions/payment-status`, {
+      payment_id: paymentId,
+      status: status
+    }, {
+      headers: getHeaders()
+    });
+    return response.data;
   }
 };
 

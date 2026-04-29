@@ -20,17 +20,6 @@ const createWhatsAppTransaction = async (req, res) => {
         });
     }
 
-    try {
-        // Check Subscription Limit
-        const subCheck = await subscriptionService.checkParkingLimit(location_id);
-        req.subscription_id = subCheck.subscription_id; // Store for later use
-    } catch (error) {
-        return res.status(403).json({
-            success: false,
-            message: error.message || 'Subscription check failed.'
-        });
-    }
-
     const client = await pool.connect();
 
     try {

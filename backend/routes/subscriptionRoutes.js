@@ -17,5 +17,7 @@ router.get('/payments', authenticate, requireRole('ADMIN'), subscriptionControll
 // Owner/Manager routes
 router.get('/my-plan/:locationId', authenticate, subscriptionController.getMyPlan);
 router.get('/my-subscriptions/:locationId', authenticate, subscriptionController.getMySubscriptions);
+router.post('/initiate-payment', authenticate, subscriptionController.initiatePayment);
+router.post('/payment-status', authenticate, subscriptionController.updatePaymentStatus);
 
 module.exports = router;

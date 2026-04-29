@@ -7,10 +7,10 @@
         </router-link>
     </div>
 
-    <header class="page-header">
+    <header class="page-header" style="margin-bottom: 24px;">
       <div class="header-info">
-          <h1>Locations List</h1>
-          <p class="subtitle">Manage and monitor all parking locations</p>
+          <h1 style="font-size: 24px; font-weight: 800; color: var(--text-main); margin: 0; letter-spacing: -0.03em;">Locations List</h1>
+          <p style="font-size: 12px; color: var(--text-muted); margin-top: 2px;">Manage and monitor all parking locations</p>
       </div>
     </header>
 
@@ -51,6 +51,9 @@
                 <div class="status-wrapper">
                     <span :class="['status-pill', loc.status ? 'pill-active' : 'pill-inactive']">
                       {{ loc.status ? 'ACTIVE' : 'INACTIVE' }}
+                    </span>
+                    <span v-if="loc.active_plan" :class="['plan-status-badge', getPlanBadgeClass(loc)]">
+                      {{ loc.active_plan }}
                     </span>
                     <span v-if="isExpired(loc)" class="expired-tag">EXPIRED</span>
                 </div>
@@ -138,6 +141,15 @@ export default {
 
     onMounted(fetchLocations);
 
+    const getPlanBadgeClass = (loc) => {
+      if (!loc.active_plan) return '';
+      const isPlanExpired = loc.subscription_status === 'EXPIRED' || 
+                           (loc.subscription_end_date && new Date(loc.subscription_end_date) < new Date());
+      if (isPlanExpired) return 'plan-expired';
+      if (loc.remaining_transactions <= 0) return 'plan-over';
+      return 'plan-live';
+    };
+
     return {
       locations,
       loading,
@@ -145,7 +157,8 @@ export default {
       togglingId,
       formatDate,
       isExpired,
-      toggleStatus
+      toggleStatus,
+      getPlanBadgeClass
     };
   }
 };
@@ -239,9 +252,9 @@ export default {
 
 .data-table th {
     background: var(--bg-main);
-    padding: 16px 24px;
+    padding: 12px 16px;
     text-align: left;
-    font-size: 12px;
+    font-size: 11px;
     font-weight: 700;
     color: var(--text-muted);
     text-transform: uppercase;
@@ -250,8 +263,8 @@ export default {
 }
 
 .data-table td {
-    padding: 18px 24px;
-    font-size: 15px;
+    padding: 12px 16px;
+    font-size: 13px;
     color: var(--text-main);
     border-bottom: 1px solid var(--border-subtle);
 }
@@ -326,6 +339,36 @@ export default {
     font-weight: 800;
     color: var(--danger);
     letter-spacing: 0.05em;
+}
+
+.plan-status-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 10px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+    width: fit-content;
+}
+
+.plan-live {
+    background: #ecfdf5;
+    color: #059669;
+    border: 1px solid #10b98133;
+}
+
+.plan-over {
+    background: #fffbeb;
+    color: #d97706;
+    border: 1px solid #f59e0b33;
+}
+
+.plan-expired {
+    background: #fef2f2;
+    color: #dc2626;
+    border: 1px solid #ef444433;
 }
 
 /* Action Buttons */

@@ -2,29 +2,79 @@
   <div class="dashboard-page animate-fade-in">
     <!-- Unifying Header and Container in a single Responsive Wrapper -->
     <div class="dashboard-wrapper">
-      <div class="dashboard-header">
-        <div class="header-main-info">
-          <h1>My Subscription</h1>
-          <div v-if="locations.length > 1" class="header-filters ml-4">
-            <div class="filter-box">
-              <select 
-                v-model="selectedLocationId" 
-                @change="fetchPlanDetails"
-                class="filter-select"
-              >
-                <option v-for="loc in locations" :key="loc.location_id" :value="loc.location_id">
-                  {{ loc.location_name }}
-                </option>
-              </select>
+      <div class="dashboard-header" style="margin-bottom: 20px;">
+        <div class="header-main-info" style="gap: 16px;">
+          <h1 style="font-size: 24px; font-weight: 800; color: var(--text-main); margin: 0; letter-spacing: -0.03em;">My Subscription</h1>
+          
+          <!-- Refined Site Switcher -->
+          <div v-if="locations.length > 1" class="site-switcher-inline" style="height: 34px;" v-click-outside="() => showLocationDropdown = false">
+            <div class="switcher-trigger-inline" style="padding: 0 12px; height: 100%; border-radius: 8px;" @click="showLocationDropdown = !showLocationDropdown" :class="{ 'active': showLocationDropdown }">
+              <div class="trigger-meta">
+                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" class="loc-icon"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
+                <span class="current-site-name" style="font-size: 12px;">{{ selectedLocationName }}</span>
+              </div>
+              <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" class="chevron-icon" :class="{ 'rotated': showLocationDropdown }"><path d="m6 9 6 6 6-6"/></svg>
             </div>
+
+            <transition name="pop-in">
+              <div v-if="showLocationDropdown" class="switcher-dropdown-menu">
+                <div class="menu-search-wrapper">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.3-4.3"></path></svg>
+                  <input type="text" placeholder="Search sites..." @click.stop v-model="siteFilter" />
+                </div>
+                <div class="menu-items-list">
+                  <div 
+                    v-for="loc in filteredLocations" 
+                    :key="loc.location_id" 
+                    class="site-item"
+                    :class="{ 'active': loc.location_id === selectedLocationId }"
+                    @click="selectLocation(loc)"
+                  >
+                    <div class="site-item-info">
+                      <span class="site-item-name">{{ loc.location_name }}</span>
+                      <span class="site-item-sub">Deployment Active</span>
+                    </div>
+                    <div v-if="loc.location_id === selectedLocationId" class="site-active-check">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </transition>
           </div>
         </div>
         <div class="header-actions">
-          <button class="btn btn-outline-small" @click="fetchPlanDetails">
-            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M23 4v6h-6"></path><path d="M1 20v-6h6"></path><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
-            Refresh Analytics
+          <button v-if="!showPlans" class="btn btn-primary" style="padding: 6px 12px; font-size: 12px; border-radius: 8px;" @click="togglePlanSelection(currentPlan && currentPlan.status === 'ACTIVE' ? 'change' : 'upgrade')">
+            {{ currentPlan && currentPlan.status === 'ACTIVE' ? 'Change Plan' : 'Upgrade Plan' }}
           </button>
         </div>
+      </div>
+
+
+      <!-- Payment Status Alert -->
+      <div v-if="paymentStatus" class="payment-alert" :class="paymentStatus.type">
+        <div class="alert-content">
+          <span class="alert-icon">{{ paymentStatus.type === 'success' ? '✅' : '❌' }}</span>
+          <p>{{ paymentStatus.message }}</p>
+        </div>
+        <button class="alert-close" @click="paymentStatus = null">×</button>
+      </div>
+
+      <!-- Limit Exhausted Alert -->
+      <div v-if="currentPlan && currentPlan.calculated_remaining <= 0" class="limit-exhausted-banner-v2 animate-pop-in">
+        <div class="banner-v2-main">
+          <div class="banner-v2-icon-box">
+            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          </div>
+          <div class="banner-v2-info">
+            <h3>TRANSACTION LIMIT REACHED</h3>
+            <p>Operations are paused. Please upgrade to continue.</p>
+          </div>
+        </div>
+        <button class="btn-upgrade-v2" @click="togglePlanSelection('upgrade')">
+          <span>Upgrade Tier</span>
+          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+        </button>
       </div>
 
       <!-- Loading State -->
@@ -157,18 +207,38 @@
           </div>
         </div>
 
+        <!-- Plan Selection Flow -->
+        <div v-if="showPlans" class="plan-selection-overlay">
+          <div class="selection-container">
+            <div class="selection-header">
+              <h2>Select Service Architecture</h2>
+              <button class="btn-close" @click="showPlans = false">×</button>
+            </div>
+            <div class="tier-grid">
+              <TierCard 
+                v-for="plan in displayedPlans" 
+                :key="plan.plan_id" 
+                :plan="plan" 
+                :is-current="currentPlan?.plan_id === plan.plan_id && currentPlan?.status === 'ACTIVE'"
+                :loading="submitting === plan.plan_id"
+                @subscribe="handleSubscribe"
+              />
+            </div>
+          </div>
+        </div>
+
         <!-- No Plan State -->
-        <div v-else class="empty-deployment-state">
+        <div v-if="!currentPlan && !showPlans" class="empty-deployment-state">
           <div class="empty-card">
             <div class="empty-icon-box">
               <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" /></svg>
             </div>
             <h3 class="empty-title">Deployment Pending</h3>
             <p class="empty-text">
-              No active service tier has been assigned to this location yet. Please coordinate with Administration for deployment.
+              No active service tier has been assigned to this location yet. Subscribe to continue valet operations.
             </p>
-            <button class="request-btn">
-              Request Activation
+            <button class="request-btn" @click="togglePlanSelection('upgrade')">
+              View Plans
             </button>
           </div>
         </div>
@@ -181,14 +251,59 @@
 import { ref, onMounted, computed } from 'vue';
 import { useAuthStore } from '../stores/auth';
 import { SubscriptionService } from '../services/SubscriptionService';
+import TierCard from '../components/subscriptions/TierCard.vue';
 
 const authStore = useAuthStore();
 const currentPlan = ref(null);
 const history = ref([]);
+const availablePlans = ref([]);
 const loading = ref(true);
+const showPlans = ref(false);
+const submitting = ref(null);
+const paymentStatus = ref(null);
+const planSelectionMode = ref('upgrade'); // 'upgrade' or 'change'
+
+const togglePlanSelection = (mode) => {
+  planSelectionMode.value = mode;
+  showPlans.value = true;
+};
 
 const locations = computed(() => authStore.userLocations);
 const selectedLocationId = ref(authStore.selectedLocationId);
+const showLocationDropdown = ref(false);
+const siteFilter = ref('');
+
+const filteredLocations = computed(() => {
+  if (!siteFilter.value) return locations.value;
+  const q = siteFilter.value.toLowerCase();
+  return locations.value.filter(l => l.location_name.toLowerCase().includes(q));
+});
+
+const selectedLocationName = computed(() => {
+  const loc = locations.value.find(l => l.location_id === selectedLocationId.value);
+  return loc ? loc.location_name : 'Select Location';
+});
+
+const selectLocation = (loc) => {
+  selectedLocationId.value = loc.location_id;
+  showLocationDropdown.value = false;
+  fetchPlanDetails();
+};
+
+// Simple click outside directive logic
+const vClickOutside = {
+  mounted(el, binding) {
+    el.clickOutsideEvent = (event) => {
+      if (!(el === event.target || el.contains(event.target))) {
+        binding.value(event);
+      }
+    };
+    document.addEventListener("click", el.clickOutsideEvent);
+  },
+  unmounted(el) {
+    document.removeEventListener("click", el.clickOutsideEvent);
+  },
+};
 
 const fetchPlanDetails = async () => {
   if (!selectedLocationId.value) {
@@ -198,19 +313,69 @@ const fetchPlanDetails = async () => {
 
   loading.value = true;
   try {
-    const [planRes, historyRes] = await Promise.all([
+    const [planRes, historyRes, plansRes] = await Promise.all([
       SubscriptionService.getMyPlan(selectedLocationId.value),
-      SubscriptionService.getMySubscriptions(selectedLocationId.value)
+      SubscriptionService.getMySubscriptions(selectedLocationId.value),
+      SubscriptionService.getPlans()
     ]);
     
     currentPlan.value = planRes.data;
     history.value = historyRes.data;
+    availablePlans.value = plansRes.data;
   } catch (error) {
     console.error('Fetch Error:', error);
   } finally {
     loading.value = false;
   }
 };
+
+const handleSubscribe = async (plan) => {
+  if (!selectedLocationId.value) return;
+  
+  submitting.value = plan.plan_id;
+  try {
+    // 1. Initiate Payment
+    const initRes = await SubscriptionService.initiatePayment(selectedLocationId.value, plan.plan_id);
+    const paymentId = initRes.data.payment_id;
+
+    // 2. Simulate Payment (Since this is a demo/dev mode)
+    // In a real app, this would redirect to a payment gateway
+    setTimeout(async () => {
+      try {
+        const result = await SubscriptionService.updatePaymentStatus(paymentId, 'SUCCESS');
+        paymentStatus.value = {
+          type: 'success',
+          message: '✅ Payment Successful. Plan Activated.'
+        };
+        showPlans.value = false;
+        fetchPlanDetails();
+      } catch (err) {
+        paymentStatus.value = {
+          type: 'error',
+          message: '❌ Payment Failed. Please try again.'
+        };
+      } finally {
+        submitting.value = null;
+      }
+    }, 2000);
+
+  } catch (error) {
+    console.error('Subscription Error:', error);
+    paymentStatus.value = {
+      type: 'error',
+      message: error.response?.data?.message || 'Failed to initiate payment.'
+    };
+    submitting.value = null;
+  }
+};
+
+const displayedPlans = computed(() => {
+  if (currentPlan.value) {
+    // Only show plans that can accommodate the transactions already processed
+    return availablePlans.value.filter(p => p.total_transactions > (currentPlan.value.used_transactions || 0));
+  }
+  return availablePlans.value;
+});
 
 const usagePercentage = computed(() => {
   if (!currentPlan.value || !currentPlan.value.plan_limit) return 0;
@@ -230,14 +395,65 @@ const formatDate = (dateStr) => {
     year: 'numeric'
   });
 };
-
 onMounted(fetchPlanDetails);
 </script>
 
+<style>
+/* Global Theme Bridge for Site Switcher */
+:root .light-theme .dashboard-wrapper,
+:root .light .dashboard-wrapper,
+body.light-theme .dashboard-wrapper,
+body.light .dashboard-wrapper,
+.dashboard-wrapper:not(.dark):not(.dark-theme) {
+  --dropdown-bg: #ffffff !important;
+  --dropdown-border: #d1d5db !important;
+  --dropdown-text: #111827 !important;
+  --dropdown-hover: #f3f4f6 !important;
+  --dropdown-active-bg: #f0f7ff !important;
+  --dropdown-shadow: 0 20px 50px rgba(0, 0, 0, 0.15) !important;
+  --search-bg: #f9fafb !important;
+}
+
+:root .dark-theme .dashboard-wrapper,
+:root .dark .dashboard-wrapper,
+body.dark-theme .dashboard-wrapper,
+body.dark .dashboard-wrapper {
+  --dropdown-bg: #111827 !important;
+  --dropdown-border: #374151 !important;
+  --dropdown-text: #f9fafb !important;
+  --dropdown-hover: #1f2937 !important;
+  --dropdown-active-bg: rgba(59, 130, 246, 0.2) !important;
+  --dropdown-shadow: 0 20px 50px rgba(0, 0, 0, 0.5) !important;
+  --search-bg: #1f2937 !important;
+}
+</style>
+
 <style scoped>
+/* 1. Base Defaults (Light Theme) */
+.dashboard-wrapper {
+  --dropdown-bg: #ffffff;
+  --dropdown-border: #e2e8f0;
+  --dropdown-text: #1e293b;
+  --dropdown-hover: #f1f5f9;
+  --dropdown-active-bg: #eff6ff;
+  --dropdown-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+}
+
+/* 2. System Dark Mode Override */
+@media (prefers-color-scheme: dark) {
+  .dashboard-wrapper {
+    --dropdown-bg: #1a1b1e;
+    --dropdown-border: #2c2e33;
+    --dropdown-text: #ffffff;
+    --dropdown-hover: #25262b;
+    --dropdown-active-bg: rgba(66, 153, 225, 0.15);
+    --dropdown-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
+  }
+}
+
 .dashboard-wrapper {
   width: 100%;
-  padding: 20px 24px;
+  padding: 0;
   display: flex;
   flex-direction: column;
   gap: 24px;
@@ -262,6 +478,264 @@ onMounted(fetchPlanDetails);
   display: flex;
   align-items: center;
   gap: 16px;
+  flex-wrap: nowrap;
+}
+
+.header-main-info h1 {
+  flex-shrink: 0;
+  margin: 0;
+}
+
+/* Professional Inline Site Switcher */
+.site-switcher-inline {
+  position: relative;
+  z-index: 1000;
+}
+
+.switcher-trigger-inline {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 16px;
+  background: var(--dropdown-bg);
+  border: 1px solid var(--dropdown-border);
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  min-width: 220px;
+  box-shadow: var(--shadow-sm);
+  color: var(--dropdown-text);
+}
+
+.switcher-trigger-inline:hover {
+  border-color: var(--primary);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.switcher-trigger-inline.active {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 4px rgba(var(--primary-rgb), 0.1);
+}
+
+.trigger-meta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  overflow: hidden;
+}
+
+.loc-icon {
+  color: var(--primary);
+  flex-shrink: 0;
+}
+
+.current-site-name {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-main);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.chevron-icon {
+  color: var(--text-muted);
+  transition: transform 0.3s ease;
+  flex-shrink: 0;
+}
+
+.chevron-icon.rotated {
+  transform: rotate(180deg);
+}
+
+/* Professional Dropdown Menu */
+.switcher-dropdown-menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  width: 340px;
+  background: var(--dropdown-bg) !important;
+  border: 1px solid var(--dropdown-border);
+  border-radius: 20px;
+  box-shadow: var(--dropdown-shadow);
+  padding: 12px;
+  z-index: 1000;
+}
+
+.menu-search-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 12px;
+  background: var(--search-bg);
+  border: 1px solid var(--dropdown-border);
+  border-radius: 10px;
+  height: 36px;
+  margin-bottom: 12px;
+}
+
+.menu-search-wrapper svg {
+  color: var(--text-muted);
+}
+
+.menu-search-wrapper input {
+  background: transparent;
+  border: none;
+  width: 100%;
+  color: var(--dropdown-text);
+  font-size: 13px;
+  font-weight: 600;
+  outline: none;
+}
+
+.menu-items-list {
+  max-height: 280px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.site-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 14px;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+  background: var(--dropdown-bg);
+  color: var(--dropdown-text);
+}
+
+.site-item:hover {
+  background: var(--dropdown-hover);
+}
+
+.site-item.active {
+  background: var(--dropdown-active-bg);
+}
+
+.site-item-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.site-item-name {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--dropdown-text);
+}
+
+.site-item-sub {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text-muted);
+  opacity: 0.8;
+}
+
+.site-active-check {
+  color: var(--primary);
+}
+
+/* Limit Exhausted Banner V2 */
+.limit-exhausted-banner-v2 {
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+  border-radius: 20px;
+  padding: 16px 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+  box-shadow: 0 12px 24px rgba(239, 68, 68, 0.2);
+}
+
+.banner-v2-main {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.banner-v2-icon-box {
+  width: 40px;
+  height: 40px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+}
+
+.banner-v2-info h3 {
+  font-size: 13px;
+  font-weight: 900;
+  color: white;
+  margin: 0;
+  letter-spacing: 0.05em;
+}
+
+.banner-v2-info p {
+  font-size: 12px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.9);
+  margin: 2px 0 0 0;
+}
+
+.btn-upgrade-v2 {
+  background: white;
+  color: #ef4444;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 10px;
+  font-size: 11px;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-transform: uppercase;
+}
+
+.btn-upgrade-v2:hover {
+  transform: scale(1.05);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+@keyframes dropdownFade {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.fade-slide-enter-active, .fade-slide-leave-active {
+  transition: all 0.3s;
+}
+.fade-slide-enter-from, .fade-slide-leave-to {
+  opacity: 0;
+  transform: translateY(-10px);
+}
+
+.btn-primary-small {
+  background: var(--primary);
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 10px;
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(var(--primary-rgb), 0.2);
+  transition: all 0.2s;
+}
+
+.btn-primary-small:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(var(--primary-rgb), 0.3);
 }
 
 .btn-outline-small {
@@ -536,6 +1010,152 @@ onMounted(fetchPlanDetails);
 }
 .ledger-status.active { background: var(--success-light); color: var(--success); }
 .ledger-status.expired { background: var(--danger-light); color: var(--danger); }
+
+/* Payment Alert */
+.payment-alert {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 20px;
+  border-radius: 12px;
+  margin-bottom: 24px;
+  animation: slideDown 0.3s ease-out;
+}
+.payment-alert.success { background: var(--success-light); color: var(--success); border: 1px solid rgba(34, 197, 94, 0.2); }
+.payment-alert.error { background: var(--danger-light); color: var(--danger); border: 1px solid rgba(239, 68, 68, 0.2); }
+
+.alert-content { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 13px; }
+.alert-close { background: none; border: none; font-size: 20px; color: inherit; cursor: pointer; opacity: 0.5; }
+
+/* Limit Exhausted Banner */
+.limit-exhausted-banner {
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+  color: white;
+  padding: 20px 24px;
+  border-radius: 20px;
+  margin-bottom: 30px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: 0 15px 35px rgba(239, 68, 68, 0.3);
+  animation: slideDown 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.banner-content {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.banner-icon {
+  width: 48px;
+  height: 48px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.banner-text h3 {
+  font-size: 14px;
+  font-weight: 900;
+  letter-spacing: 0.1em;
+  margin: 0 0 4px 0;
+}
+
+.banner-text p {
+  font-size: 13px;
+  font-weight: 600;
+  opacity: 0.9;
+  margin: 0;
+}
+
+.btn-upgrade-now {
+  background: white;
+  color: #ef4444;
+  border: none;
+  padding: 10px 24px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-upgrade-now:hover {
+  transform: scale(1.05);
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+}
+
+/* Plan Selection Overlay */
+.plan-selection-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.8);
+  backdrop-filter: blur(10px);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+}
+
+.selection-container {
+  background: var(--bg-main);
+  width: 100%;
+  max-width: 1200px;
+  max-height: 90vh;
+  border-radius: 32px;
+  padding: 40px;
+  overflow-y: auto;
+  border: 1px solid var(--border-subtle);
+  position: relative;
+}
+
+.selection-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 40px;
+}
+
+.selection-header h2 {
+  font-size: 32px;
+  font-weight: 900;
+  letter-spacing: -0.04em;
+}
+
+.btn-close {
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  font-size: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.tier-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 32px;
+  padding: 10px;
+}
+
+@keyframes slideDown {
+  from { transform: translateY(-20px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
 
 /* No Plan State */
 .empty-deployment-state {
